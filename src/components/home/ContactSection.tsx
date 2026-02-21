@@ -43,8 +43,9 @@ export default function ContactSection() {
             </h2>
             <p className="text-text-light leading-relaxed mb-8">
               Heb je vragen over adoptie, wil je vrijwilliger worden of wil je
-              ons steunen? We horen graag van je! We proberen binnen 3 werkdagen
-              te antwoorden.
+              ons steunen? We horen graag van je! We proberen steeds binnen de
+              8 werkdagen een antwoord te voorzien op je mail. Voor adoptie en
+              afstand: enkel op afspraak.
             </p>
 
             <div className="space-y-5">

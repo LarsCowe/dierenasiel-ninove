@@ -1,4 +1,28 @@
 import Link from "next/link";
+import Image from "next/image";
+import { SITE_LOGO_URL } from "@/lib/constants";
+
+const WIX = "https://static.wixstatic.com/media";
+
+// Featured animal photos from the old website for the hero grid
+const heroImages = [
+  {
+    src: `${WIX}/12c6b4_9feb8fc1bb464ef899363245fec44a25~mv2.jpg/v1/fill/w_600,h_600,al_c,q_80,enc_auto/12c6b4_9feb8fc1bb464ef899363245fec44a25~mv2.jpg`,
+    alt: "Dieren in het asiel",
+  },
+  {
+    src: `${WIX}/12c6b4_adc6c63de5144e0aa5d1abcb2f16d9a9~mv2.jpg/v1/fill/w_600,h_600,al_c,q_80,enc_auto/12c6b4_adc6c63de5144e0aa5d1abcb2f16d9a9~mv2.jpg`,
+    alt: "Andere dieren in het asiel",
+  },
+  {
+    src: `${WIX}/12c6b4_71b76aeabafa44d6b1612132d897fa1f~mv2.jpeg/v1/fill/w_600,h_600,al_c,q_80,enc_auto/12c6b4_71b76aeabafa44d6b1612132d897fa1f~mv2.jpeg`,
+    alt: "Honden ter adoptie",
+  },
+  {
+    src: `${WIX}/12c6b4_a9e7932650044215bbd9e40601ba6b22~mv2.jpg/v1/fill/w_600,h_600,al_c,q_80,enc_auto/12c6b4_a9e7932650044215bbd9e40601ba6b22~mv2.jpg`,
+    alt: "Katten ter adoptie",
+  },
+];
 
 export default function HeroSection() {
   return (
@@ -13,14 +37,23 @@ export default function HeroSection() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Text content */}
         <div className="text-center lg:text-left">
+          <div className="mb-6">
+            <Image
+              src={SITE_LOGO_URL}
+              alt="Dierenasiel Ninove logo"
+              width={120}
+              height={120}
+              className="mx-auto lg:mx-0 rounded-full bg-white/10 p-2"
+            />
+          </div>
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
             Geef een dier{" "}
             <span className="text-accent-light">een tweede kans</span> op geluk
           </h1>
           <p className="text-lg text-white/85 leading-relaxed mb-9 max-w-lg mx-auto lg:mx-0">
-            Dierenasiel Ninove VZW vangt verwaarloosde, achtergelaten en verloren
-            dieren op. Samen zorgen we ervoor dat elk dier de liefde en het thuis
-            krijgt dat het verdient.
+            Het Dierenasiel Ninove (Denderwindeke) geeft nieuwe kansen aan
+            dieren die een nieuwe thuis zoeken. Samen zorgen we ervoor dat elk
+            dier de liefde en het thuis krijgt dat het verdient.
           </p>
           <div className="flex gap-4 flex-wrap justify-center lg:justify-start">
             <Link
@@ -54,20 +87,23 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Visual grid */}
+        {/* Visual grid with real photos */}
         <div className="flex justify-center">
           <div className="grid grid-cols-2 gap-4 max-w-sm">
-            {[
-              { emoji: "🐕", gradient: "from-accent-light to-accent" },
-              { emoji: "🐈", gradient: "from-[#a8dadc] to-[#457b9d]", offset: "translate-y-8" },
-              { emoji: "🐇", gradient: "from-[#d8f3dc] to-[#95d5b2]", offset: "-translate-y-5" },
-              { emoji: "🐾", gradient: "from-[#fde2e4] to-[#fad2e1]" },
-            ].map((card) => (
+            {heroImages.map((img, i) => (
               <div
-                key={card.emoji}
-                className={`aspect-square rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-6xl shadow-xl hover:scale-[1.03] transition-transform ${card.offset || ""}`}
+                key={img.alt}
+                className={`aspect-square rounded-2xl overflow-hidden shadow-xl hover:scale-[1.03] transition-transform ${
+                  i === 1 ? "translate-y-8" : i === 2 ? "-translate-y-5" : ""
+                }`}
               >
-                {card.emoji}
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  width={300}
+                  height={300}
+                  className="w-full h-full object-cover"
+                />
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import AnimateOnScroll from "@/components/ui/AnimateOnScroll";
 import { TEAM_MEMBERS, VOLUNTEERS } from "@/lib/constants";
 
@@ -18,91 +19,121 @@ export default function OverOnsPage() {
             Over ons
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary-dark mb-5">
-            Over Dierenasiel Ninove
+            Over het dierenasiel
           </h1>
-          <p className="text-text-light max-w-2xl mx-auto leading-relaxed">
-            Het Dierenasiel Ninove (Denderwindeke) geeft nieuwe kansen aan dieren
-            die een nieuwe thuis zoeken.
-          </p>
         </AnimateOnScroll>
 
-        {/* History */}
+        {/* Doel */}
         <AnimateOnScroll className="mb-16">
           <h2 className="font-heading text-2xl font-bold text-primary-dark mb-6">
-            Onze geschiedenis
+            Doel van het asiel
+          </h2>
+          <ul className="list-disc list-inside space-y-2 text-text-light leading-relaxed">
+            <li>Geven van nieuwe kansen aan dieren die een nieuwe thuis zoeken.</li>
+            <li>Het opvangen van verloren dieren.</li>
+          </ul>
+        </AnimateOnScroll>
+
+        {/* Geschiedenis */}
+        <AnimateOnScroll className="mb-16">
+          <h2 className="font-heading text-2xl font-bold text-primary-dark mb-6">
+            Geschiedenis van het Dierenasiel Ninove
           </h2>
           <div className="space-y-4 text-text-light leading-relaxed">
             <p>
-              Dierenasiel Ninove VZW, ook bekend als Dierenbescherming Groot-Ninove,
-              werd opgericht op <strong>6 maart 1980</strong> aan Kerkveld 29 in
-              Denderwindeke. In 2014 namen <strong>Katrien Reygaerts</strong> en haar
-              moeder <strong>Martine Van Den Steen</strong> het asiel over.
+              Dierenasiel Ninove is ontstaan in <strong>1980</strong> op Kerkveld in
+              Denderwindeke. Sinds januari <strong>2014</strong> hebben{" "}
+              <strong>Martine Van Den Steen</strong> en dochter{" "}
+              <strong>Katrien Reygaerts</strong> de uitbating van dit asiel
+              overgenomen.
             </p>
             <p>
-              Binnen een jaar na de overname vonden al 275 honden en katten een nieuw
-              thuis via het asiel. De oorspronkelijke locatie raakte echter zwaar
-              verouderd — koud, vochtig en niet geschikt voor verbouwingen door de
-              agrarische zone.
+              Martine had reeds vele jaren ervaring in omgang met honden in haar
+              trimsalon en was ook vele jaren actief in een hondenschool. Katrien
+              kreeg de microbe van dierenvriend van thuis mee en studeerde voor
+              dierenartsassistente: 2de en 3de graad dierenverzorging + Bachelor
+              Agro- en Biotechnologie met als afstudeerrichting Dierenzorg. Zoon
+              Peter Reygaerts, administratief deskundige, helpt mee bij de
+              administratieve taken.
             </p>
             <p>
-              In <strong>april 2022</strong> kocht het asiel een voormalig
-              landbouwgebouw aan de Minnenhofstraat 24, op ongeveer 2 km van de oude
-              locatie. Na uitgebreide verbouwingen — nieuw dak, geïsoleerde wanden,
-              24 kennels, klimaatbeheersing en geluidsisolatie — opende het nieuwe
-              hondengebouw feestelijk op <strong>6-7 januari 2024</strong>.
+              Sinds januari <strong>2024</strong> hebben we, na een verplichte
+              verhuis, onze intrek genomen in een volledig vernieuwd asiel in de
+              Minnenhofstraat te Denderwindeke. Hier hebben we enkel plaats voor
+              opvang van onze honden.
             </p>
             <p>
-              De honden verblijven nu in het moderne gebouw aan de Minnenhofstraat. De
-              katten en andere dieren (ezels, kippen, hangbuikvarken) bevinden zich
-              nog aan de Kerkveld-locatie. Het plan is om alle dieren binnen 10 jaar
-              op de Minnenhofstraat te huisvesten.
+              Onze toekomstplannen zijn om ook hier een verblijf op te richten voor
+              onze katten, die nu uit noodzaak in een ander gebouw in Ninove
+              opgevangen en verzorgd worden. Alles samenbrengen is ons doel.
+            </p>
+            <p>
+              We zijn dankbaar voor onze toffe medewerkers en vrijwilligers die mee
+              instaan bij de werking van ons dierenasiel, zonder hen zou het niet
+              lukken. Ons team kan je hieronder terugvinden.
             </p>
           </div>
         </AnimateOnScroll>
 
-        {/* Team */}
+        {/* Team - Wie zijn we */}
         <AnimateOnScroll className="mb-16">
           <h2 className="font-heading text-2xl font-bold text-primary-dark mb-6">
-            Ons team
+            Wie zijn we
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {TEAM_MEMBERS.map((member) => (
               <div
                 key={member.name}
-                className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
               >
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-2xl mb-4">
-                  👤
+                <div className="relative w-full aspect-[4/3]">
+                  <Image
+                    src={member.imageUrl}
+                    alt={member.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, 33vw"
+                  />
                 </div>
-                <h3 className="font-bold text-primary-dark">{member.name}</h3>
-                <p className="text-sm text-text-light">{member.role}</p>
+                <div className="p-4 text-center">
+                  <h3 className="font-bold text-primary-dark text-sm">{member.name}</h3>
+                  <p className="text-xs text-text-light">{member.role}</p>
+                </div>
               </div>
             ))}
           </div>
         </AnimateOnScroll>
 
-        {/* Volunteers */}
+        {/* Vrijwilligers */}
         <AnimateOnScroll className="mb-16">
           <h2 className="font-heading text-2xl font-bold text-primary-dark mb-6">
             Onze vrijwilligers
           </h2>
-          <p className="text-text-light leading-relaxed mb-4">
-            Ons asiel draait grotendeels op de inzet van fantastische vrijwilligers.
-            Zonder hen zouden we ons werk niet kunnen doen.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {VOLUNTEERS.map((name) => (
-              <span
-                key={name}
-                className="px-4 py-2 bg-warm rounded-full text-sm font-semibold text-primary-dark"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {VOLUNTEERS.map((volunteer) => (
+              <div
+                key={volunteer.name}
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
               >
-                {name}
-              </span>
+                <div className="relative w-full aspect-[4/3]">
+                  <Image
+                    src={volunteer.imageUrl}
+                    alt={volunteer.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                  />
+                </div>
+                <div className="p-3 text-center">
+                  <h3 className="font-bold text-primary-dark text-sm">{volunteer.name}</h3>
+                  <p className="text-xs text-text-light">Vrijwilliger</p>
+                </div>
+              </div>
             ))}
           </div>
         </AnimateOnScroll>
 
-        {/* Legal info */}
+        {/* Juridische informatie */}
         <AnimateOnScroll>
           <div className="bg-gray-100 p-8 rounded-2xl">
             <h3 className="font-heading text-lg font-bold text-primary-dark mb-3">
@@ -123,6 +154,9 @@ export default function OverOnsPage() {
               <div>
                 <span className="font-semibold text-text">IBAN:</span> BE98 0680 7888
                 7093
+              </div>
+              <div>
+                <span className="font-semibold text-text">HK:</span> 30408195
               </div>
             </div>
           </div>

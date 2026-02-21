@@ -22,8 +22,10 @@ export default function ContactPage() {
             Neem contact met ons op
           </h1>
           <p className="text-text-light max-w-xl mx-auto leading-relaxed">
-            We proberen binnen 3 werkdagen te antwoorden. Bel of kom niet
-            spontaan langs — we werken op afspraak.
+            Beste mensen, gelieve rekening te houden met het feit dat we uit een
+            klein team van vaste medewerkers bestaan, aangevuld met enkele
+            vrijwilligers. We proberen steeds binnen de 8 werkdagen een antwoord
+            te voorzien op je mail. Voor adoptie en afstand: enkel op afspraak.
           </p>
         </AnimateOnScroll>
 

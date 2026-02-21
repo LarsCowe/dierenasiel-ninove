@@ -1,3 +1,4 @@
+import Image from "next/image";
 import AnimateOnScroll from "@/components/ui/AnimateOnScroll";
 
 const features = [
@@ -31,8 +32,14 @@ export default function AboutPreview() {
           {/* Image side */}
           <AnimateOnScroll animation="fade-in-left">
             <div className="relative">
-              <div className="w-full aspect-[4/3] bg-gradient-to-br from-warm to-warm-dark rounded-3xl flex items-center justify-center text-8xl shadow-lg">
-                🏠
+              <div className="w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-lg">
+                <Image
+                  src="https://static.wixstatic.com/media/12c6b4_3b08cbc1a12f429eb6e21f269800cef4~mv2.jpg/v1/fill/w_800,h_645,al_c,q_80,enc_auto/12c6b4_3b08cbc1a12f429eb6e21f269800cef4~mv2.jpg"
+                  alt="Dierenasiel Ninove"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
               </div>
               <div className="absolute -bottom-5 -right-5 bg-accent text-white px-7 py-5 rounded-2xl shadow-lg text-center">
                 <div className="font-heading text-3xl font-bold">275+</div>

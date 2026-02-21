@@ -3,31 +3,39 @@ import type { NewPage } from "@/types";
 export const pageSeeds: NewPage[] = [
   {
     slug: "wandelreglement",
-    title: "Wandelreglement",
+    title: "Wandelen: reglement en uren van het asiel",
     metaDescription:
       "Regels voor het wandelen met onze asielhonden. Lees het wandelreglement van Dierenasiel Ninove.",
     content: `## Wandelreglement
 
-Wandelen met onze asielhonden is een geweldige manier om de dieren wat extra beweging en aandacht te geven. Om ervoor te zorgen dat dit veilig en aangenaam verloopt voor zowel de honden als de wandelaars, hanteren we onderstaande regels.
+Neem onderstaand reglement door voor je met een van de honden wenst te wandelen.
 
-### Wanneer kan je wandelen?
+### Reglement
 
-- **Enkel op openingsdagen** (maandag tot zaterdag)
-- **Van 10:00 tot 12:00**
-- Niet op zondag of feestdagen
+1. Wandelen is mogelijk op **openingsdagen (maandag, woensdag, vrijdag en zaterdag)** tussen **10:00 en 12:00 uur**. Start bij voorkeur tussen 10:00 en 11:30 uur.
+2. Bij **vriestemperaturen of boven 23 graden** kunnen wandelingen geannuleerd worden.
+3. De wandelaar moet **minstens 18 jaar oud** zijn of onder begeleiding van een volwassene.
+4. Je dient je **gegevens achter te laten** voor de wandeling.
+5. Draag altijd het **fluo hesje van het dierenasiel**.
+6. Je moet **telefonisch bereikbaar** zijn tijdens de wandeling.
+7. De keuze van de hond gebeurt **in samenspraak met de verantwoordelijke**.
+8. Honden blijven **altijd aan de leiband** en mogen nooit loslopen. Houd afstand en geef de hond niet door aan anderen.
+9. Breng **geen eigen honden** mee.
+10. Respecteer **private eigendommen** tijdens de wandeling.
+11. **Poepzakjes zijn verplicht** (verkrijgbaar in het asiel).
+12. Wandelen gebeurt op **eigen verantwoordelijkheid en risico**.
+13. Het dierenasiel mag **wandelaars weigeren**.
+14. Bij het niet naleven van het reglement kunnen **wandelingen geweigerd** worden.
+15. Door te wandelen verklaar je je **akkoord met dit wandelreglement**.
 
-### Wie mag wandelen?
+### Wandeluren
 
-- Wandelen is **enkel mogelijk voor vaste vrijwilligers** die regelmatig komen wandelen
-- Je moet je **contactgegevens en telefoonnummer** achterlaten voor je gaat wandelen
-
-### Belangrijke regels
-
-- **Kom NIET met kinderen** om de honden uit te laten
-- Volg altijd de instructies van het personeel
-- Laat de hond niet los tenzij uitdrukkelijk toegestaan
-- Breng de hond altijd terug naar het asiel na de wandeling
-- Meld eventuele problemen of bijzonderheden aan het personeel
+| Dag | Uren |
+|-----|------|
+| Maandag | 10:00 - 12:00 |
+| Woensdag | 10:00 - 12:00 |
+| Vrijdag | 10:00 - 12:00 |
+| Zaterdag | 10:00 - 12:00 |
 
 ### Contact
 
@@ -40,31 +48,40 @@ Vragen over het wandelreglement? Neem contact op via info@dierenasielninove.be o
       "Informatie over het afstaan van een dier aan Dierenasiel Ninove. Procedure, kosten en wat mee te brengen.",
     content: `## Een dier afstaan
 
-Het afstaan van een huisdier is nooit een makkelijke beslissing. Bij Dierenasiel Ninove begrijpen we dat en zorgen we ervoor dat elk dier de best mogelijke opvang krijgt.
+Je kan je hond enkel brengen **na afspraak**. Zorg ervoor dat je je identiteitskaart, het vaccinatieboekje en het geldige registratieformulier van de hond of kat op jouw naam meebrengt. Neem ook altijd een knuffel of dekentje mee waar de hond vertrouwd mee is. Op die manier heeft het dier een vertrouwd item en kan de overgang naar ons asiel soepeler verlopen.
 
-### Belangrijke informatie
+Samen met jou zullen we een **gedragsfiche** van het dier opstellen. Hoe meer informatie we hebben, hoe sneller we een geschikte nieuwe eigenaar kunnen vinden.
 
-- Het afstaan van een dier is **NIET gratis**. Er wordt een afstandsbijdrage gevraagd om de kosten te dekken.
-- **Grotere hondenrassen** betalen een hogere bijdrage omdat zij gemiddeld langer in het asiel verblijven.
-- Er geldt een **extra toeslag** als het dier geen geldige documenten en vaccinaties heeft.
-- Je kan **enkel dieren afstaan die op jouw naam geregistreerd staan**.
-- Er is vaak een **wachtlijst**, vooral voor grotere dieren.
-- Dieren kunnen enkel gebracht worden **op afspraak**.
+**LET OP!** Je kunt geen dier afstaan dat niet van jou is.
 
-### Wat meebrengen?
+Jammer genoeg werken we heel vaak met een **wachtlijst**, zeker voor grotere dieren.
 
-1. Je **identiteitskaart**
-2. Het **vaccinatieboekje** van het dier
-3. Het geldige **registratieformulier** op jouw naam
-4. Een **knuffel of dekentje** dat het dier kent (voor comfort tijdens de overgang)
+### Afstandsbijdrage
 
-### Gedragsfiche
+#### Honden
+| Leeftijd | Bijdrage |
+|----------|----------|
+| Pup tot 6 maanden | Gratis |
+| 6 maanden tot 2 jaar | Vanaf €50 (grote honden vanaf €75) |
+| 2 jaar tot 8 jaar | Vanaf €75 (grote honden vanaf €100) |
+| Ouder dan 8 jaar | Neem contact met ons op |
 
-Samen met de eigenaar stellen we een **gedragsfiche** op van het dier. Hoe meer informatie we hebben, hoe sneller we een geschikte nieuwe eigenaar kunnen vinden.
+#### Katten
+| Leeftijd | Bijdrage |
+|----------|----------|
+| Kitten tot 6 maanden | Gratis |
+| Vanaf 6 maanden | Afhankelijk van de leeftijd |
 
-### Afspraak maken
+### Geldige documenten vereist
 
-Neem contact op via info@dierenasielninove.be of bel 054/32 16 79 om een afspraak te maken.`,
+- **Vaccinatieboekje** met vaccin niet ouder dan 1 jaar
+- **Bewijs van identificatie** op jouw naam (www.huisdierinfo.be)
+
+In ons asiel kan je betalen met **Payconiq** of **cash**.
+
+### Contact
+
+Heb je nog een vraag? Mail ons via info@dierenasielninove.be of bel 054/32 16 79 om een afspraak te maken.`,
   },
   {
     slug: "vrijwilligerswerk",
@@ -73,65 +90,60 @@ Neem contact op via info@dierenasielninove.be of bel 054/32 16 79 om een afspraa
       "Word vrijwilliger bij Dierenasiel Ninove. Help mee met de dagelijkse verzorging van onze dieren.",
     content: `## Vrijwilligerswerk
 
-Dierenasiel Ninove draait grotendeels op de inzet van onze fantastische vrijwilligers. Zonder hen zouden we ons werk niet kunnen doen.
+Wandelen met de honden kan enkel op de **openingsdagen van 10:00 tot 12:00 uur** (maandag, woensdag, vrijdag en zaterdag). Je gegevens en telefoonnummer dien je achter te laten voor je gaat wandelen.
 
-### Wat kan je doen?
-
-- **Honden uitlaten** op openingsdagen van 10:00 tot 12:00
-- **Katten socialiseren** en knuffelen
-- **Kennels en kattenbakken** schoonmaken
-- **Voeden** van de dieren
-- **Helpen bij evenementen** zoals het jaarlijkse eetfestijn
-- **Onderhoud en klusjes** in en rond het asiel
-
-### Ons vrijwilligersteam
-
-We zijn trots op ons team van toegewijde vrijwilligers: Natasja, Nathalie, Ward, Lars, Els, Christel, Joris, Shirley, David en Marie-Josee. Samen zorgen ze ervoor dat onze dieren de beste zorg krijgen.
+[Neem hier alvast ons wandelreglement door.](/wandelreglement)
 
 ### Interesse?
 
-Neem contact met ons op via info@dierenasielninove.be of vul het contactformulier in op onze website. Vermeld dat je graag vrijwilliger wil worden en we nemen zo snel mogelijk contact met je op!`,
+Wil je graag wandelen? Stuur ons een mailtje via info@dierenasielninove.be.`,
   },
   {
     slug: "steun-ons",
     title: "Steun ons",
     metaDescription:
       "Steun Dierenasiel Ninove met een donatie, kennelsponsorschap of via Trooper. Elke bijdrage telt!",
-    content: `## Steun ons
+    content: `## Giften
 
-Dierenasiel Ninove is een vzw die grotendeels draait op giften en vrijwilligerswerk. Elke bijdrage, groot of klein, helpt ons om de beste zorg te bieden aan onze dieren.
-
-### Financieel steunen
-
-Doe een eenmalige of maandelijkse overschrijving naar:
+Je kan een eenmalige of maandelijkse financiële gift doen op volgend rekeningnummer:
 
 **IBAN: BE98 0680 7888 7093**
 t.n.v. Dierenasiel Ninove VZW
 
-Bij giften van **€40 of meer per jaar** ontvang je automatisch een **fiscaal attest**.
+Voor een gift **vanaf €40 per jaar** ontvang je automatisch een **fiscaal attest**. Als je een storting doet, moet je wel **'gift' of 'steun' vermelden**, anders geldt het niet! Vergeet ook je **rijksregisternummer** niet te vermelden in de mededeling.
 
-### Kennelsponsor worden
+## Materiaal doneren
 
-Bedrijven kunnen kennelsponsor worden. Als sponsor wordt je bedrijfslogo en link op onze website geplaatst. Neem contact op voor meer informatie.
+Momenteel hebben we meer dan voldoende materiaal voor honden en katten voorhanden. Enkel onderstaande benodigdheden kunnen we steeds gebruiken:
 
-### Materiaal doneren
-
-We hebben altijd nood aan:
-- **Kittenvoer** (kittenpapjes)
-- **Bleekwater**
+- **Kittenvoeding** (kittenpapjes/kittenvoer)
+- **Javel** (bleekwater)
 - **Houtpellets**
 
-Je kan materiaal afgeven tijdens de openingsuren.
+Je bent altijd welkom in het dierenasiel (bij voorkeur tijdens de openingsuren) voor donatie van deze benodigdheden.
 
-### Online shoppen via Trooper
+## Testament
+
+Uiteraard neem je jouw kinderen, naaste familie en andere dierbaren op in je testament. Maar mocht je daarvoor de ruimte hebben, dan hopen we dat je in je testament ook een plaatsje hebt voor onze vzw. Dit kan zelfs voordelig zijn voor je erfgenamen in de zijlijn zoals broers, zussen, neven en nichten. Je kan voor meer informatie het best terecht bij je notaris.
+
+## Kennelsponsors
+
+Bedrijven kunnen kennelsponsor worden. Meer info op onze [kennelsponsor-pagina](/kennelsponsor).
+
+| Formule | Bijdrage |
+|---------|----------|
+| KENNELSPONSOR | €125 (affiche in het asiel voor 1 jaar) |
+| KENNELSPONSOR+ | €150 (idem + vermelding op website met link) |
+| HOOFDSPONSOR | €200 (banner aan hoofdingang + op affiches/bierviltjes eetfestijn) |
+| VRIJE BIJDRAGE | Naar keuze |
+
+Betalingsperiode: 15 mei 2025 - 15 mei 2026.
+
+## Online shoppen via Trooper
 
 Shop bij meer dan 600 webshops via [Trooper](https://www.trooper.be/nl/trooperverenigingen/dierenasielninove) en een deel van je aankoop gaat automatisch naar het asiel, zonder extra kost voor jou!
 
-Deelnemende shops zijn onder andere: Booking.com, Center Parcs, Bol.com, Coolblue en vele anderen.
-
-### Overheidssteun
-
-Dierenasiel Ninove ontvangt jaarlijks structurele steun van de Vlaamse overheid (€10.725 in 2025). Daarnaast ontvangen we vergoedingen wanneer we in beslag genomen dieren opvangen.`,
+Deelnemende shops zijn onder andere: Booking.com, Center Parcs, Bol.com, Coolblue en vele anderen.`,
   },
   {
     slug: "eetfestijn",
@@ -168,14 +180,18 @@ Neem contact op via info@dierenasielninove.be als je wil meehelpen.`,
       "Word kennelsponsor bij Dierenasiel Ninove. Steun ons asiel en krijg zichtbaarheid voor uw bedrijf.",
     content: `## Kennelsponsor worden
 
-Als bedrijf kunt u kennelsponsor worden bij Dierenasiel Ninove. Met uw steun helpt u ons om de beste zorg te bieden aan onze dieren.
+Dankzij de waardevolle steun van onze hoofdsponsors, kennelsponsors en andere dierenvrienden kunnen wij dagelijks zorg blijven bieden aan onze asieldieren. Daarom zetten we hen hier graag in de kijker, met een link naar hun website. Uit naam van al onze asieldieren: **hartelijk dank aan al onze sponsors!**
 
-### Wat krijgt u als sponsor?
+### Formules
 
-- Uw **bedrijfslogo** op onze website
-- Een **link naar uw website**
-- Vermelding op onze **sociale media**
-- Het goede gevoel dat u bijdraagt aan het welzijn van dieren in nood
+| Formule | Bijdrage | Voordelen |
+|---------|----------|-----------|
+| KENNELSPONSOR | €125 | Affiche in het asiel voor 1 jaar |
+| KENNELSPONSOR+ | €150 | Idem + vermelding op website met link |
+| HOOFDSPONSOR | €200 | Banner aan hoofdingang + op affiches en bierviltjes bij eetfestijn |
+| VRIJE BIJDRAGE | Naar keuze | - |
+
+Betalingsperiode: 15 mei 2025 - 15 mei 2026.
 
 ### Interesse?
 
