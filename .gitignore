@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# scraping artifacts
+/scraped-content/
+/public/images/site/
+scrape-wix-images.mjs
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
