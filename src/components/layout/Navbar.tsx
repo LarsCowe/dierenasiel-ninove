@@ -20,7 +20,7 @@ export default function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-white/97 backdrop-blur-md shadow-sm py-2.5"
-          : "bg-primary-dark/90 backdrop-blur-sm py-4"
+          : "bg-transparent py-4"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -30,7 +30,7 @@ export default function Navbar() {
             scrolled ? "text-primary-dark" : "text-white"
           }`}
         >
-          <div className="w-11 h-11 bg-accent rounded-full flex items-center justify-center text-xl shrink-0">
+          <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center text-xl shrink-0">
             🐾
           </div>
           <span>Dierenasiel Ninove</span>

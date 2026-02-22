@@ -58,7 +58,7 @@ export const FOOTER_LINKS = {
   navigation: [
     { label: "Over ons", href: "/over-ons" },
     { label: "Onze dieren", href: "/honden-ter-adoptie" },
-    { label: "Adoptieproces", href: "/over-ons#adoptieproces" },
+    { label: "Adoptieprocedure", href: "/adoptieprocedure" },
     { label: "Nieuws", href: "/nieuws" },
     { label: "Contact", href: "/contact" },
   ],
@@ -70,6 +70,8 @@ export const FOOTER_LINKS = {
   info: [
     { label: "Wandelreglement", href: "/wandelreglement" },
     { label: "Dier afstaan", href: "/een-dier-afstaan" },
+    { label: "Dierenverwaarlozing", href: "/dierenverwaarlozing" },
+    { label: "Lid worden", href: "/lid-worden" },
     { label: "Vrijwilligerswerk", href: "/vrijwilligerswerk" },
     { label: "Steun ons", href: "/steun-ons" },
     { label: "Kennelsponsor", href: "/kennelsponsor" },
