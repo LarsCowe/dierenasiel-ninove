@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import LoginForm from "./LoginForm";
 import { loginAsGuest, loginWithCredentials } from "@/lib/actions/auth";
+import { SITE_LOGO_URL } from "@/lib/constants";
 
 type LoginMode = "surfer" | "wandelaar" | "beheerder";
 
@@ -108,9 +110,14 @@ export default function SplashLogin() {
             animation: phase === "splash" ? "fadeInUp 1s ease-out" : undefined,
           }}
         >
-          <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center text-5xl shadow-xl shadow-black/20 mb-5">
-            🐾
-          </div>
+          <Image
+            src={SITE_LOGO_URL}
+            alt="Dierenasiel Ninove logo"
+            width={120}
+            height={120}
+            className="rounded-full bg-white/10 p-2 shadow-xl shadow-black/20 mb-5"
+            priority
+          />
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-white text-center">
             Dierenasiel Ninove
           </h1>
