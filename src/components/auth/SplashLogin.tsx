@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import LoginForm from "./LoginForm";
-import { loginAsGuest } from "@/lib/actions/auth";
+import { loginAsGuest, loginWithCredentials } from "@/lib/actions/auth";
+
+type LoginMode = "surfer" | "wandelaar" | "beheerder";
 
 export default function SplashLogin() {
   const [phase, setPhase] = useState<"splash" | "login">("splash");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>();
   const router = useRouter();
 
   useEffect(() => {
@@ -19,10 +22,57 @@ export default function SplashLogin() {
 
   async function handleGuestLogin() {
     setIsLoading(true);
+    setError(undefined);
     try {
       await loginAsGuest();
       router.push("/");
     } catch {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleCredentialLogin(
+    email: string,
+    password: string,
+    mode: LoginMode
+  ) {
+    setIsLoading(true);
+    setError(undefined);
+    try {
+      const result = await loginWithCredentials(email, password);
+
+      if (result.error) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check role permission
+      if (mode === "beheerder" && result.role !== "beheerder") {
+        setError("Je hebt geen beheerdersrechten.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (
+        mode === "wandelaar" &&
+        result.role !== "wandelaar" &&
+        result.role !== "beheerder"
+      ) {
+        setError("Je hebt geen wandelaarstoegang.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Redirect based on chosen mode
+      const redirectMap: Record<LoginMode, string> = {
+        surfer: "/",
+        wandelaar: "/wandelaar",
+        beheerder: "/beheerder",
+      };
+      router.push(redirectMap[mode]);
+    } catch {
+      setError("Er ging iets mis. Probeer opnieuw.");
       setIsLoading(false);
     }
   }
@@ -80,7 +130,12 @@ export default function SplashLogin() {
           <p className="text-white/70 text-center text-sm mb-6">
             Kies hoe je wil verder gaan
           </p>
-          <LoginForm onGuestLogin={handleGuestLogin} isLoading={isLoading} />
+          <LoginForm
+            onGuestLogin={handleGuestLogin}
+            onCredentialLogin={handleCredentialLogin}
+            isLoading={isLoading}
+            error={error}
+          />
         </div>
       </div>
 

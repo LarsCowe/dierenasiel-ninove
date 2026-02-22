@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
 const PUBLIC_PATHS = ["/login", "/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml"];
 
-export function middleware(request: NextRequest) {
+const SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "dierenasiel-ninove-dev-secret-change-in-prod"
+);
+
+async function getSessionRole(request: NextRequest): Promise<string | null> {
+  const token = request.cookies.get("session")?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    return (payload as { role?: string }).role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
@@ -16,7 +32,26 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session or guest cookie
+  // Protected platform routes
+  if (pathname.startsWith("/beheerder")) {
+    const role = await getSessionRole(request);
+    if (role !== "beheerder") {
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/wandelaar")) {
+    const role = await getSessionRole(request);
+    if (role !== "wandelaar" && role !== "beheerder") {
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
+  // Default: check for session or guest cookie (surfer routes)
   const hasSession = request.cookies.has("session");
   const hasGuest = request.cookies.has("guest-mode");
 
