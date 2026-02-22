@@ -121,15 +121,12 @@ export default function SplashLogin() {
 
         {/* Login form - slides in after splash */}
         <div
-          className={`w-full max-w-sm mt-10 transition-all duration-700 ease-out ${
+          className={`w-full max-w-sm mt-6 transition-all duration-700 ease-out ${
             phase === "login"
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-8 pointer-events-none"
           }`}
         >
-          <p className="text-white/70 text-center text-sm mb-6">
-            Kies hoe je wil verder gaan
-          </p>
           <LoginForm
             onGuestLogin={handleGuestLogin}
             onCredentialLogin={handleCredentialLogin}

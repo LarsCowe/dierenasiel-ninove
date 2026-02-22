@@ -69,11 +69,15 @@ export default function LoginForm({
       {/* Buttons */}
       <div className="space-y-3 pt-2">
         <button
-          onClick={onGuestLogin}
-          disabled={isLoading}
-          className="w-full py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/25"
+          onClick={() => handleCredentialLogin("beheerder")}
+          disabled={isLoading || !hasCredentials}
+          className={`w-full py-3.5 font-bold rounded-xl transition-all border ${
+            hasCredentials
+              ? "bg-[#1b4332] hover:bg-[#14332a] text-white border-[#2d6a4f] hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-[#1b4332]/25"
+              : "bg-white/10 text-white/40 border-white/10 cursor-not-allowed"
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {isLoading ? "Even geduld..." : "Login als surfer"}
+          {isLoading ? "Even geduld..." : "Login als beheerder"}
         </button>
 
         <button
@@ -85,29 +89,15 @@ export default function LoginForm({
               : "bg-white/10 text-white/40 border-white/10 cursor-not-allowed"
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          Login als wandelaar
-          {!hasCredentials && (
-            <span className="block text-xs font-normal mt-0.5 opacity-60">
-              Vul e-mail en wachtwoord in
-            </span>
-          )}
+          {isLoading ? "Even geduld..." : "Login als wandelaar"}
         </button>
 
         <button
-          onClick={() => handleCredentialLogin("beheerder")}
-          disabled={isLoading || !hasCredentials}
-          className={`w-full py-3.5 font-bold rounded-xl transition-all border ${
-            hasCredentials
-              ? "bg-[#1b4332] hover:bg-[#14332a] text-white border-[#2d6a4f] hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-[#1b4332]/25"
-              : "bg-white/10 text-white/40 border-white/10 cursor-not-allowed"
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+          onClick={onGuestLogin}
+          disabled={isLoading}
+          className="w-full py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/25"
         >
-          Login als beheerder
-          {!hasCredentials && (
-            <span className="block text-xs font-normal mt-0.5 opacity-60">
-              Vul e-mail en wachtwoord in
-            </span>
-          )}
+          {isLoading ? "Even geduld..." : "Login als surfer"}
         </button>
       </div>
     </div>
