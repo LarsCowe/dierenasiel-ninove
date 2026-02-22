@@ -40,5 +40,5 @@ export async function getFeaturedAnimals() {
       and(eq(animals.isFeatured, true), ne(animals.status, "geadopteerd"))
     )
     .orderBy(desc(animals.createdAt))
-    .limit(6);
+    .limit(3);
 }

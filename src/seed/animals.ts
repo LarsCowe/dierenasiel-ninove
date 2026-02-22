@@ -38,7 +38,6 @@ Met de juiste begeleiding en een stabiele omgeving zal Vito zich ontwikkelen tot
       wixImg("12c6b4_910a2d9f805a4577ba1631c6bebe84f2"),
     ],
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-08-01",
   },
   {
@@ -54,7 +53,6 @@ Met de juiste begeleiding en een stabiele omgeving zal Vito zich ontwikkelen tot
     shortDescription: "Een stevige kruising die een ervaren en liefdevol baasje zoekt.",
     imageUrl: wixImg("12c6b4_fe290441b8a445b298236e8d171f04de"),
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-04-01",
   },
   {
@@ -120,7 +118,6 @@ Ik zoek een thuis bij mensen die ervaring hebben met Mechelse herders. Mensen di
       wixImg("12c6b4_4b4a7f5531de495fbc20ce98a71bea80"),
     ],
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-09-01",
   },
   {
@@ -220,7 +217,6 @@ Zindelijkheid? Valt te verbeteren, mij op tijd buiten laten is de boodschap.`,
       wixImg("12c6b4_fafa98b9d59849e594c53bb7e9549eeb"),
     ],
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-03-15",
   },
   {
@@ -347,7 +343,6 @@ export const catSeeds: NewAnimal[] = [
     shortDescription: "Een onafscheidelijk kattenduo dat samen een nieuw thuis zoekt.",
     imageUrl: wixImg("12c6b4_a9e7932650044215bbd9e40601ba6b22"),
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-10-01",
   },
   {
@@ -372,7 +367,6 @@ Ze is steriel, gechipt, gevaccineerd, ontwormd en ontvlooid.`,
       wixImgWide("12c6b4_b8dc27b68d664f4bb6639c74040d7bb8"),
     ],
     status: "beschikbaar",
-    isFeatured: true,
     intakeDate: "2024-09-15",
   },
   {
