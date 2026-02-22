@@ -1,15 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getNewsArticles } from "@/lib/queries/news";
 import AnimateOnScroll from "@/components/ui/AnimateOnScroll";
 import { formatDate } from "@/lib/utils";
-
-const cardColors = [
-  "bg-gradient-to-br from-[#d8f3dc] to-[#b7e4c7]",
-  "bg-gradient-to-br from-[#fde2e4] to-[#fad2e1]",
-  "bg-gradient-to-br from-[#d4e09b] to-[#f6f4d2]",
-];
-
-const cardEmojis = ["🎉", "🎪", "💡"];
 
 export default async function NewsPreview() {
   const articles = await getNewsArticles(3);
@@ -37,12 +30,20 @@ export default async function NewsPreview() {
                 href={`/nieuws/${article.slug}`}
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1.5 hover:shadow-lg transition-all block"
               >
-                <div
-                  className={`aspect-video flex items-center justify-center text-4xl ${
-                    cardColors[idx % cardColors.length]
-                  }`}
-                >
-                  {cardEmojis[idx % cardEmojis.length]}
+                <div className="aspect-video relative overflow-hidden bg-gray-100">
+                  {article.imageUrl ? (
+                    <Image
+                      src={article.imageUrl}
+                      alt={article.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#d8f3dc] to-[#b7e4c7]">
+                      📰
+                    </div>
+                  )}
                 </div>
                 <div className="p-6">
                   <div className="text-xs font-semibold text-accent mb-2.5">

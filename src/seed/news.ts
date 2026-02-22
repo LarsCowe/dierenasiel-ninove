@@ -25,7 +25,7 @@ De honden werden na het openingsweekend verhuisd naar hun nieuwe thuis om stress
 > "Een geadopteerd asielhond vertegenwoordigt een levend wezen en volwaardig gezinslid, geen ruilobject of wegwerpartikel." - Dierenasiel Ninove
 
 Bedankt aan alle bezoekers, vrijwilligers en sponsors die dit mogelijk maakten!`,
-    imageUrl: "https://placedog.net/800/400?id=20",
+    imageUrl: "https://www.ninofmedia.tv/wp-content/uploads/2024/01/IMG_8816-scaled.jpeg",
     publishedAt: new Date("2024-01-08"),
     isPublished: true,
   },
@@ -43,7 +43,7 @@ Tijdens zijn bezoek maakte de minister kennis met Snow en Ice, twee onafscheidel
 Het bezoek benadrukte het belang van dierenopvang en adoptie in Vlaanderen. De Vlaamse overheid investeert jaarlijks in de werking van erkende dierenasielen, met een budget dat de afgelopen jaren met bijna 30% is gestegen.
 
 Dierenasiel Ninove ontvangt jaarlijks structurele steun van de Vlaamse overheid ter waarde van ongeveer €10.725.`,
-    imageUrl: "https://placedog.net/800/400?id=21",
+    imageUrl: "https://www.ninofmedia.tv/wp-content/uploads/2025/10/ben-Zonder-titel-1200-x-627-px-300-x-250-px-1200-x-627-px-scaled.png",
     publishedAt: new Date("2025-10-03"),
     isPublished: true,
   },
@@ -74,7 +74,7 @@ Dierenasiel Ninove is op zoek naar enthousiaste vrijwilligers die ons willen hel
 ### Interesse?
 
 Neem contact met ons op via info@dierenasielninove.be of vul het contactformulier in op onze website. We nemen zo snel mogelijk contact met je op!`,
-    imageUrl: "https://placedog.net/800/400?id=22",
+    imageUrl: "https://images.vrt.be/orig/2024/01/07/fac895b7-ad5c-11ee-b483-02b7b76bf47f.jpg",
     publishedAt: new Date("2026-01-25"),
     isPublished: true,
   },

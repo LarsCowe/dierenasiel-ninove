@@ -39,7 +39,7 @@ export default function AnimalCard({ animal }: { animal: Animal }) {
     >
       {/* Image */}
       <div
-        className={`aspect-[4/5] bg-gradient-to-br ${gradient} relative overflow-hidden rounded-2xl flex items-center justify-center`}
+        className={`aspect-square bg-gradient-to-br ${gradient} relative overflow-hidden rounded-2xl flex items-center justify-center`}
       >
         {animal.badge && (
           <span

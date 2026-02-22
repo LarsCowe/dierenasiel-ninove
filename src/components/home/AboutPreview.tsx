@@ -31,17 +31,18 @@ export default function AboutPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Image side */}
           <AnimateOnScroll animation="fade-in-left">
-            <div className="relative">
-              <div className="w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-lg">
+            <div className="relative pb-12">
+              <div className="rounded-3xl overflow-hidden shadow-lg">
                 <Image
                   src="https://static.wixstatic.com/media/12c6b4_3b08cbc1a12f429eb6e21f269800cef4~mv2.jpg/v1/fill/w_800,h_645,al_c,q_80,enc_auto/12c6b4_3b08cbc1a12f429eb6e21f269800cef4~mv2.jpg"
                   alt="Dierenasiel Ninove"
-                  fill
-                  className="object-cover"
+                  width={800}
+                  height={645}
+                  className="w-full h-auto"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               </div>
-              <div className="absolute -bottom-5 -right-5 bg-accent text-white px-7 py-5 rounded-2xl shadow-lg text-center">
+              <div className="absolute -bottom-8 right-4 bg-accent text-white px-7 py-5 rounded-2xl shadow-lg text-center">
                 <div className="font-heading text-3xl font-bold">275+</div>
                 <div className="text-xs font-semibold opacity-90">
                   Adopties per jaar
