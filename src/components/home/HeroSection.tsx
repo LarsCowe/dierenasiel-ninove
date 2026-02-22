@@ -37,6 +37,17 @@ export default function HeroSection() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
         {/* Text content */}
         <div className="text-center lg:text-left">
+          {/* Mobile logo — large, centered above title */}
+          <div className="flex justify-center mb-8 lg:hidden">
+            <div className="relative w-40 h-40">
+              <Image
+                src={SITE_LOGO_URL}
+                alt="Dierenasiel Ninove logo"
+                fill
+                className="rounded-full bg-white/10 p-2 object-contain"
+              />
+            </div>
+          </div>
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
             Geef een dier{" "}
             <span className="text-accent-light">een tweede kans</span> op geluk
@@ -55,17 +66,6 @@ export default function HeroSection() {
               dieren die een nieuwe thuis zoeken. Samen zorgen we ervoor dat elk
               dier de liefde en het thuis krijgt dat het verdient.
             </p>
-          </div>
-          {/* Mobile logo — larger, centered above buttons */}
-          <div className="flex justify-center mb-6 lg:hidden">
-            <div className="relative w-24 h-24">
-              <Image
-                src={SITE_LOGO_URL}
-                alt="Dierenasiel Ninove logo"
-                fill
-                className="rounded-full bg-white/10 p-1.5 object-contain"
-              />
-            </div>
           </div>
           <div className="flex gap-4 flex-wrap justify-center lg:justify-start">
             <Link
