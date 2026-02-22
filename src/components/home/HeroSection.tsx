@@ -42,7 +42,7 @@ export default function HeroSection() {
             <span className="text-accent-light">een tweede kans</span> op geluk
           </h1>
           <div className="flex items-center gap-4 mb-9 justify-center lg:justify-start">
-            <div className="shrink-0 relative w-[4.5rem] h-[4.5rem] lg:w-[5.5rem] lg:h-[5.5rem]">
+            <div className="shrink-0 relative w-[5.5rem] h-[5.5rem] hidden lg:block">
               <Image
                 src={SITE_LOGO_URL}
                 alt="Dierenasiel Ninove logo"
@@ -55,6 +55,17 @@ export default function HeroSection() {
               dieren die een nieuwe thuis zoeken. Samen zorgen we ervoor dat elk
               dier de liefde en het thuis krijgt dat het verdient.
             </p>
+          </div>
+          {/* Mobile logo — larger, centered above buttons */}
+          <div className="flex justify-center mb-6 lg:hidden">
+            <div className="relative w-24 h-24">
+              <Image
+                src={SITE_LOGO_URL}
+                alt="Dierenasiel Ninove logo"
+                fill
+                className="rounded-full bg-white/10 p-1.5 object-contain"
+              />
+            </div>
           </div>
           <div className="flex gap-4 flex-wrap justify-center lg:justify-start">
             <Link
