@@ -86,12 +86,12 @@ export default function OverOnsPage() {
                 key={member.name}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
               >
-                <div className="relative w-full aspect-[4/3]">
+                <div className="relative w-full aspect-[3/4]">
                   <Image
                     src={member.imageUrl}
                     alt={member.name}
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                     sizes="(max-width: 640px) 50vw, 33vw"
                   />
                 </div>
@@ -115,12 +115,12 @@ export default function OverOnsPage() {
                 key={volunteer.name}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
               >
-                <div className="relative w-full aspect-[4/3]">
+                <div className="relative w-full aspect-[3/4]">
                   <Image
                     src={volunteer.imageUrl}
                     alt={volunteer.name}
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                     sizes="(max-width: 640px) 50vw, 25vw"
                   />
                 </div>

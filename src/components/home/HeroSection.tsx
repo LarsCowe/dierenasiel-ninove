@@ -89,7 +89,7 @@ export default function HeroSection() {
 
         {/* Visual grid with real photos */}
         <div className="flex justify-center">
-          <div className="grid grid-cols-2 gap-4 max-w-sm">
+          <div className="grid grid-cols-2 gap-6 max-w-sm">
             {heroImages.map((img, i) => (
               <div
                 key={img.alt}
