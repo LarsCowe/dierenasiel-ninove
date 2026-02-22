@@ -39,7 +39,7 @@ export default function AnimalCard({ animal }: { animal: Animal }) {
     >
       {/* Image */}
       <div
-        className={`aspect-[4/5] bg-gradient-to-br ${gradient} relative overflow-hidden flex items-center justify-center`}
+        className={`aspect-[4/5] bg-gradient-to-br ${gradient} relative overflow-hidden rounded-2xl flex items-center justify-center`}
       >
         {animal.badge && (
           <span
@@ -55,7 +55,7 @@ export default function AnimalCard({ animal }: { animal: Animal }) {
             src={animal.imageUrl}
             alt={animal.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (

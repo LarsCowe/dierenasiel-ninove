@@ -7,6 +7,12 @@ const WIX = "https://static.wixstatic.com/media";
 function wixImg(id: string, ext = "jpg") {
   return `${WIX}/${id}~mv2.${ext}/v1/fill/w_800,h_800,al_c,q_80,enc_auto/${id}~mv2.${ext}`;
 }
+function wixImgWide(id: string, ext = "jpg") {
+  return `${WIX}/${id}~mv2.${ext}/v1/fill/w_800,h_566,al_c,q_80,enc_auto/${id}~mv2.${ext}`;
+}
+function wixImgTall(id: string, ext = "jpg") {
+  return `${WIX}/${id}~mv2.${ext}/v1/fill/w_800,h_1131,al_c,q_80,enc_auto/${id}~mv2.${ext}`;
+}
 
 export const dogSeeds: NewAnimal[] = [
   {
@@ -27,7 +33,9 @@ Met de juiste begeleiding en een stabiele omgeving zal Vito zich ontwikkelen tot
     shortDescription: "Een knappe en indrukwekkende kruising met een sterk karakter.",
     imageUrl: wixImg("12c6b4_cd2649975be84f4eb228b69c1ede8484"),
     images: [
-      `${WIX}/12c6b4_7c75321881e54a4595edcbee19439002~mv2.jpeg/v1/fill/w_800,h_560,al_c,q_80,enc_auto/12c6b4_7c75321881e54a4595edcbee19439002~mv2.jpeg`,
+      wixImgWide("12c6b4_7c75321881e54a4595edcbee19439002", "jpeg"),
+      wixImg("12c6b4_4ce317ce17ce495da4082fac28e4b02b"),
+      wixImg("12c6b4_910a2d9f805a4577ba1631c6bebe84f2"),
     ],
     status: "beschikbaar",
     isFeatured: true,
@@ -71,9 +79,12 @@ Of ik zindelijk ben? Dat is nog wat af te wachten. En ook het alleen thuisblijve
 Ik ben sociaal, vriendelijk en geniet van menselijk gezelschap: ik wil er graag bij horen en deel uitmaken van een warm gezin dat graag actief bezig is. Samen wandelen, spelen, trainen en vooral genieten… dat is waar ik van droom. 💛
 Andere honden kan getest worden als ze omkunnen met mijn energie 😁`,
     shortDescription: "Een jonge Engelse Pointer vol levenslust en avontuur.",
-    imageUrl: `${WIX}/12c6b4_5b41ca374b4448489b9f8c9475cc0f96~mv2.jpeg/v1/fill/w_800,h_1010,al_c,q_80,enc_auto/12c6b4_5b41ca374b4448489b9f8c9475cc0f96~mv2.jpeg`,
+    imageUrl: wixImgTall("12c6b4_5b41ca374b4448489b9f8c9475cc0f96", "jpeg"),
     images: [
-      `${WIX}/12c6b4_ab19c3a638ae45f28b0fe016e735503a~mv2.jpeg/v1/fill/w_800,h_687,al_c,q_80,enc_auto/12c6b4_ab19c3a638ae45f28b0fe016e735503a~mv2.jpeg`,
+      wixImgWide("12c6b4_ab19c3a638ae45f28b0fe016e735503a", "jpeg"),
+      wixImg("12c6b4_8c0bb229f1bf409090ade677847c6087", "jpeg"),
+      wixImg("12c6b4_916df9be99c146ef8998ca2be3aef544", "jpeg"),
+      wixImg("12c6b4_71b76aeabafa44d6b1612132d897fa1f", "jpeg"),
     ],
     status: "beschikbaar",
     badge: "nieuw",
@@ -103,7 +114,10 @@ Ik zoek een thuis bij mensen die ervaring hebben met Mechelse herders. Mensen di
     shortDescription: "Een prachtige, compacte Mechelse herder van 3,5 jaar jong.",
     imageUrl: wixImg("12c6b4_8c5ac89ae40c41e09e8ab2998424c267"),
     images: [
-      `${WIX}/12c6b4_66bbf03f175f4a9390f546627e14f410~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_66bbf03f175f4a9390f546627e14f410~mv2.jpg`,
+      wixImgWide("12c6b4_66bbf03f175f4a9390f546627e14f410"),
+      `${WIX}/12c6b4_41d31dbd21fb47f2a51f4e9579323ce9f003.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_41d31dbd21fb47f2a51f4e9579323ce9f003.jpg`,
+      wixImg("12c6b4_363017005d37447f99ba250ec9cf1012"),
+      wixImg("12c6b4_4b4a7f5531de495fbc20ce98a71bea80"),
     ],
     status: "beschikbaar",
     isFeatured: true,
@@ -136,7 +150,8 @@ Dus, ben jij klaar voor een knappe, witte Husky die je hart langzaam verovert me
     shortDescription: "Een prachtige witte Husky, alsof hij recht uit een sneeuwlandschap komt.",
     imageUrl: wixImg("12c6b4_87a2ea0051c140629a19928739ae540c"),
     images: [
-      `${WIX}/12c6b4_bdba3285fd6e41488b1a351bd58b5831~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_bdba3285fd6e41488b1a351bd58b5831~mv2.jpg`,
+      wixImgWide("12c6b4_bdba3285fd6e41488b1a351bd58b5831"),
+      wixImgWide("12c6b4_1cdec4df5a204e598d4e85d1bb595d3a"),
     ],
     status: "beschikbaar",
     intakeDate: "2024-05-01",
@@ -169,7 +184,8 @@ Misschien kies je geen pup dit keer. Misschien kies je voor mij. En geef je mij 
     shortDescription: "Een oudere Mechelse Herder die een rustig en liefdevol thuis zoekt.",
     imageUrl: wixImg("12c6b4_9df752ba213d4b938af938ed353ec26f"),
     images: [
-      `${WIX}/12c6b4_822a0ac9e9034f64ada051004d7f8501~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_822a0ac9e9034f64ada051004d7f8501~mv2.jpg`,
+      wixImgWide("12c6b4_822a0ac9e9034f64ada051004d7f8501"),
+      wixImgWide("12c6b4_a72d874af79a42c99c32fb8081d4b265"),
     ],
     status: "beschikbaar",
     badge: "dringend",
@@ -197,9 +213,11 @@ Alleen thuisblijven? Euh… tja… Rustig opbouwen, zeggen de professionals. Per
 
 Zindelijkheid? Valt te verbeteren, mij op tijd buiten laten is de boodschap.`,
     shortDescription: "Een prachtige Siberische Husky met de mooiste blauwe ogen.",
-    imageUrl: `${WIX}/12c6b4_ed121ff0d7744fd7810cba53babf4261~mv2.jpg/v1/fill/w_800,h_1131,al_c,q_80,enc_auto/12c6b4_ed121ff0d7744fd7810cba53babf4261~mv2.jpg`,
+    imageUrl: wixImgTall("12c6b4_ed121ff0d7744fd7810cba53babf4261"),
     images: [
-      `${WIX}/12c6b4_689ea172ab83413b841d69c7a2ef6050~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_689ea172ab83413b841d69c7a2ef6050~mv2.jpg`,
+      wixImgWide("12c6b4_689ea172ab83413b841d69c7a2ef6050"),
+      wixImgWide("12c6b4_17a5e4e047244662b0538c4d4d146a75"),
+      wixImg("12c6b4_fafa98b9d59849e594c53bb7e9549eeb"),
     ],
     status: "beschikbaar",
     isFeatured: true,
@@ -234,7 +252,9 @@ Ben jij op zoek naar een trouwe, grappige, liefdevolle Stafford die je laat lach
     shortDescription: "Een jonge, lieve Stafford met een groot hart en een nog grotere knuffelnood.",
     imageUrl: wixImg("12c6b4_000d3f0edc4740dfb2eda99be7f49537"),
     images: [
-      `${WIX}/12c6b4_de8a879946ed428c802e64f58ab6bfa4~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_de8a879946ed428c802e64f58ab6bfa4~mv2.jpg`,
+      wixImgWide("12c6b4_de8a879946ed428c802e64f58ab6bfa4"),
+      wixImgWide("12c6b4_8415d148d3e64eb8972c15bb1fe749c8"),
+      wixImg("12c6b4_9feb8fc1bb464ef899363245fec44a25"),
     ],
     status: "beschikbaar",
     isFeatured: true,
@@ -269,7 +289,9 @@ Ben jij op zoek naar een trouwe metgezel voor rustige wandelingen (met af en toe
     shortDescription: "Een lieve terrier mix die nog vol energie zit ondanks zijn leeftijd.",
     imageUrl: `${WIX}/12c6b4_6595bb9a6f514fc084aa91c3f8bad3c7~mv2.jpg/v1/fill/w_800,h_1131,fp_0.5_0.42,al_c,q_80,enc_auto/12c6b4_6595bb9a6f514fc084aa91c3f8bad3c7~mv2.jpg`,
     images: [
-      `${WIX}/12c6b4_cfe79094e7314188ae16aebe18005e24~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_cfe79094e7314188ae16aebe18005e24~mv2.jpg`,
+      wixImgWide("12c6b4_cfe79094e7314188ae16aebe18005e24"),
+      wixImgWide("12c6b4_831f896ac2164340bc667e5dc10a1552"),
+      wixImg("12c6b4_b409ab44b32d44f990580d586b5a129f"),
     ],
     status: "beschikbaar",
     intakeDate: "2024-06-01",
@@ -301,7 +323,9 @@ Ben jij die ene mens die ik mag volgen, aanbidden en lichtjes omver lopen van en
     shortDescription: "Een stevige American Stafford op zoek naar een ervaren baasje.",
     imageUrl: wixImg("12c6b4_8f2450fd66ae447ea8198a373208a1c1"),
     images: [
-      `${WIX}/12c6b4_9cb28c5cb13f490f9eb30eb7a7ac1521~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_9cb28c5cb13f490f9eb30eb7a7ac1521~mv2.jpg`,
+      wixImgWide("12c6b4_9cb28c5cb13f490f9eb30eb7a7ac1521"),
+      wixImgWide("12c6b4_bf7621e1979d4ca39465b70e16b7a7b4"),
+      wixImg("12c6b4_ecc5a70ec3c34e0dba518f3d881a0290"),
     ],
     status: "gereserveerd",
     badge: "gereserveerd",
@@ -344,7 +368,8 @@ Ze is steriel, gechipt, gevaccineerd, ontwormd en ontvlooid.`,
     shortDescription: "Een lieve poes op zoek naar een rustig en liefdevol thuis.",
     imageUrl: wixImg("12c6b4_645effbfddb34c6286c5cd160bad282d"),
     images: [
-      `${WIX}/12c6b4_1cf90edddcc242b083dee422061fbc35~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_1cf90edddcc242b083dee422061fbc35~mv2.jpg`,
+      wixImgWide("12c6b4_1cf90edddcc242b083dee422061fbc35"),
+      wixImgWide("12c6b4_b8dc27b68d664f4bb6639c74040d7bb8"),
     ],
     status: "beschikbaar",
     isFeatured: true,
@@ -370,7 +395,8 @@ Ik ben steriel, gechipt, gevaccineerd, ontwormd en ontvlooid.`,
     shortDescription: "Een prachtige poes met een zacht karakter.",
     imageUrl: wixImg("12c6b4_4ad661738231484d951a64913fa39545"),
     images: [
-      `${WIX}/12c6b4_d8db8430e77b437ba81b83a2a26f97db~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_d8db8430e77b437ba81b83a2a26f97db~mv2.jpg`,
+      wixImgWide("12c6b4_d8db8430e77b437ba81b83a2a26f97db"),
+      wixImgWide("12c6b4_6b38b3f435534a598d50bcc9af69d953"),
     ],
     status: "beschikbaar",
     intakeDate: "2024-08-01",
@@ -394,9 +420,11 @@ Voor mij zoek ik een rustig thuis zonder kleine kindjes. Ik hou van kalmte en vo
 
 Ik ben steriel, gechipt, gevaccineerd, ontwormd en ontvlooid.`,
     shortDescription: "Een rustige, elegante poes die graag in de buurt van haar baasje is.",
-    imageUrl: `${WIX}/12c6b4_778e9f0b59da45d3811ebd6a36649d26~mv2.jpg/v1/fill/w_800,h_1131,al_c,q_80,enc_auto/12c6b4_778e9f0b59da45d3811ebd6a36649d26~mv2.jpg`,
+    imageUrl: wixImgTall("12c6b4_778e9f0b59da45d3811ebd6a36649d26"),
     images: [
-      `${WIX}/12c6b4_889dcf8209874d03820f683a6451b548~mv2.jpg/v1/fill/w_800,h_566,al_c,q_80,enc_auto/12c6b4_889dcf8209874d03820f683a6451b548~mv2.jpg`,
+      wixImgWide("12c6b4_889dcf8209874d03820f683a6451b548"),
+      wixImgWide("12c6b4_7426964bbf2443be8ad5521ededb488d"),
+      wixImg("12c6b4_14ba62cb16c84be9b6cb8a47c68cddce"),
     ],
     status: "beschikbaar",
     intakeDate: "2024-07-01",

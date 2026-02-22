@@ -33,13 +33,14 @@ export default function AnimalProfile({ animal }: { animal: Animal }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Images */}
           <div>
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-lg bg-gradient-to-br from-warm to-warm-dark">
+            <div className="rounded-3xl overflow-hidden shadow-lg bg-gradient-to-br from-warm to-warm-dark">
               {allImages.length > 0 ? (
                 <Image
                   src={allImages[activeImage]}
                   alt={animal.name}
-                  fill
-                  className="object-cover"
+                  width={800}
+                  height={800}
+                  className="w-full h-auto"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
                 />
