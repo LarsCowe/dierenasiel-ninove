@@ -89,7 +89,7 @@ export default function HeroSection() {
         </div>
 
         {/* Visual grid with real photos */}
-        <div className="flex justify-center">
+        <div className="flex justify-center mt-6">
           <div className="flex gap-4 max-w-sm">
             {/* Left column */}
             <div className="flex flex-col gap-4 flex-1">
@@ -109,7 +109,7 @@ export default function HeroSection() {
               ))}
             </div>
             {/* Right column — shifted down for stagger effect */}
-            <div className="flex flex-col gap-4 flex-1 translate-y-8">
+            <div className="flex flex-col gap-4 flex-1 translate-y-10">
               {[heroImages[1], heroImages[3]].map((img) => (
                 <div
                   key={img.alt}

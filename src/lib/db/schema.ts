@@ -21,6 +21,7 @@ export const animals = pgTable("animals", {
   description: text("description").notNull(),
   shortDescription: varchar("short_description", { length: 300 }),
   imageUrl: varchar("image_url", { length: 500 }),
+  images: text("images").array(),
   status: varchar("status", { length: 30 }).default("beschikbaar"),
   badge: varchar("badge", { length: 30 }),
   isFeatured: boolean("is_featured").default(false),

@@ -1,9 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Animal } from "@/types";
 import { calculateAge, speciesLabel, genderLabel, statusLabel, formatDate } from "@/lib/utils";
 
 export default function AnimalProfile({ animal }: { animal: Animal }) {
+  const allImages = [
+    ...(animal.imageUrl ? [animal.imageUrl] : []),
+    ...(animal.images || []),
+  ];
+  const [activeImage, setActiveImage] = useState(0);
+
   return (
     <div className="pt-28 pb-20 bg-bg">
       <div className="max-w-5xl mx-auto px-6">
@@ -22,34 +31,61 @@ export default function AnimalProfile({ animal }: { animal: Animal }) {
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Image */}
-          <div className="relative aspect-square rounded-3xl overflow-hidden shadow-lg bg-gradient-to-br from-warm to-warm-dark">
-            {animal.imageUrl ? (
-              <Image
-                src={animal.imageUrl}
-                alt={animal.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-9xl">
-                {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
+          {/* Images */}
+          <div>
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-lg bg-gradient-to-br from-warm to-warm-dark">
+              {allImages.length > 0 ? (
+                <Image
+                  src={allImages[activeImage]}
+                  alt={animal.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-9xl">
+                  {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
+                </div>
+              )}
+              {animal.badge && (
+                <span
+                  className={`absolute top-4 left-4 px-4 py-1.5 rounded-full text-sm font-bold text-white ${
+                    animal.badge === "nieuw"
+                      ? "bg-accent"
+                      : animal.badge === "dringend"
+                      ? "bg-red-500"
+                      : "bg-primary"
+                  }`}
+                >
+                  {animal.badge.charAt(0).toUpperCase() + animal.badge.slice(1)}
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail gallery */}
+            {allImages.length > 1 && (
+              <div className="flex gap-3 mt-4">
+                {allImages.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImage(i)}
+                    className={`relative w-20 h-20 rounded-xl overflow-hidden shrink-0 transition-all ${
+                      i === activeImage
+                        ? "ring-3 ring-accent ring-offset-2"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <Image
+                      src={img}
+                      alt={`${animal.name} foto ${i + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  </button>
+                ))}
               </div>
-            )}
-            {animal.badge && (
-              <span
-                className={`absolute top-4 left-4 px-4 py-1.5 rounded-full text-sm font-bold text-white ${
-                  animal.badge === "nieuw"
-                    ? "bg-accent"
-                    : animal.badge === "dringend"
-                    ? "bg-red-500"
-                    : "bg-primary"
-                }`}
-              >
-                {animal.badge.charAt(0).toUpperCase() + animal.badge.slice(1)}
-              </span>
             )}
           </div>
 
@@ -83,9 +119,9 @@ export default function AnimalProfile({ animal }: { animal: Animal }) {
               <h3 className="font-heading text-xl font-bold text-primary-dark mb-3">
                 Over {animal.name}
               </h3>
-              <p className="text-text-light leading-relaxed whitespace-pre-line">
+              <div className="text-text-light leading-relaxed whitespace-pre-line">
                 {animal.description}
-              </p>
+              </div>
             </div>
 
             {animal.intakeDate && (
