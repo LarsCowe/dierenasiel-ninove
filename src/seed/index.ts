@@ -8,6 +8,7 @@ import { dogSeeds, catSeeds, otherAnimalSeeds } from "./animals";
 import { newsSeeds } from "./news";
 import { pageSeeds } from "./pages";
 import { sponsorSeeds } from "./sponsors";
+import { getUserSeeds } from "./users";
 
 async function seed() {
   const sql = neon(process.env.DATABASE_URL!);
@@ -22,6 +23,7 @@ async function seed() {
   await db.delete(schema.newsArticles);
   await db.delete(schema.pages);
   await db.delete(schema.kennelSponsors);
+  await db.delete(schema.users);
 
   // Seed animals
   console.log("Seeding animals...");
@@ -51,6 +53,14 @@ async function seed() {
     await db.insert(schema.kennelSponsors).values(sponsor);
   }
   console.log(`  Inserted ${sponsorSeeds.length} sponsors`);
+
+  // Seed users
+  console.log("Seeding users...");
+  const userSeeds = await getUserSeeds();
+  for (const user of userSeeds) {
+    await db.insert(schema.users).values(user);
+  }
+  console.log(`  Inserted ${userSeeds.length} users`);
 
   console.log("Seeding complete!");
 }

@@ -1,4 +1,4 @@
-import type { animals, newsArticles, contactSubmissions, kennelSponsors, pages } from "@/lib/db/schema";
+import type { animals, newsArticles, contactSubmissions, kennelSponsors, pages, users } from "@/lib/db/schema";
 
 export type Animal = typeof animals.$inferSelect;
 export type NewAnimal = typeof animals.$inferInsert;
@@ -14,3 +14,6 @@ export type NewKennelSponsor = typeof kennelSponsors.$inferInsert;
 
 export type Page = typeof pages.$inferSelect;
 export type NewPage = typeof pages.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;

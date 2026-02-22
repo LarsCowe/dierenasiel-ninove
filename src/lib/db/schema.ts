@@ -73,3 +73,15 @@ export const pages = pgTable("pages", {
   metaDescription: varchar("meta_description", { length: 300 }),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  role: varchar("role", { length: 20 }).notNull(), // surfer | wandelaar | beheerder
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
