@@ -17,13 +17,13 @@ const EPICS: Epic[] = [
   {
     id: 1,
     title: "Backoffice Toegang & Dashboard",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "1.1", title: "Beheerder Authenticatie en Sessiebeveiliging", status: "done" },
       { id: "1.2", title: "Rolgebaseerde Toegangscontrole (RBAC)", status: "done" },
       { id: "1.3", title: "Beheerder Layout met Sidebar Navigatie", status: "done" },
-      { id: "1.4", title: "Audit Logging Systeem", status: "review" },
-      { id: "1.5", title: "Dashboard met Basisoverzicht en Alerts", status: "backlog" },
+      { id: "1.4", title: "Audit Logging Systeem", status: "done" },
+      { id: "1.5", title: "Dashboard met Basisoverzicht en Alerts", status: "done" },
     ],
   },
   {

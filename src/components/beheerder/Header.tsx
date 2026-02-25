@@ -21,7 +21,7 @@ export default function Header({ userName, userRole, navItems }: HeaderProps) {
           href="/beheerder/voortgang"
           className="hidden rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 transition-colors hover:bg-amber-100 md:inline-block"
         >
-          Laatst gerealiseerde story 1.4
+          Laatst gerealiseerde story 1.5
         </Link>
       </div>
       <div className="flex items-center gap-4">

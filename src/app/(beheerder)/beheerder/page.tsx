@@ -1,54 +1,33 @@
-export default function BeheerderDashboard() {
+import { getDashboardStats } from "@/lib/queries/dashboard";
+import StatsCards from "@/components/beheerder/dashboard/StatsCards";
+import AlertWidget from "@/components/beheerder/dashboard/AlertWidget";
+import TodoWidget from "@/components/beheerder/dashboard/TodoWidget";
+import DeadlineWidget from "@/components/beheerder/dashboard/DeadlineWidget";
+import RecentAdoptions from "@/components/beheerder/dashboard/RecentAdoptions";
+import StatusOverview from "@/components/beheerder/dashboard/StatusOverview";
+
+export default async function BeheerderDashboard() {
+  const stats = await getDashboardStats();
+
   return (
     <div>
       <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
         Dashboard
       </h1>
-      <p className="mt-2 text-gray-500">
-        Welkom beheerder, dit platform wordt binnenkort beschikbaar.
+      <p className="mt-1 text-sm text-gray-500">
+        Overzicht van het dierenasiel.
       </p>
 
-      {/* Placeholder stats */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Dieren", value: "—", icon: "🐾" },
-          { label: "Adoptie-aanvragen", value: "—", icon: "📋" },
-          { label: "Berichten", value: "—", icon: "✉️" },
-          { label: "Gebruikers", value: "—", icon: "👥" },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-              <span className="text-xl">{stat.icon}</span>
-            </div>
-            <p className="mt-2 text-2xl font-bold text-[#1b4332]">
-              {stat.value}
-            </p>
-          </div>
-        ))}
+      <div className="mt-6">
+        <StatsCards stats={stats} />
       </div>
 
-      <div className="mt-8 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-gray-600">
-          Functies in ontwikkeling:
-        </p>
-        <ul className="mt-3 space-y-2 text-sm text-gray-500">
-          <li className="flex items-center gap-2">
-            <span>🐾</span> Dierenbeheer (toevoegen, bewerken, status)
-          </li>
-          <li className="flex items-center gap-2">
-            <span>📰</span> Nieuwsartikelen beheren
-          </li>
-          <li className="flex items-center gap-2">
-            <span>✉️</span> Contactberichten inzien
-          </li>
-          <li className="flex items-center gap-2">
-            <span>👥</span> Gebruikersbeheer
-          </li>
-        </ul>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <StatusOverview statuses={stats.animalsByStatus} />
+        <RecentAdoptions adoptions={stats.recentAdoptions} />
+        <AlertWidget />
+        <DeadlineWidget />
+        <TodoWidget />
       </div>
     </div>
   );
