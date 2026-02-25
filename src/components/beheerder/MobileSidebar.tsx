@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import LogoutButton from "@/components/layout/LogoutButton";
-import { isNavItemActive } from "@/lib/navigation";
+import { isNavItemActive } from "@/lib/navigation/active";
 import type { NavItem } from "@/lib/navigation";
 
 interface MobileSidebarProps {

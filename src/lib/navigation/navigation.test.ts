@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { BEHEERDER_NAV_ITEMS, getVisibleNavItems, isNavItemActive } from "./index";
+import { BEHEERDER_NAV_ITEMS, getVisibleNavItems } from "./index";
+import { isNavItemActive } from "./active";
 
 describe("BEHEERDER_NAV_ITEMS", () => {
   it("has exactly 11 navigation items", () => {

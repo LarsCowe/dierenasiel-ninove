@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/layout/LogoutButton";
-import { isNavItemActive } from "@/lib/navigation";
+import { isNavItemActive } from "@/lib/navigation/active";
 import type { NavItem } from "@/lib/navigation";
 
 interface SidebarProps {
