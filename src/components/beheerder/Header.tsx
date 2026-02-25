@@ -16,6 +16,9 @@ export default function Header({ userName, userRole, navItems }: HeaderProps) {
         <h2 className="font-heading text-lg font-bold text-[#1b4332]">
           Backoffice
         </h2>
+        <span className="hidden rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 md:inline-block">
+          Laatst gerealiseerde story 1.3
+        </span>
       </div>
       <div className="flex items-center gap-4">
         <div className="hidden items-center gap-2 sm:flex">
