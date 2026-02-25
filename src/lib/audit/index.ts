@@ -10,22 +10,26 @@ export async function logAudit(
   oldValue: unknown | null,
   newValue: unknown | null,
 ): Promise<void> {
-  const session = await getSession();
-  const userId = session?.userId ?? null;
+  try {
+    const session = await getSession();
+    const userId = session?.userId ?? null;
 
-  const headersList = await headers();
-  const ipAddress =
-    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headersList.get("x-real-ip") ??
-    null;
+    const headersList = await headers();
+    const ipAddress =
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      headersList.get("x-real-ip") ??
+      null;
 
-  await db.insert(auditLogs).values({
-    userId,
-    action,
-    entityType,
-    entityId: typeof entityId === "string" ? parseInt(entityId, 10) : entityId,
-    oldValue,
-    newValue,
-    ipAddress,
-  });
+    await db.insert(auditLogs).values({
+      userId,
+      action,
+      entityType,
+      entityId: typeof entityId === "string" ? parseInt(entityId, 10) : entityId,
+      oldValue,
+      newValue,
+      ipAddress,
+    });
+  } catch {
+    // Silent fail — audit logging must never break business logic
+  }
 }

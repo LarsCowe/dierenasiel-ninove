@@ -28,6 +28,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { logAudit } from "./index";
+import { auditLogs } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { headers } from "next/headers";
 
@@ -156,5 +157,27 @@ describe("logAudit", () => {
     expect(mockValues).toHaveBeenCalledWith(
       expect.objectContaining({ ipAddress: null }),
     );
+  });
+
+  it("passes auditLogs table reference to db.insert", async () => {
+    await logAudit("animal.created", "animal", 1, null, {});
+
+    expect(mockInsert).toHaveBeenCalledWith(auditLogs);
+  });
+
+  it("converts string entityId to integer via parseInt", async () => {
+    await logAudit("animal.created", "animal", "42", null, {});
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ entityId: 42 }),
+    );
+  });
+
+  it("silently fails when db.insert throws (fire-and-forget)", async () => {
+    mockValues.mockRejectedValueOnce(new Error("DB connection lost"));
+
+    await expect(
+      logAudit("animal.created", "animal", 1, null, {}),
+    ).resolves.toBeUndefined();
   });
 });
