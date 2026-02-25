@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -17,7 +24,8 @@ export function formatDate(date: Date | string | null): string {
 
 export function calculateAge(dateOfBirth: Date | string | null): string {
   if (!dateOfBirth) return "Onbekend";
-  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+  const dob =
+    typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
   const now = new Date();
   const years = now.getFullYear() - dob.getFullYear();
   const months = now.getMonth() - dob.getMonth();
