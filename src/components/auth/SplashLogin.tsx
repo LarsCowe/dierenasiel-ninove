@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoginForm from "./LoginForm";
 import { loginAsGuest, loginWithCredentials } from "@/lib/actions/auth";
-import { SITE_LOGO_URL } from "@/lib/constants";
+import { SITE_LOGO_URL, BACKOFFICE_ROLES } from "@/lib/constants";
+import type { BackofficeRole } from "@/types";
 
 type LoginMode = "surfer" | "wandelaar" | "beheerder";
 
@@ -50,7 +51,8 @@ export default function SplashLogin() {
       }
 
       // Check role permission
-      if (mode === "beheerder" && result.role !== "beheerder") {
+      const isBackofficeRole = BACKOFFICE_ROLES.includes(result.role as BackofficeRole);
+      if (mode === "beheerder" && !isBackofficeRole) {
         setError("Je hebt geen beheerdersrechten.");
         setIsLoading(false);
         return;
@@ -59,7 +61,7 @@ export default function SplashLogin() {
       if (
         mode === "wandelaar" &&
         result.role !== "wandelaar" &&
-        result.role !== "beheerder"
+        !isBackofficeRole
       ) {
         setError("Je hebt geen wandelaarstoegang.");
         setIsLoading(false);

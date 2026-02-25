@@ -7,6 +7,8 @@ const SECRET = new TextEncoder().encode(
 
 const SESSION_COOKIE = "session";
 const GUEST_COOKIE = "guest-mode";
+export const SESSION_DURATION = 8 * 60 * 60; // 8 hours in seconds
+const REFRESH_THRESHOLD = 60 * 60; // Refresh if < 1 hour remaining
 
 export interface SessionPayload {
   userId: number;
@@ -19,7 +21,7 @@ export async function createSession(payload: SessionPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(`${SESSION_DURATION}s`)
     .sign(SECRET);
 }
 
@@ -47,9 +49,41 @@ export async function setSessionCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: SESSION_DURATION, // 8 hours
     path: "/",
   });
+}
+
+export async function refreshSession(): Promise<SessionPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    const session = payload as unknown as SessionPayload & { exp?: number };
+
+    // Sliding window: re-issue token if less than REFRESH_THRESHOLD remaining
+    const now = Math.floor(Date.now() / 1000);
+    if (session.exp && session.exp - now < REFRESH_THRESHOLD) {
+      const newToken = await createSession({
+        userId: session.userId,
+        email: session.email,
+        role: session.role,
+        name: session.name,
+      });
+      await setSessionCookie(newToken);
+    }
+
+    return {
+      userId: session.userId,
+      email: session.email,
+      role: session.role,
+      name: session.name,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function setGuestCookie() {

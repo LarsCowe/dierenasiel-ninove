@@ -1,4 +1,13 @@
 import type { animals, newsArticles, contactSubmissions, kennelSponsors, pages, users } from "@/lib/db/schema";
+import { BACKOFFICE_ROLES } from "@/lib/constants";
+
+// Standard return type for all Server Actions
+export type ActionResult<T = void> =
+  | { success: true; data: T; message?: string }
+  | { success: false; error?: string; fieldErrors?: Record<string, string[]> };
+
+// Backoffice roles — derived from BACKOFFICE_ROLES constant (single source of truth)
+export type BackofficeRole = (typeof BACKOFFICE_ROLES)[number];
 
 export type Animal = typeof animals.$inferSelect;
 export type NewAnimal = typeof animals.$inferInsert;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LogoutButton from "@/components/layout/LogoutButton";
+import { refreshSession } from "@/lib/auth/session";
 
 export const metadata = {
   title: "Beheerder | Dierenasiel Ninove",
@@ -13,11 +14,13 @@ const SIDEBAR_ITEMS = [
   { href: "/beheerder", label: "Gebruikers", icon: "👥" },
 ];
 
-export default function BeheerderLayout({
+export default async function BeheerderLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Sliding window: refresh session if < 1 hour remaining
+  await refreshSession();
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}

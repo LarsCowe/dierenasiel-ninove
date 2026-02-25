@@ -80,7 +80,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).unique().notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   name: varchar("name", { length: 200 }).notNull(),
-  role: varchar("role", { length: 20 }).notNull(), // surfer | wandelaar | beheerder
+  role: varchar("role", { length: 20 }).notNull(), // beheerder | medewerker | dierenarts | adoptieconsulent | coördinator | wandelaar | surfer
   isActive: boolean("is_active").default(true),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),

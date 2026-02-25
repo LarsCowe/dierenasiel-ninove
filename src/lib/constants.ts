@@ -1,3 +1,12 @@
+// Backoffice roles with access to /beheerder routes
+export const BACKOFFICE_ROLES = [
+  "beheerder",
+  "medewerker",
+  "dierenarts",
+  "adoptieconsulent",
+  "coördinator",
+] as const;
+
 export const SITE_NAME = "Dierenasiel Ninove VZW";
 export const SITE_TAGLINE =
   "Het Dierenasiel Ninove (Denderwindeke) geeft nieuwe kansen aan dieren die een nieuwe thuis zoeken.";

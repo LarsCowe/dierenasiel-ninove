@@ -4,6 +4,15 @@ import { jwtVerify } from "jose";
 
 const PUBLIC_PATHS = ["/login", "/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml"];
 
+// All roles with access to /beheerder routes (defined locally — Edge Runtime safe)
+const BACKOFFICE_ROLES = [
+  "beheerder",
+  "medewerker",
+  "dierenarts",
+  "adoptieconsulent",
+  "coördinator",
+];
+
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "dierenasiel-ninove-dev-secret-change-in-prod"
 );
@@ -32,10 +41,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected platform routes
+  // Protected platform routes — beheerder (all 5 backoffice roles)
   if (pathname.startsWith("/beheerder")) {
     const role = await getSessionRole(request);
-    if (role !== "beheerder") {
+    if (!role || !BACKOFFICE_ROLES.includes(role)) {
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }

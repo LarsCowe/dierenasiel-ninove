@@ -1,9 +1,10 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { verifyPassword } from "@/lib/auth/password";
+import { loginSchema } from "@/lib/validations/auth";
 import {
   createSession,
   setSessionCookie,
@@ -16,10 +17,15 @@ export async function loginAsGuest() {
 }
 
 export async function loginWithCredentials(email: string, password: string) {
+  const parsed = loginSchema.safeParse({ email, password });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ongeldige invoer" };
+  }
+
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, email.toLowerCase().trim()))
+    .where(eq(users.email, parsed.data.email.toLowerCase().trim()))
     .limit(1);
 
   if (!user) {
@@ -30,7 +36,7 @@ export async function loginWithCredentials(email: string, password: string) {
     return { error: "Dit account is niet actief." };
   }
 
-  const validPassword = await bcrypt.compare(password, user.passwordHash);
+  const validPassword = await verifyPassword(password, user.passwordHash);
   if (!validPassword) {
     return { error: "Ongeldig e-mailadres of wachtwoord." };
   }
