@@ -1,17 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Hoisted mocks
-const { mockReturning, mockValues, mockInsert, mockRequirePermission, mockLogAudit } = vi.hoisted(() => {
+const {
+  mockReturning, mockValues, mockInsert,
+  mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
+  mockSelectReturning, mockSelectWhere, mockSelectLimit,
+  mockRequirePermission, mockLogAudit, mockRevalidatePath,
+} = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
   const mockInsert = vi.fn().mockReturnValue({ values: mockValues });
+
+  const mockUpdateReturning = vi.fn();
+  const mockUpdateWhere = vi.fn().mockReturnValue({ returning: mockUpdateReturning });
+  const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
+
+  const mockSelectLimit = vi.fn();
+  const mockSelectWhere = vi.fn().mockReturnValue({ limit: mockSelectLimit });
+  const mockSelectReturning = vi.fn().mockReturnValue({ where: mockSelectWhere });
+
   const mockRequirePermission = vi.fn();
   const mockLogAudit = vi.fn();
-  return { mockReturning, mockValues, mockInsert, mockRequirePermission, mockLogAudit };
+  const mockRevalidatePath = vi.fn();
+  return {
+    mockReturning, mockValues, mockInsert,
+    mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
+    mockSelectReturning, mockSelectWhere, mockSelectLimit,
+    mockRequirePermission, mockLogAudit, mockRevalidatePath,
+  };
 });
 
 vi.mock("@/lib/db", () => ({
-  db: { insert: mockInsert },
+  db: {
+    insert: mockInsert,
+    update: mockUpdate,
+    select: vi.fn().mockReturnValue({ from: mockSelectReturning }),
+  },
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: mockRevalidatePath,
 }));
 
 vi.mock("@/lib/db/schema", () => ({
@@ -26,7 +55,7 @@ vi.mock("@/lib/audit", () => ({
   logAudit: mockLogAudit,
 }));
 
-import { createAnimalIntake } from "./animals";
+import { createAnimalIntake, updateAnimal } from "./animals";
 import { animals } from "@/lib/db/schema";
 
 function makeFormData(data: Record<string, string>): FormData {
@@ -198,5 +227,163 @@ describe("createAnimalIntake", () => {
     if (!result.success) {
       expect(result.error).toBeDefined();
     }
+  });
+});
+
+const existingAnimal = {
+  id: 1,
+  name: "Rex",
+  slug: "rex",
+  aliasName: null,
+  species: "hond",
+  gender: "reu",
+  breed: "Mechelse Herder",
+  color: "bruin",
+  status: "beschikbaar",
+  isOnWebsite: false,
+  isFeatured: false,
+};
+
+const updateFormData = {
+  id: "1",
+  name: "Rex Updated",
+  breed: "Border Collie",
+  color: "zwart-wit",
+  isOnWebsite: "true",
+  isFeatured: "false",
+};
+
+describe("updateAnimal", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockSelectLimit.mockResolvedValue([existingAnimal]);
+    mockUpdateReturning.mockResolvedValue([{
+      ...existingAnimal,
+      name: "Rex Updated",
+      slug: "rex-updated",
+      breed: "Border Collie",
+      color: "zwart-wit",
+      isOnWebsite: true,
+      updatedAt: new Date(),
+    }]);
+  });
+
+  it("requires animal:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+
+    const result = await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockRequirePermission).toHaveBeenCalledWith("animal:write");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Onvoldoende rechten");
+    }
+  });
+
+  it("returns validation error when data is invalid", async () => {
+    const result = await updateAnimal(null, makeFormData({ id: "1", name: "" }));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.fieldErrors).toBeDefined();
+      expect(result.fieldErrors!.name).toBeDefined();
+    }
+  });
+
+  it("saves changes and returns updated animal", async () => {
+    const result = await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.name).toBe("Rex Updated");
+    }
+  });
+
+  it("updates slug when name changes", async () => {
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: "rex-updated",
+      }),
+    );
+  });
+
+  it("logs audit with oldValue and newValue", async () => {
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "update_animal",
+      "animal",
+      1,
+      existingAnimal,
+      expect.objectContaining({ name: "Rex Updated" }),
+    );
+  });
+
+  it("sets updatedAt to current timestamp", async () => {
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updatedAt: expect.any(Date),
+      }),
+    );
+  });
+
+  it("returns error when animal not found", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+
+    const result = await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Dier niet gevonden");
+    }
+  });
+
+  it("returns field error on duplicate name (unique constraint 23505)", async () => {
+    mockUpdateReturning.mockRejectedValue(
+      Object.assign(new Error("unique violation"), { code: "23505" }),
+    );
+
+    const result = await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.fieldErrors?.name).toBeDefined();
+    }
+  });
+
+  it("returns graceful error on unexpected DB error", async () => {
+    mockUpdateReturning.mockRejectedValue(new Error("Connection refused"));
+
+    const result = await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBeDefined();
+    }
+  });
+
+  it("saves aliasName (schuilnaam) when provided", async () => {
+    await updateAnimal(null, makeFormData({
+      ...updateFormData,
+      aliasName: "Buddy",
+    }));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        aliasName: "Buddy",
+      }),
+    );
+  });
+
+  it("revalidates the dieren path after update", async () => {
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
   });
 });

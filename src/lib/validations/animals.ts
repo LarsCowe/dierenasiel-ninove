@@ -26,3 +26,21 @@ export const animalIntakeSchema = z.object({
 });
 
 export type AnimalIntakeInput = z.infer<typeof animalIntakeSchema>;
+
+export const animalUpdateSchema = z.object({
+  id: z.coerce.number().positive("Ongeldig dier-ID"),
+  name: z.string().min(1, "Naam is verplicht"),
+  aliasName: z.string().optional(),
+  breed: z.string().optional(),
+  color: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
+  identificationNr: z.string().optional(),
+  passportNr: z.string().optional(),
+  barcode: z.string().optional(),
+  isOnWebsite: z.boolean().optional().default(false),
+  isFeatured: z.boolean().optional().default(false),
+});
+
+export type AnimalUpdateInput = z.infer<typeof animalUpdateSchema>;

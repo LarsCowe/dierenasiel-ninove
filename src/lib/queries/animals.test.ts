@@ -67,7 +67,7 @@ vi.mock("drizzle-orm", () => ({
   count: vi.fn(),
 }));
 
-import { getAnimalsForAdmin } from "./animals";
+import { getAnimalsForAdmin, getAnimalById } from "./animals";
 import { db } from "@/lib/db";
 
 describe("getAnimalsForAdmin", () => {
@@ -195,5 +195,41 @@ describe("getAnimalsForAdmin", () => {
 
     expect(result.animals).toEqual([]);
     expect(result.total).toBe(0);
+  });
+});
+
+describe("getAnimalById", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResults.length = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)._resetIndex();
+  });
+
+  it("returns the animal when found by ID", async () => {
+    const animal = { id: 1, name: "Rex", species: "hond", status: "beschikbaar" };
+    mockResults.push([animal]);
+
+    const result = await getAnimalById(1);
+
+    expect(result).toEqual(animal);
+  });
+
+  it("returns null when no animal found", async () => {
+    mockResults.push([]);
+
+    const result = await getAnimalById(999);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null on database error (graceful fallback)", async () => {
+    vi.mocked(db.select).mockImplementationOnce(() => {
+      throw new Error("Connection refused");
+    });
+
+    const result = await getAnimalById(1);
+
+    expect(result).toBeNull();
   });
 });

@@ -39,6 +39,20 @@ export async function getAnimals(options?: {
     .orderBy(desc(animals.createdAt));
 }
 
+export async function getAnimalById(id: number): Promise<Animal | null> {
+  try {
+    const results = await db
+      .select()
+      .from(animals)
+      .where(eq(animals.id, id))
+      .limit(1);
+    return (results[0] as Animal) ?? null;
+  } catch (err) {
+    console.error("getAnimalById query failed:", err);
+    return null;
+  }
+}
+
 export async function getAnimalBySlug(slug: string) {
   const results = await db
     .select()

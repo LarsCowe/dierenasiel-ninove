@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { animalIntakeSchema } from "./animals";
+import { animalIntakeSchema, animalUpdateSchema } from "./animals";
 
 const validIntake = {
   name: "Rex",
@@ -135,5 +135,106 @@ describe("animalIntakeSchema", () => {
       isPickedUpByShelter: false,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+const validUpdate = {
+  id: 1,
+  name: "Rex",
+};
+
+describe("animalUpdateSchema", () => {
+  it("accepts a valid update with all fields", () => {
+    const result = animalUpdateSchema.safeParse({
+      id: 1,
+      name: "Rex",
+      aliasName: "Buddy",
+      breed: "Mechelse Herder",
+      color: "bruin",
+      dateOfBirth: "2022-05-02",
+      description: "Een lieve hond",
+      shortDescription: "Lief",
+      identificationNr: "981100004567890",
+      passportNr: "BE-123456",
+      barcode: "ABC123",
+      isOnWebsite: true,
+      isFeatured: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts update with only required fields (id, name)", () => {
+    const result = animalUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects when id is missing", () => {
+    const result = animalUpdateSchema.safeParse({ name: "Rex" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const fields = result.error.flatten().fieldErrors;
+      expect(fields.id).toBeDefined();
+    }
+  });
+
+  it("rejects when name is empty", () => {
+    const result = animalUpdateSchema.safeParse({ id: 1, name: "" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const fields = result.error.flatten().fieldErrors;
+      expect(fields.name).toBeDefined();
+    }
+  });
+
+  it("coerces string id to number", () => {
+    const result = animalUpdateSchema.safeParse({ id: "5", name: "Rex" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.id).toBe(5);
+    }
+  });
+
+  it("accepts boolean toggles isOnWebsite and isFeatured", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      isOnWebsite: true,
+      isFeatured: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isOnWebsite).toBe(true);
+      expect(result.data.isFeatured).toBe(true);
+    }
+  });
+
+  it("defaults isOnWebsite and isFeatured to false when omitted", () => {
+    const result = animalUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isOnWebsite).toBe(false);
+      expect(result.data.isFeatured).toBe(false);
+    }
+  });
+
+  it("accepts optional aliasName (schuilnaam)", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      aliasName: "Buddy",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.aliasName).toBe("Buddy");
+    }
+  });
+
+  it("accepts all optional fields as undefined", () => {
+    const result = animalUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.breed).toBeUndefined();
+      expect(result.data.color).toBeUndefined();
+      expect(result.data.aliasName).toBeUndefined();
+      expect(result.data.description).toBeUndefined();
+    }
   });
 });

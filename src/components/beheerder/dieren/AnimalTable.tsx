@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Link from "next/link";
 import { speciesLabel, statusLabel, formatDate } from "@/lib/utils";
 import type { Animal } from "@/types";
 
@@ -85,8 +86,13 @@ export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTablePro
         <tbody className="divide-y divide-gray-200 bg-white">
           {animals.map((animal) => (
             <tr key={animal.id} className="hover:bg-gray-50">
-              <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
-                {animal.name}
+              <td className="whitespace-nowrap px-4 py-3 text-sm font-medium">
+                <Link
+                  href={`/beheerder/dieren/${animal.id}`}
+                  className="text-[#1b4332] hover:underline"
+                >
+                  {animal.name}
+                </Link>
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                 {speciesLabel(animal.species)}

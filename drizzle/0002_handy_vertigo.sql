@@ -1,0 +1,1 @@
+ALTER TABLE "animals" ADD COLUMN "alias_name" varchar(100);
