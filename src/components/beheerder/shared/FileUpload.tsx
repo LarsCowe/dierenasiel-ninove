@@ -2,19 +2,9 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/validations/attachments";
 
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "video/mp4",
-  "video/quicktime",
-  "video/webm",
-  "application/pdf",
-];
-
-const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+const ACCEPT_STRING = ALLOWED_MIME_TYPES.join(",");
 
 interface FileUploadProps {
   animalId: number;
@@ -23,7 +13,7 @@ interface FileUploadProps {
 
 export default function FileUpload({ animalId, onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -31,18 +21,21 @@ export default function FileUpload({ animalId, onUploadComplete }: FileUploadPro
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
 
-    setError(null);
+    setErrors([]);
     setUploading(true);
+
+    const newErrors: string[] = [];
+    let hasSuccess = false;
 
     try {
       for (const file of Array.from(files)) {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-          setError(`"${file.name}" heeft een ongeldig bestandstype. Toegestaan: afbeeldingen, video's en PDF.`);
+        if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
+          newErrors.push(`"${file.name}" heeft een ongeldig bestandstype.`);
           continue;
         }
 
-        if (file.size > MAX_SIZE) {
-          setError(`"${file.name}" is te groot (max 50MB).`);
+        if (file.size > MAX_FILE_SIZE) {
+          newErrors.push(`"${file.name}" is te groot (max 50MB).`);
           continue;
         }
 
@@ -57,15 +50,21 @@ export default function FileUpload({ animalId, onUploadComplete }: FileUploadPro
 
         if (!response.ok) {
           const body = await response.json();
-          setError(body.error || "Upload mislukt");
+          newErrors.push(`"${file.name}": ${body.error || "Upload mislukt"}`);
           continue;
         }
+
+        hasSuccess = true;
       }
 
-      router.refresh();
-      onUploadComplete?.();
+      if (newErrors.length) setErrors(newErrors);
+
+      if (hasSuccess) {
+        router.refresh();
+        onUploadComplete?.();
+      }
     } catch {
-      setError("Er ging iets mis bij het uploaden.");
+      setErrors(["Er ging iets mis bij het uploaden."]);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -95,7 +94,7 @@ export default function FileUpload({ animalId, onUploadComplete }: FileUploadPro
           ref={inputRef}
           type="file"
           multiple
-          accept="image/*,video/mp4,video/quicktime,video/webm,.pdf"
+          accept={ACCEPT_STRING}
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
@@ -121,8 +120,12 @@ export default function FileUpload({ animalId, onUploadComplete }: FileUploadPro
         )}
       </div>
 
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
+      {errors.length > 0 && (
+        <div className="space-y-1">
+          {errors.map((err, i) => (
+            <p key={i} className="text-sm text-red-600">{err}</p>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE "animal_attachments" ADD CONSTRAINT "animal_attachments_animal_id_animals_id_fk" FOREIGN KEY ("animal_id") REFERENCES "public"."animals"("id") ON DELETE cascade ON UPDATE no action;

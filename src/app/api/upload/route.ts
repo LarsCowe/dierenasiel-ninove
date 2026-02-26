@@ -1,15 +1,27 @@
-import { put } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { db } from "@/lib/db";
 import { animalAttachments } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/validations/attachments";
 import { NextResponse } from "next/server";
+
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/_{2,}/g, "_")
+    .slice(0, 200);
+}
 
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
+
+  if (!hasPermission(session.role, "animal:write")) {
+    return NextResponse.json({ error: "Onvoldoende rechten" }, { status: 403 });
   }
 
   const formData = await request.formData();
@@ -39,22 +51,44 @@ export async function POST(request: Request) {
   }
 
   const timestamp = Date.now();
-  const path = `animals/${animalId}/${timestamp}-${file.name}`;
+  const safeName = sanitizeFileName(file.name);
+  const path = `animals/${animalId}/${timestamp}-${safeName}`;
 
-  const blob = await put(path, file, { access: "public" });
+  let blob: { url: string };
+  try {
+    blob = await put(path, file, { access: "public" });
+  } catch {
+    return NextResponse.json(
+      { error: "Bestand uploaden mislukt. Probeer opnieuw." },
+      { status: 500 },
+    );
+  }
 
-  const [attachment] = await db
-    .insert(animalAttachments)
-    .values({
-      animalId,
-      fileUrl: blob.url,
-      fileName: file.name,
-      fileType: file.type,
-      description: description || undefined,
-    })
-    .returning();
+  try {
+    const [attachment] = await db
+      .insert(animalAttachments)
+      .values({
+        animalId,
+        fileUrl: blob.url,
+        fileName: file.name,
+        fileType: file.type,
+        description: description || undefined,
+      })
+      .returning();
 
-  await logAudit("upload_attachment", "animal_attachment", attachment.id, null, attachment);
+    await logAudit("upload_attachment", "animal_attachment", attachment.id, null, attachment);
 
-  return NextResponse.json({ success: true, data: attachment });
+    return NextResponse.json({ success: true, data: attachment });
+  } catch {
+    // DB insert failed — clean up orphaned blob
+    try {
+      await del(blob.url);
+    } catch {
+      // Best effort cleanup
+    }
+    return NextResponse.json(
+      { error: "Bijlage opslaan mislukt. Probeer opnieuw." },
+      { status: 500 },
+    );
+  }
 }

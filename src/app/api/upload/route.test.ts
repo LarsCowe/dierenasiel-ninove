@@ -2,21 +2,27 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockGetSession,
+  mockHasPermission,
   mockPut,
+  mockDel,
   mockInsertValues,
   mockInsertReturning,
   mockInsert,
   mockLogAudit,
 } = vi.hoisted(() => {
   const mockGetSession = vi.fn();
+  const mockHasPermission = vi.fn();
   const mockPut = vi.fn();
+  const mockDel = vi.fn();
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn().mockReturnValue({ returning: mockInsertReturning });
   const mockInsert = vi.fn().mockReturnValue({ values: mockInsertValues });
   const mockLogAudit = vi.fn();
   return {
     mockGetSession,
+    mockHasPermission,
     mockPut,
+    mockDel,
     mockInsertValues,
     mockInsertReturning,
     mockInsert,
@@ -28,8 +34,13 @@ vi.mock("@/lib/auth/session", () => ({
   getSession: mockGetSession,
 }));
 
+vi.mock("@/lib/permissions", () => ({
+  hasPermission: mockHasPermission,
+}));
+
 vi.mock("@vercel/blob", () => ({
   put: mockPut,
+  del: mockDel,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -71,6 +82,7 @@ describe("POST /api/upload", () => {
       role: "beheerder",
       name: "Admin",
     });
+    mockHasPermission.mockReturnValue(true);
     mockPut.mockResolvedValue({
       url: "https://blob.vercel-storage.com/animals/1/photo.jpg",
     });
@@ -87,6 +99,7 @@ describe("POST /api/upload", () => {
       },
     ]);
     mockLogAudit.mockResolvedValue(undefined);
+    mockDel.mockResolvedValue(undefined);
   });
 
   it("returns 401 without session", async () => {
@@ -101,6 +114,21 @@ describe("POST /api/upload", () => {
 
     expect(response.status).toBe(401);
     expect(body.error).toBe("Niet ingelogd");
+  });
+
+  it("returns 403 without animal:write permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+
+    const response = await POST(makeRequest(formData));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Onvoldoende rechten");
+    expect(mockHasPermission).toHaveBeenCalledWith("beheerder", "animal:write");
   });
 
   it("returns 400 when file is missing", async () => {
@@ -163,7 +191,7 @@ describe("POST /api/upload", () => {
     expect(body.data).toBeDefined();
     expect(body.data.fileUrl).toContain("blob.vercel-storage.com");
 
-    // Verify Vercel Blob was called
+    // Verify Vercel Blob was called with sanitized filename
     expect(mockPut).toHaveBeenCalledWith(
       expect.stringMatching(/^animals\/1\/\d+-photo\.jpg$/),
       expect.any(File),
@@ -229,6 +257,52 @@ describe("POST /api/upload", () => {
       expect.objectContaining({
         description: "Foto na adoptie",
       }),
+    );
+  });
+
+  it("returns 500 when Vercel Blob upload fails", async () => {
+    mockPut.mockRejectedValue(new Error("Blob service unavailable"));
+
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+
+    const response = await POST(makeRequest(formData));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toContain("uploaden mislukt");
+  });
+
+  it("returns 500 and cleans up blob when DB insert fails", async () => {
+    mockInsertReturning.mockRejectedValue(new Error("DB connection lost"));
+
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+
+    const response = await POST(makeRequest(formData));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toContain("opslaan mislukt");
+    // Verify orphaned blob was cleaned up
+    expect(mockDel).toHaveBeenCalledWith(
+      "https://blob.vercel-storage.com/animals/1/photo.jpg",
+    );
+  });
+
+  it("sanitizes filenames with special characters", async () => {
+    const formData = new FormData();
+    formData.append("file", makeFile("foto met spaties & (tekens).jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+
+    await POST(makeRequest(formData));
+
+    expect(mockPut).toHaveBeenCalledWith(
+      expect.stringMatching(/^animals\/1\/\d+-foto_met_spaties_tekens_.jpg$/),
+      expect.any(File),
+      { access: "public" },
     );
   });
 });

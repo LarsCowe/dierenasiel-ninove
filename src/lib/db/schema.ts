@@ -109,7 +109,7 @@ export const users = pgTable("users", {
 
 export const animalAttachments = pgTable("animal_attachments", {
   id: serial("id").primaryKey(),
-  animalId: integer("animal_id").notNull(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
   fileUrl: text("file_url").notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   fileType: varchar("file_type", { length: 50 }).notNull(),

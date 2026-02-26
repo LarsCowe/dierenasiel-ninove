@@ -27,8 +27,8 @@ export async function deleteAttachment(
     return { success: false, error: "Bijlage niet gevonden" };
   }
 
-  await del(attachment.fileUrl);
   await db.delete(animalAttachments).where(eq(animalAttachments.id, id));
+  await del(attachment.fileUrl);
 
   await logAudit("delete_attachment", "animal_attachment", id, attachment, null);
   revalidatePath(`/beheerder/dieren/${attachment.animalId}`);

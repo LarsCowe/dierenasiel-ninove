@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { animals } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { animalIntakeSchema, animalUpdateSchema } from "@/lib/validations/animals";
@@ -140,15 +140,15 @@ export async function updateAnimal(
       .set({
         name: parsed.data.name,
         slug,
-        aliasName: parsed.data.aliasName || undefined,
-        breed: parsed.data.breed || undefined,
-        color: parsed.data.color || undefined,
-        dateOfBirth: parsed.data.dateOfBirth || undefined,
-        description: parsed.data.description || undefined,
-        shortDescription: parsed.data.shortDescription || undefined,
-        identificationNr: parsed.data.identificationNr || undefined,
-        passportNr: parsed.data.passportNr || undefined,
-        barcode: parsed.data.barcode || undefined,
+        aliasName: parsed.data.aliasName || sql`null`,
+        breed: parsed.data.breed || sql`null`,
+        color: parsed.data.color || sql`null`,
+        dateOfBirth: parsed.data.dateOfBirth || sql`null`,
+        description: parsed.data.description || sql`null`,
+        shortDescription: parsed.data.shortDescription || sql`null`,
+        identificationNr: parsed.data.identificationNr || sql`null`,
+        passportNr: parsed.data.passportNr || sql`null`,
+        barcode: parsed.data.barcode || sql`null`,
         isOnWebsite: parsed.data.isOnWebsite,
         isFeatured: parsed.data.isFeatured,
         updatedAt: new Date(),
