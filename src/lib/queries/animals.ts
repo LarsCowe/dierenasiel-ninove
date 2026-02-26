@@ -1,6 +1,22 @@
 import { db } from "@/lib/db";
 import { animals } from "@/lib/db/schema";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc, asc, or, ilike, sql } from "drizzle-orm";
+import type { Animal } from "@/types";
+
+export interface AdminAnimalListOptions {
+  search?: string;
+  species?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}
+
+export interface AdminAnimalListResult {
+  animals: Animal[];
+  total: number;
+}
 
 export async function getAnimals(options?: {
   species?: string;
@@ -41,4 +57,70 @@ export async function getFeaturedAnimals() {
     )
     .orderBy(desc(animals.createdAt))
     .limit(3);
+}
+
+function getSortColumn(key: string) {
+  switch (key) {
+    case "name": return animals.name;
+    case "species": return animals.species;
+    case "status": return animals.status;
+    case "intakeDate": return animals.intakeDate;
+    case "createdAt": return animals.createdAt;
+    default: return animals.intakeDate;
+  }
+}
+
+export async function getAnimalsForAdmin(
+  options: AdminAnimalListOptions = {},
+): Promise<AdminAnimalListResult> {
+  const {
+    search,
+    species,
+    status,
+    page = 1,
+    pageSize = 25,
+    sortBy,
+    sortDir = "desc",
+  } = options;
+
+  const conditions = [];
+  if (species) conditions.push(eq(animals.species, species));
+  if (status) conditions.push(eq(animals.status, status));
+  if (search) {
+    const escaped = search.replace(/[%_]/g, "\\$&");
+    conditions.push(
+      or(
+        ilike(animals.name, `%${escaped}%`),
+        ilike(animals.identificationNr, `%${escaped}%`),
+      ),
+    );
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const sortColumn = getSortColumn(sortBy ?? "");
+  const orderFn = sortDir === "asc" ? asc : desc;
+
+  try {
+    const [results, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(animals)
+        .where(whereClause)
+        .orderBy(orderFn(sortColumn))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(animals)
+        .where(whereClause),
+    ]);
+
+    return {
+      animals: results as Animal[],
+      total: (totalResult as { count: number }[])[0]?.count ?? 0,
+    };
+  } catch (err) {
+    console.error("getAnimalsForAdmin query failed:", err);
+    return { animals: [], total: 0 };
+  }
 }

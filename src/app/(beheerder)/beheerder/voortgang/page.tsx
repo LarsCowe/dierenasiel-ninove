@@ -29,10 +29,10 @@ const EPICS: Epic[] = [
   {
     id: 2,
     title: "Dierenbeheer & Intake",
-    status: "backlog",
+    status: "in-progress",
     stories: [
-      { id: "2.1", title: "Dier Registreren bij Intake", status: "backlog" },
-      { id: "2.2", title: "Dierenoverzicht met Zoek- en Filterfunctie", status: "backlog" },
+      { id: "2.1", title: "Dier Registreren bij Intake", status: "done" },
+      { id: "2.2", title: "Dierenoverzicht met Zoek- en Filterfunctie", status: "ready-for-dev" },
       { id: "2.3", title: "Dier Profiel Bewerken en Websitemarkering", status: "backlog" },
       { id: "2.4", title: "Foto's en Bijlagen Uploaden", status: "backlog" },
       { id: "2.5", title: "Kennel Toewijzing en Beheer", status: "backlog" },
