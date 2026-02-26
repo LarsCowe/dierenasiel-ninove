@@ -8,6 +8,13 @@
       "when": 1772057969564,
       "tag": "0000_same_makkari",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772061916472,
+      "tag": "0001_graceful_ultimates",
+      "breakpoints": true
     }
   ]
 }
