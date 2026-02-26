@@ -194,6 +194,22 @@ export const dewormings = pgTable("dewormings", {
   index("idx_dewormings_animal_id").on(table.animalId),
 ]);
 
+export const vetVisits = pgTable("vet_visits", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  location: varchar("location", { length: 50 }).notNull(),
+  complaints: text("complaints"),
+  todo: text("todo"),
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  recordedBy: integer("recorded_by").references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_vet_visits_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

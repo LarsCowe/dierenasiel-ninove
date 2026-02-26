@@ -49,7 +49,7 @@ const EPICS: Epic[] = [
     status: "in-progress",
     stories: [
       { id: "3.1", title: "Vaccinaties en Ontwormingen Registreren", status: "done" },
-      { id: "3.2", title: "Dierenarts Bezoeken Loggen", status: "backlog" },
+      { id: "3.2", title: "Dierenarts Bezoeken Loggen", status: "done" },
       { id: "3.3", title: "Operaties Registreren", status: "backlog" },
       { id: "3.4", title: "Medicatie Voorschrijven", status: "backlog" },
       { id: "3.5", title: "Medicatie Dagelijks Afvinken", status: "backlog" },

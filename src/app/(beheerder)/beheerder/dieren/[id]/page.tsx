@@ -14,11 +14,13 @@ import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordS
 import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
 import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection";
 import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
+import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import CollapsibleSection from "@/components/beheerder/shared/CollapsibleSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
 import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
 import { getDewormingsByAnimalId } from "@/lib/queries/dewormings";
+import { getVetVisitsByAnimalId } from "@/lib/queries/vet-visits";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -42,7 +44,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -52,6 +54,7 @@ export default async function DierDetailPage({ params }: Props) {
     getFeedingPlanByAnimalId(animalId),
     getVaccinationsByAnimalId(animalId),
     getDewormingsByAnimalId(animalId),
+    getVetVisitsByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -160,6 +163,13 @@ export default async function DierDetailPage({ params }: Props) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ontwormingen</h3>
           <div className="mt-2">
             <DewormingSection animalId={animalId} dewormings={dewormingsList} />
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Dierenarts-bezoeken</h3>
+          <div className="mt-2">
+            <VetVisitSection animalId={animalId} visits={vetVisitsList} />
           </div>
         </div>
       </CollapsibleSection>
