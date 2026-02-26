@@ -36,6 +36,20 @@
       "when": 1772105244767,
       "tag": "0004_vengeful_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772112174980,
+      "tag": "0005_flashy_post",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772113469733,
+      "tag": "0006_great_black_bird",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,15 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+export const kennels = pgTable("kennels", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 10 }).unique().notNull(),
+  zone: varchar("zone", { length: 20 }).notNull(), // 'honden', 'katten', 'andere'
+  capacity: integer("capacity").notNull().default(2),
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"),
+});
+
 export const animals = pgTable("animals", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -35,7 +44,7 @@ export const animals = pgTable("animals", {
   isAvailableForAdoption: boolean("is_available_for_adoption").default(false),
   isOnWebsite: boolean("is_on_website").default(false),
   isInShelter: boolean("is_in_shelter").default(true),
-  kennelId: integer("kennel_id"),
+  kennelId: integer("kennel_id").references(() => kennels.id, { onDelete: "set null" }),
   intakeDate: date("intake_date"),
   intakeReason: varchar("intake_reason", { length: 50 }),
   isPickedUpByShelter: boolean("is_picked_up_by_shelter").default(false),

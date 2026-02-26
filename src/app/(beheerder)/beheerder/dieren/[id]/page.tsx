@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { getAnimalById } from "@/lib/queries/animals";
 import { getAttachmentsByAnimalId } from "@/lib/queries/attachments";
+import { getKennels } from "@/lib/queries/kennels";
 import AnimalEditForm from "@/components/beheerder/dieren/AnimalEditForm";
 import FileUpload from "@/components/beheerder/shared/FileUpload";
 import AttachmentGallery from "@/components/beheerder/dieren/AttachmentGallery";
+import KennelSelector from "@/components/beheerder/dieren/KennelSelector";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -14,9 +16,10 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments] = await Promise.all([
+  const [animal, attachments, kennelsList] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
+    getKennels(),
   ]);
 
   if (!animal) notFound();
@@ -24,6 +27,20 @@ export default async function DierDetailPage({ params }: Props) {
   return (
     <div className="space-y-8">
       <AnimalEditForm animal={animal} />
+
+      {/* Kennel Toewijzing */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
+          Kennel Toewijzing
+        </h2>
+        <div className="mt-4 max-w-xs">
+          <KennelSelector
+            animalId={animalId}
+            currentKennelId={animal.kennelId}
+            kennels={kennelsList}
+          />
+        </div>
+      </div>
 
       {/* Foto's & Bijlagen */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

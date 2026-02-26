@@ -8,6 +8,7 @@ import { dogSeeds, catSeeds, otherAnimalSeeds } from "./animals";
 import { newsSeeds } from "./news";
 import { pageSeeds } from "./pages";
 import { sponsorSeeds } from "./sponsors";
+import { kennelSeeds } from "./kennels";
 import { getUserSeeds } from "./users";
 
 async function seed() {
@@ -16,14 +17,23 @@ async function seed() {
 
   console.log("Seeding database...");
 
-  // Clear existing data
+  // Clear existing data (order matters — FK constraints)
   console.log("Clearing existing data...");
+  await db.delete(schema.animalAttachments);
   await db.delete(schema.contactSubmissions);
   await db.delete(schema.animals);
+  await db.delete(schema.kennels);
   await db.delete(schema.newsArticles);
   await db.delete(schema.pages);
   await db.delete(schema.kennelSponsors);
   await db.delete(schema.users);
+
+  // Seed kennels (before animals — FK dependency)
+  console.log("Seeding kennels...");
+  for (const kennel of kennelSeeds) {
+    await db.insert(schema.kennels).values(kennel);
+  }
+  console.log(`  Inserted ${kennelSeeds.length} kennels`);
 
   // Seed animals
   console.log("Seeding animals...");
