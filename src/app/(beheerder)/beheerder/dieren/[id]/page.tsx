@@ -10,6 +10,10 @@ import KennelSelector from "@/components/beheerder/dieren/KennelSelector";
 import StatusChanger from "@/components/beheerder/dieren/StatusChanger";
 import OuttakeForm from "@/components/beheerder/dieren/OuttakeForm";
 import NeglectReportSection from "@/components/beheerder/dieren/NeglectReportSection";
+import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordSection";
+import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
+import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
+import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -33,11 +37,14 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
     getNeglectReportByAnimalId(animalId),
+    getBehaviorRecordsByAnimalId(animalId),
+    countBehaviorRecords(animalId),
+    getFeedingPlanByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -124,6 +131,31 @@ export default async function DierDetailPage({ params }: Props) {
           <NeglectReportSection animalId={animalId} report={neglectReport} />
         </div>
       )}
+
+      {/* Gedragsfiches */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
+          Gedragsfiches
+        </h2>
+        <div className="mt-4">
+          <BehaviorRecordSection
+            animalId={animalId}
+            species={animal.species}
+            records={behaviorRecords}
+            recordCount={behaviorRecordCount}
+          />
+        </div>
+      </div>
+
+      {/* Voedingsplan */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
+          Voedingsplan
+        </h2>
+        <div className="mt-4">
+          <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
+        </div>
+      </div>
 
       {/* Foto's & Bijlagen */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

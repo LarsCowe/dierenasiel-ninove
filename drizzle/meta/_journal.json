@@ -57,6 +57,20 @@
       "when": 1772118734622,
       "tag": "0007_lucky_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772120640544,
+      "tag": "0008_melted_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772122302726,
+      "tag": "0009_dark_joystick",
+      "breakpoints": true
     }
   ]
 }

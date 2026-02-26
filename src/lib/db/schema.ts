@@ -147,6 +147,29 @@ export const neglectReports = pgTable("neglect_reports", {
   index("idx_neglect_reports_animal_id").on(table.animalId),
 ]);
 
+export const behaviorRecords = pgTable("behavior_records", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  checklist: jsonb("checklist").notNull(),
+  notes: text("notes"),
+  recordedBy: integer("recorded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_behavior_records_animal_id").on(table.animalId),
+]);
+
+export const feedingPlans = pgTable("feeding_plans", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  questionnaire: jsonb("questionnaire").notNull(),
+  notes: text("notes"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  unique("feeding_plans_animal_id_unique").on(table.animalId),
+  index("idx_feeding_plans_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

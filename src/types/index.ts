@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -17,6 +17,33 @@ export type NewAnimalAttachment = typeof animalAttachments.$inferInsert;
 
 export type NeglectReport = typeof neglectReports.$inferSelect;
 export type NewNeglectReport = typeof neglectReports.$inferInsert;
+
+export type BehaviorRecord = typeof behaviorRecords.$inferSelect;
+export type NewBehaviorRecord = typeof behaviorRecords.$inferInsert;
+
+export type FeedingPlan = typeof feedingPlans.$inferSelect;
+export type NewFeedingPlan = typeof feedingPlans.$inferInsert;
+
+export interface FeedingQuestionnaire {
+  dieetType: string;
+  merk: string;
+  hoeveelheid: string;
+  frequentie: string;
+  allergieen: string[];
+  specifiekeBehoeften: string;
+}
+
+export interface BehaviorChecklist {
+  benaderingHok: number;       // 1-5: Reactie bij nadering hok
+  uitHetHok: number;           // 1-5: Gedrag bij uit hok halen
+  wandelingLeiband: number;    // 1-5: Wandeling aan de leiband
+  reactieAndereHonden: number; // 1-5: Reactie op andere honden
+  reactieMensen: number;       // 1-5: Reactie op mensen/kinderen
+  aanrakingManipulatie: number; // 1-5: Aanraking/manipulatie
+  voedselgedrag: number;       // 1-5: Voedselgedrag/resource guarding
+  zindelijk: boolean | null;   // Zindelijk ja/nee/onbekend
+  aandachtspunten: string[];   // Multi-select aandachtspunten
+}
 
 export type Kennel = typeof kennels.$inferSelect;
 export type NewKennel = typeof kennels.$inferInsert;
