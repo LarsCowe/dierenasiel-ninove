@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { dewormingSchema } from "@/lib/validations/dewormings";
+import { getAnimalById } from "@/lib/queries/animals";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, Deworming } from "@/types";
 
@@ -28,6 +29,11 @@ export async function createDeworming(
   const parsed = dewormingSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false, fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const animal = await getAnimalById(parsed.data.animalId);
+  if (!animal) {
+    return { success: false, error: "Dier niet gevonden" };
   }
 
   try {

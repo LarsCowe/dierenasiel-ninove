@@ -5,6 +5,7 @@ const {
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
   mockRequirePermission, mockLogAudit, mockRevalidatePath,
+  mockGetAnimalById,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockInsert = vi.fn();
@@ -16,11 +17,13 @@ const {
   const mockRequirePermission = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
+  const mockGetAnimalById = vi.fn();
   return {
     mockReturning, mockInsert,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
     mockRequirePermission, mockLogAudit, mockRevalidatePath,
+    mockGetAnimalById,
   };
 });
 
@@ -42,6 +45,7 @@ vi.mock("@/lib/db/schema", () => ({
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
+vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })) }));
 
 import { createDeworming, deleteDeworming } from "./dewormings";
@@ -60,6 +64,7 @@ describe("createDeworming", () => {
     vi.clearAllMocks();
     mockRequirePermission.mockResolvedValue(undefined);
     mockLogAudit.mockResolvedValue(undefined);
+    mockGetAnimalById.mockResolvedValue({ id: 1, name: "Buddy" });
     mockReturning.mockResolvedValue([createdRecord]);
   });
 
@@ -81,6 +86,14 @@ describe("createDeworming", () => {
     const result = await createDeworming(null, makeFormData({ ...validFormData, date: "" }));
     expect(result.success).toBe(false);
     if (!result.success) expect(result.fieldErrors?.date).toBeDefined();
+  });
+
+  it("returns error when animal does not exist", async () => {
+    mockGetAnimalById.mockResolvedValue(null);
+    const result = await createDeworming(null, makeFormData(validFormData));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Dier niet gevonden");
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it("creates record with correct values", async () => {

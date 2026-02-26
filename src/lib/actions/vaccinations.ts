@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { vaccinationSchema } from "@/lib/validations/vaccinations";
+import { getAnimalById } from "@/lib/queries/animals";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, Vaccination } from "@/types";
@@ -30,6 +31,11 @@ export async function createVaccination(
   const parsed = vaccinationSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false, fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const animal = await getAnimalById(parsed.data.animalId);
+  if (!animal) {
+    return { success: false, error: "Dier niet gevonden" };
   }
 
   const session = await getSession();

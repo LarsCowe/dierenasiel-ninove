@@ -14,6 +14,7 @@ import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordS
 import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
 import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection";
 import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
+import CollapsibleSection from "@/components/beheerder/shared/CollapsibleSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
 import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
@@ -98,11 +99,8 @@ export default async function DierDetailPage({ params }: Props) {
 
       {/* IBN Info */}
       {animal.intakeReason === "ibn" && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
-          <h2 className="font-heading text-lg font-bold text-red-800">
-            Inbeslagname (IBN)
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <CollapsibleSection title="Inbeslagname (IBN)" defaultOpen variant="danger">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div>
               <p className="text-xs font-medium text-gray-500">Dossiernummer DWV</p>
               <p className="mt-1 text-sm font-semibold text-gray-800">
@@ -135,41 +133,27 @@ export default async function DierDetailPage({ params }: Props) {
           </div>
           <IbnMetadata metadata={animal.intakeMetadata} />
           <NeglectReportSection animalId={animalId} report={neglectReport} />
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Gedragsfiches */}
-      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-          Gedragsfiches
-        </h2>
-        <div className="mt-4">
-          <BehaviorRecordSection
-            animalId={animalId}
-            species={animal.species}
-            records={behaviorRecords}
-            recordCount={behaviorRecordCount}
-          />
-        </div>
-      </div>
+      <CollapsibleSection title="Gedragsfiches">
+        <BehaviorRecordSection
+          animalId={animalId}
+          species={animal.species}
+          records={behaviorRecords}
+          recordCount={behaviorRecordCount}
+        />
+      </CollapsibleSection>
 
       {/* Voedingsplan */}
-      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-          Voedingsplan
-        </h2>
-        <div className="mt-4">
-          <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
-        </div>
-      </div>
+      <CollapsibleSection title="Voedingsplan">
+        <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
+      </CollapsibleSection>
 
       {/* Medische fiche */}
-      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-          Medische fiche
-        </h2>
-
-        <div className="mt-6">
+      <CollapsibleSection title="Medische fiche">
+        <div>
           <h3 className="text-sm font-semibold text-gray-700">Vaccinaties</h3>
           <div className="mt-3">
             <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
@@ -182,22 +166,18 @@ export default async function DierDetailPage({ params }: Props) {
             <DewormingSection animalId={animalId} dewormings={dewormingsList} />
           </div>
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Foto's & Bijlagen */}
-      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-          Foto&apos;s &amp; Bijlagen
-        </h2>
-
-        <div className="mt-4 space-y-6">
+      <CollapsibleSection title={"Foto's & Bijlagen"}>
+        <div className="space-y-6">
           <FileUpload animalId={animalId} />
           <AttachmentGallery
             attachments={attachments}
             currentMainPhoto={animal.imageUrl}
           />
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }

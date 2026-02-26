@@ -5,6 +5,7 @@ const {
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
   mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
+  mockGetAnimalById,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockInsert = vi.fn();
@@ -17,11 +18,13 @@ const {
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
   const mockGetSession = vi.fn();
+  const mockGetAnimalById = vi.fn();
   return {
     mockReturning, mockInsert,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
     mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
+    mockGetAnimalById,
   };
 });
 
@@ -44,6 +47,7 @@ vi.mock("@/lib/db/schema", () => ({
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
+vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })) }));
 
 import { createVaccination, deleteVaccination } from "./vaccinations";
@@ -63,6 +67,7 @@ describe("createVaccination", () => {
     mockRequirePermission.mockResolvedValue(undefined);
     mockLogAudit.mockResolvedValue(undefined);
     mockGetSession.mockResolvedValue({ userId: 5, role: "dierenarts" });
+    mockGetAnimalById.mockResolvedValue({ id: 1, name: "Buddy" });
     mockReturning.mockResolvedValue([createdRecord]);
   });
 
@@ -84,6 +89,14 @@ describe("createVaccination", () => {
     const result = await createVaccination(null, makeFormData({ ...validFormData, date: "" }));
     expect(result.success).toBe(false);
     if (!result.success) expect(result.fieldErrors?.date).toBeDefined();
+  });
+
+  it("returns error when animal does not exist", async () => {
+    mockGetAnimalById.mockResolvedValue(null);
+    const result = await createVaccination(null, makeFormData(validFormData));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Dier niet gevonden");
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it("creates record with administered_by from session", async () => {
