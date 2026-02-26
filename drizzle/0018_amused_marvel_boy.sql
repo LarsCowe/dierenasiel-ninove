@@ -1,0 +1,2 @@
+CREATE INDEX "idx_medications_end_date_active" ON "medications" USING btree ("end_date","is_active");--> statement-breakpoint
+CREATE INDEX "idx_vaccinations_next_due_date" ON "vaccinations" USING btree ("next_due_date");

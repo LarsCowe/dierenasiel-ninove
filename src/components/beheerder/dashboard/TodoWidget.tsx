@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { getOpenTodosForDashboard } from "@/lib/queries/animal-todos";
 import { TODO_TYPE_LABELS } from "@/lib/constants";
-import { daysUntil } from "@/lib/utils/date";
-
-function urgencyColor(days: number): string {
-  if (days <= 0) return "text-red-700 bg-red-100";
-  if (days <= 3) return "text-orange-700 bg-orange-100";
-  if (days <= 7) return "text-yellow-700 bg-yellow-100";
-  return "text-gray-600 bg-gray-100";
-}
+import { daysUntil, urgencyColor } from "@/lib/utils/date";
 
 const PRIORITY_BADGE: Record<string, string> = {
   dringend: "bg-red-100 text-red-700",

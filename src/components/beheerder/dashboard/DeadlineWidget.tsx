@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { getIbnDeadlineAlerts } from "@/lib/queries/animals";
-import { daysUntil } from "@/lib/utils/date";
-
-function urgencyColor(days: number): string {
-  if (days <= 0) return "text-red-700 bg-red-100";
-  if (days <= 3) return "text-orange-700 bg-orange-100";
-  return "text-yellow-700 bg-yellow-100";
-}
+import { daysUntil, urgencyColor, deadlineLabel } from "@/lib/utils/date";
 
 export default async function DeadlineWidget() {
   const alerts = await getIbnDeadlineAlerts();
@@ -35,12 +29,6 @@ export default async function DeadlineWidget() {
             const days = animal.ibnDecisionDeadline
               ? daysUntil(animal.ibnDecisionDeadline)
               : 0;
-            const label =
-              days <= 0
-                ? "Verlopen!"
-                : days === 1
-                  ? "Morgen"
-                  : `${days} dagen`;
 
             return (
               <li key={animal.id}>
@@ -54,7 +42,7 @@ export default async function DeadlineWidget() {
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${urgencyColor(days)}`}
                   >
-                    {label}
+                    {deadlineLabel(days)}
                   </span>
                 </Link>
               </li>

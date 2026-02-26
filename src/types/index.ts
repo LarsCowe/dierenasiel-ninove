@@ -54,6 +54,14 @@ export type NewMedicationLog = typeof medicationLogs.$inferInsert;
 export type AnimalTodo = typeof animalTodos.$inferSelect;
 export type NewAnimalTodo = typeof animalTodos.$inferInsert;
 
+export interface MedicalAlert {
+  category: "vaccination" | "medication";
+  animalId: number;
+  animalName: string;
+  label: string;
+  dueDate: string;
+}
+
 export interface BehaviorChecklist {
   benaderingHok: number;       // 1-5: Reactie bij nadering hok
   uitHetHok: number;           // 1-5: Gedrag bij uit hok halen

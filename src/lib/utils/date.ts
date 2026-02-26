@@ -47,3 +47,23 @@ export function daysUntil(dateStr: string): number {
   today.setHours(12, 0, 0, 0);
   return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
+
+/**
+ * Returns Tailwind CSS classes for urgency badge coloring based on days remaining.
+ * - ≤0: red (overdue), ≤3: orange (urgent), ≤7: yellow (upcoming), >7: gray (neutral)
+ */
+export function urgencyColor(days: number): string {
+  if (days <= 0) return "text-red-700 bg-red-100";
+  if (days <= 3) return "text-orange-700 bg-orange-100";
+  if (days <= 7) return "text-yellow-700 bg-yellow-100";
+  return "text-gray-600 bg-gray-100";
+}
+
+/**
+ * Returns a human-readable Dutch label for a deadline based on days remaining.
+ */
+export function deadlineLabel(days: number): string {
+  if (days <= 0) return "Verlopen!";
+  if (days === 1) return "Morgen";
+  return `${days} dagen`;
+}

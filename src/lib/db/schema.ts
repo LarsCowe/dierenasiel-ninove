@@ -181,6 +181,7 @@ export const vaccinations = pgTable("vaccinations", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_vaccinations_animal_id").on(table.animalId),
+  index("idx_vaccinations_next_due_date").on(table.nextDueDate),
 ]);
 
 export const dewormings = pgTable("dewormings", {
@@ -236,6 +237,7 @@ export const medications = pgTable("medications", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_medications_animal_id").on(table.animalId),
+  index("idx_medications_end_date_active").on(table.endDate, table.isActive),
 ]);
 
 export const medicationLogs = pgTable("medication_logs", {

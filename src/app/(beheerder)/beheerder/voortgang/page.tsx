@@ -54,7 +54,7 @@ const EPICS: Epic[] = [
       { id: "3.4", title: "Medicatie Voorschrijven", status: "done" },
       { id: "3.5", title: "Medicatie Dagelijks Afvinken", status: "done" },
       { id: "3.6", title: "To-do Lijst per Dier", status: "done" },
-      { id: "3.7", title: "Medische Alerts op Dashboard", status: "backlog" },
+      { id: "3.7", title: "Medische Alerts op Dashboard", status: "done" },
       { id: "3.8", title: "Bezoekrapport Contractdierenarts", status: "backlog" },
     ],
   },
