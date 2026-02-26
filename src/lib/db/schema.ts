@@ -9,6 +9,7 @@ import {
   integer,
   jsonb,
   index,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const kennels = pgTable("kennels", {
@@ -127,6 +128,23 @@ export const animalAttachments = pgTable("animal_attachments", {
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_animal_attachments_animal_id").on(table.animalId),
+]);
+
+export const neglectReports = pgTable("neglect_reports", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  date: date("date"),
+  vetName: varchar("vet_name", { length: 200 }),
+  healthStatusOnArrival: text("health_status_on_arrival").notNull(),
+  neglectFindings: text("neglect_findings").notNull(),
+  treatmentsGiven: text("treatments_given"),
+  weightOnArrival: varchar("weight_on_arrival", { length: 50 }),
+  photos: text("photos").array(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("neglect_reports_animal_id_unique").on(table.animalId),
+  index("idx_neglect_reports_animal_id").on(table.animalId),
 ]);
 
 export const auditLogs = pgTable("audit_logs", {

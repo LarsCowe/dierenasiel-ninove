@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -14,6 +14,9 @@ export type NewAnimal = typeof animals.$inferInsert;
 
 export type AnimalAttachment = typeof animalAttachments.$inferSelect;
 export type NewAnimalAttachment = typeof animalAttachments.$inferInsert;
+
+export type NeglectReport = typeof neglectReports.$inferSelect;
+export type NewNeglectReport = typeof neglectReports.$inferInsert;
 
 export type Kennel = typeof kennels.$inferSelect;
 export type NewKennel = typeof kennels.$inferInsert;

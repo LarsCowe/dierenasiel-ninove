@@ -50,6 +50,13 @@
       "when": 1772113469733,
       "tag": "0006_great_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772118734622,
+      "tag": "0007_lucky_gamora",
+      "breakpoints": true
     }
   ]
 }

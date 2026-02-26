@@ -305,4 +305,47 @@ describe("POST /api/upload", () => {
       { access: "public" },
     );
   });
+
+  it("checks medical:write permission when context is verwaarlozing", async () => {
+    mockHasPermission.mockReturnValue(false);
+
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+    formData.append("context", "verwaarlozing");
+
+    const response = await POST(makeRequest(formData));
+
+    expect(response.status).toBe(403);
+    expect(mockHasPermission).toHaveBeenCalledWith("beheerder", "medical:write");
+  });
+
+  it("passes context to DB insert", async () => {
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+    formData.append("context", "verwaarlozing");
+
+    await POST(makeRequest(formData));
+
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "verwaarlozing",
+      }),
+    );
+  });
+
+  it("defaults context to dossier when not provided", async () => {
+    const formData = new FormData();
+    formData.append("file", makeFile("photo.jpg", "image/jpeg"));
+    formData.append("animalId", "1");
+
+    await POST(makeRequest(formData));
+
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "dossier",
+      }),
+    );
+  });
 });

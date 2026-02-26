@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { getAnimalById } from "@/lib/queries/animals";
 import { getAttachmentsByAnimalId } from "@/lib/queries/attachments";
 import { getKennels } from "@/lib/queries/kennels";
+import { getNeglectReportByAnimalId } from "@/lib/queries/neglect-reports";
 import AnimalEditForm from "@/components/beheerder/dieren/AnimalEditForm";
 import FileUpload from "@/components/beheerder/shared/FileUpload";
 import AttachmentGallery from "@/components/beheerder/dieren/AttachmentGallery";
 import KennelSelector from "@/components/beheerder/dieren/KennelSelector";
 import StatusChanger from "@/components/beheerder/dieren/StatusChanger";
 import OuttakeForm from "@/components/beheerder/dieren/OuttakeForm";
+import NeglectReportSection from "@/components/beheerder/dieren/NeglectReportSection";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -31,10 +33,11 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
+    getNeglectReportByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -118,6 +121,7 @@ export default async function DierDetailPage({ params }: Props) {
             </div>
           </div>
           <IbnMetadata metadata={animal.intakeMetadata} />
+          <NeglectReportSection animalId={animalId} report={neglectReport} />
         </div>
       )}
 

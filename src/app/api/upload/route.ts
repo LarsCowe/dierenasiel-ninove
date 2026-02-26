@@ -20,14 +20,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
   }
 
-  if (!hasPermission(session.role, "animal:write")) {
-    return NextResponse.json({ error: "Onvoldoende rechten" }, { status: 403 });
-  }
-
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   const animalId = Number(formData.get("animalId"));
   const description = formData.get("description") as string | null;
+  const context = (formData.get("context") as string) || "dossier";
+
+  const requiredPermission = context === "verwaarlozing" ? "medical:write" : "animal:write";
+  if (!hasPermission(session.role, requiredPermission)) {
+    return NextResponse.json({ error: "Onvoldoende rechten" }, { status: 403 });
+  }
 
   if (!file || !animalId) {
     return NextResponse.json(
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
         fileUrl: blob.url,
         fileName: file.name,
         fileType: file.type,
+        context,
         description: description || undefined,
       })
       .returning();
