@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { medicationLogs, medications, animals } from "@/lib/db/schema";
 import { eq, desc, and, gte, lt, inArray } from "drizzle-orm";
 import type { MedicationLog } from "@/types";
+import { getBelgianDayBounds } from "@/lib/utils/date";
 
 export interface MedicationWithTodayStatus {
   medication: {
@@ -48,10 +49,7 @@ export async function getActiveMedicationsWithTodayStatus(): Promise<
   MedicationWithTodayStatus[]
 > {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start, end } = getBelgianDayBounds();
 
     const activeMeds = await db
       .select({
@@ -83,8 +81,8 @@ export async function getActiveMedicationsWithTodayStatus(): Promise<
       .from(medicationLogs)
       .where(
         and(
-          gte(medicationLogs.administeredAt, today),
-          lt(medicationLogs.administeredAt, tomorrow),
+          gte(medicationLogs.administeredAt, start),
+          lt(medicationLogs.administeredAt, end),
         ),
       );
 
@@ -130,10 +128,7 @@ export async function getTodayMedicationLogsByAnimalId(
 
     const medIds = animalMeds.map((m) => m.id);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start, end } = getBelgianDayBounds();
 
     return await db
       .select()
@@ -141,8 +136,8 @@ export async function getTodayMedicationLogsByAnimalId(
       .where(
         and(
           inArray(medicationLogs.medicationId, medIds),
-          gte(medicationLogs.administeredAt, today),
-          lt(medicationLogs.administeredAt, tomorrow),
+          gte(medicationLogs.administeredAt, start),
+          lt(medicationLogs.administeredAt, end),
         ),
       ) as MedicationLog[];
   } catch (err) {

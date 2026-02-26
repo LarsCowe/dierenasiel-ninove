@@ -53,6 +53,12 @@ vi.mock("drizzle-orm", () => ({
   lt: vi.fn((...args: unknown[]) => ({ type: "lt", args })),
   inArray: vi.fn((...args: unknown[]) => ({ type: "inArray", args })),
 }));
+vi.mock("@/lib/utils/date", () => ({
+  getBelgianDayBounds: vi.fn(() => ({
+    start: new Date("2026-02-26T00:00:00Z"),
+    end: new Date("2026-02-27T00:00:00Z"),
+  })),
+}));
 
 import { getMedicationLogsByMedicationId, getActiveMedicationsWithTodayStatus, getTodayMedicationLogsByAnimalId } from "./medication-logs";
 import { db } from "@/lib/db";

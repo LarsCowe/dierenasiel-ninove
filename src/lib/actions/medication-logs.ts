@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { medicationLogSchema } from "@/lib/validations/medication-logs";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
+import { getBelgianDayBounds } from "@/lib/utils/date";
 import type { ActionResult, MedicationLog } from "@/types";
 
 export async function createMedicationLog(
@@ -43,11 +44,8 @@ export async function createMedicationLog(
     return { success: false, error: "Medicatie is niet meer actief" };
   }
 
-  // Idempotency: check if already checked off today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Idempotency: check if already checked off today (Belgian time)
+  const { start, end } = getBelgianDayBounds();
 
   const [alreadyLogged] = await db
     .select()
@@ -55,8 +53,8 @@ export async function createMedicationLog(
     .where(
       and(
         eq(medicationLogs.medicationId, parsed.data.medicationId),
-        gte(medicationLogs.administeredAt, today),
-        lt(medicationLogs.administeredAt, tomorrow),
+        gte(medicationLogs.administeredAt, start),
+        lt(medicationLogs.administeredAt, end),
       ),
     )
     .limit(1);
@@ -82,6 +80,7 @@ export async function createMedicationLog(
     await logAudit("create_medication_log", "medication_log", record.id, null, record);
     revalidatePath("/beheerder/medisch");
     revalidatePath("/beheerder/dieren");
+    revalidatePath("/beheerder/dieren/[id]", "page");
 
     return { success: true, data: record as MedicationLog };
   } catch {
@@ -119,6 +118,7 @@ export async function deleteMedicationLog(
     await logAudit("delete_medication_log", "medication_log", existing.id, existing, null);
     revalidatePath("/beheerder/medisch");
     revalidatePath("/beheerder/dieren");
+    revalidatePath("/beheerder/dieren/[id]", "page");
 
     return { success: true, data: undefined };
   } catch {

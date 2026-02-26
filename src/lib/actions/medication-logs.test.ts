@@ -51,6 +51,12 @@ vi.mock("drizzle-orm", () => ({
   gte: vi.fn((...args: unknown[]) => ({ type: "gte", args })),
   lt: vi.fn((...args: unknown[]) => ({ type: "lt", args })),
 }));
+vi.mock("@/lib/utils/date", () => ({
+  getBelgianDayBounds: vi.fn(() => ({
+    start: new Date("2026-02-26T00:00:00Z"),
+    end: new Date("2026-02-27T00:00:00Z"),
+  })),
+}));
 
 import { createMedicationLog, deleteMedicationLog } from "./medication-logs";
 
@@ -142,10 +148,11 @@ describe("createMedicationLog", () => {
     );
   });
 
-  it("revalidates medisch and dieren paths", async () => {
+  it("revalidates medisch, dieren, and dynamic dieren paths", async () => {
     await createMedicationLog(null, makeFormData({ medicationId: "5" }));
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/medisch");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/[id]", "page");
   });
 
   it("returns graceful error on DB failure", async () => {
@@ -198,10 +205,11 @@ describe("deleteMedicationLog", () => {
     );
   });
 
-  it("revalidates medisch and dieren paths", async () => {
+  it("revalidates medisch, dieren, and dynamic dieren paths", async () => {
     await deleteMedicationLog(null, makeFormData({ id: "1" }));
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/medisch");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/[id]", "page");
   });
 
   it("returns graceful error on DB failure", async () => {
