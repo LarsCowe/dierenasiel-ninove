@@ -25,6 +25,7 @@ import { getDewormingsByAnimalId } from "@/lib/queries/dewormings";
 import { getVetVisitsByAnimalId } from "@/lib/queries/vet-visits";
 import { getOperationsByAnimalId } from "@/lib/queries/operations";
 import { getMedicationsByAnimalId } from "@/lib/queries/medications";
+import { getTodayMedicationLogsByAnimalId } from "@/lib/queries/medication-logs";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -48,7 +49,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -61,6 +62,7 @@ export default async function DierDetailPage({ params }: Props) {
     getVetVisitsByAnimalId(animalId),
     getOperationsByAnimalId(animalId),
     getMedicationsByAnimalId(animalId),
+    getTodayMedicationLogsByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -189,7 +191,7 @@ export default async function DierDetailPage({ params }: Props) {
         <div className="mt-4 border-t border-gray-100 pt-4">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Medicatie</h3>
           <div className="mt-2">
-            <MedicationSection animalId={animalId} medications={medicationsList} />
+            <MedicationSection animalId={animalId} medications={medicationsList} todayLogs={todayMedicationLogs} />
           </div>
         </div>
       </CollapsibleSection>

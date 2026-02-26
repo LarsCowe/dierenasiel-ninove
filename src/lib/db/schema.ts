@@ -238,6 +238,19 @@ export const medications = pgTable("medications", {
   index("idx_medications_animal_id").on(table.animalId),
 ]);
 
+export const medicationLogs = pgTable("medication_logs", {
+  id: serial("id").primaryKey(),
+  medicationId: integer("medication_id").notNull().references(() => medications.id, { onDelete: "cascade" }),
+  administeredAt: timestamp("administered_at", { withTimezone: true }).notNull(),
+  administeredBy: varchar("administered_by", { length: 100 }),
+  administeredByUserId: integer("administered_by_user_id").references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_medication_logs_medication_id").on(table.medicationId),
+  index("idx_medication_logs_administered_at").on(table.administeredAt),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

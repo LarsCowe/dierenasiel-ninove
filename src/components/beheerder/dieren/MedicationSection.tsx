@@ -3,14 +3,15 @@
 import { useState } from "react";
 import MedicationList from "./MedicationList";
 import MedicationForm from "./MedicationForm";
-import type { Medication } from "@/types";
+import type { Medication, MedicationLog } from "@/types";
 
 interface MedicationSectionProps {
   animalId: number;
   medications: Medication[];
+  todayLogs: MedicationLog[];
 }
 
-export default function MedicationSection({ animalId, medications }: MedicationSectionProps) {
+export default function MedicationSection({ animalId, medications, todayLogs }: MedicationSectionProps) {
   const [view, setView] = useState<"list" | "form">("list");
 
   return (
@@ -41,7 +42,7 @@ export default function MedicationSection({ animalId, medications }: MedicationS
       </div>
 
       {view === "list" ? (
-        <MedicationList medications={medications} />
+        <MedicationList medications={medications} todayLogs={todayLogs} />
       ) : (
         <MedicationForm animalId={animalId} onCancel={() => setView("list")} />
       )}

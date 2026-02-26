@@ -1,0 +1,1 @@
+ALTER TABLE "medication_logs" ALTER COLUMN "administered_at" SET DATA TYPE timestamp with time zone;

@@ -2,29 +2,35 @@
 
 import { useActionState } from "react";
 import { deleteMedication, stopMedication } from "@/lib/actions/medications";
-import type { Medication } from "@/types";
+import { createMedicationLog, deleteMedicationLog } from "@/lib/actions/medication-logs";
+import type { Medication, MedicationLog } from "@/types";
 
 interface MedicationListProps {
   medications: Medication[];
+  todayLogs: MedicationLog[];
 }
 
-export default function MedicationList({ medications }: MedicationListProps) {
+export default function MedicationList({ medications, todayLogs }: MedicationListProps) {
   if (medications.length === 0) {
     return <p className="text-sm text-gray-500">Nog geen medicatie voorgeschreven.</p>;
   }
 
+  const logMap = new Map(todayLogs.map((log) => [log.medicationId, log]));
+
   return (
     <div className="space-y-2">
       {medications.map((med) => (
-        <MedicationRow key={med.id} medication={med} />
+        <MedicationRow key={med.id} medication={med} todayLog={logMap.get(med.id) ?? null} />
       ))}
     </div>
   );
 }
 
-function MedicationRow({ medication }: { medication: Medication }) {
+function MedicationRow({ medication, todayLog }: { medication: Medication; todayLog: MedicationLog | null }) {
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteMedication, null);
   const [stopState, stopAction, isStopping] = useActionState(stopMedication, null);
+  const [checkState, checkAction, isChecking] = useActionState(createMedicationLog, null);
+  const [undoState, undoAction, isUndoing] = useActionState(deleteMedicationLog, null);
 
   const borderColor = medication.isActive ? "border-emerald-200" : "border-gray-200";
   const bgColor = medication.isActive ? "bg-emerald-50/50" : "bg-gray-50/50";
@@ -57,14 +63,52 @@ function MedicationRow({ medication }: { medication: Medication }) {
           {medication.notes && (
             <p className="text-xs text-gray-500">{medication.notes}</p>
           )}
+          {/* Today's checkoff status */}
+          {medication.isActive && todayLog && (
+            <p className="text-xs text-emerald-600">
+              Vandaag toegediend om {new Date(todayLog.administeredAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
+              {todayLog.administeredBy && ` door ${todayLog.administeredBy}`}
+            </p>
+          )}
           {deleteState && !deleteState.success && (
             <p className="text-xs text-red-600">{deleteState.error}</p>
           )}
           {stopState && !stopState.success && (
             <p className="text-xs text-red-600">{stopState.error}</p>
           )}
+          {checkState && !checkState.success && (
+            <p className="text-xs text-red-600">{checkState.error}</p>
+          )}
+          {undoState && !undoState.success && (
+            <p className="text-xs text-red-600">{undoState.error}</p>
+          )}
         </div>
         <div className="flex shrink-0 gap-2">
+          {/* Checkoff button for active medications */}
+          {medication.isActive && !todayLog && (
+            <form action={checkAction}>
+              <input type="hidden" name="medicationId" value={medication.id} />
+              <button
+                type="submit"
+                disabled={isChecking}
+                className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isChecking ? "..." : "Afvinken"}
+              </button>
+            </form>
+          )}
+          {medication.isActive && todayLog && (
+            <form action={undoAction}>
+              <input type="hidden" name="id" value={todayLog.id} />
+              <button
+                type="submit"
+                disabled={isUndoing}
+                className="text-xs font-medium text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                {isUndoing ? "..." : "Ongedaan"}
+              </button>
+            </form>
+          )}
           {medication.isActive && (
             <form action={stopAction}>
               <input type="hidden" name="id" value={medication.id} />
