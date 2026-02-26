@@ -57,41 +57,37 @@ export default async function DierDetailPage({ params }: Props) {
   if (!animal) notFound();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <AnimalEditForm animal={animal} />
 
       {/* Status & Kennel */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Status */}
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-            Status
-          </h2>
-          <div className="mt-4 max-w-xs">
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#1b4332]">Status</h2>
+          <div className="mt-2">
             <StatusChanger
               animalId={animalId}
               currentStatus={animal.status ?? "beschikbaar"}
             />
           </div>
-          <div className="mt-6">
-            <OuttakeForm
-              animalId={animalId}
-              animalName={animal.name}
-              isInShelter={animal.isInShelter ?? true}
-            />
-          </div>
         </div>
-
-        {/* Kennel Toewijzing */}
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="font-heading text-lg font-bold text-[#1b4332]">
-            Kennel Toewijzing
-          </h2>
-          <div className="mt-4 max-w-xs">
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
+          <div className="mt-2">
             <KennelSelector
               animalId={animalId}
               currentKennelId={animal.kennelId}
               kennels={kennelsList}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
+          <div className="mt-2">
+            <OuttakeForm
+              animalId={animalId}
+              animalName={animal.name}
+              isInShelter={animal.isInShelter ?? true}
             />
           </div>
         </div>
@@ -154,15 +150,15 @@ export default async function DierDetailPage({ params }: Props) {
       {/* Medische fiche */}
       <CollapsibleSection title="Medische fiche">
         <div>
-          <h3 className="text-sm font-semibold text-gray-700">Vaccinaties</h3>
-          <div className="mt-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Vaccinaties</h3>
+          <div className="mt-2">
             <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
           </div>
         </div>
 
-        <div className="mt-6 border-t border-gray-100 pt-6">
-          <h3 className="text-sm font-semibold text-gray-700">Ontwormingen</h3>
-          <div className="mt-3">
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ontwormingen</h3>
+          <div className="mt-2">
             <DewormingSection animalId={animalId} dewormings={dewormingsList} />
           </div>
         </div>

@@ -24,21 +24,21 @@ export default function CollapsibleSection({
   const titleColor = variant === "danger" ? "text-red-800" : "text-[#1b4332]";
 
   return (
-    <div className={`overflow-hidden rounded-xl border ${borderColor} ${bgColor} shadow-sm`}>
+    <div className={`overflow-hidden rounded-lg border ${borderColor} ${bgColor} shadow-sm`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50/50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50/50"
       >
-        <div className="flex items-center gap-3">
-          <h2 className={`font-heading text-lg font-bold ${titleColor}`}>
+        <div className="flex items-center gap-2">
+          <h2 className={`font-heading text-sm font-bold ${titleColor}`}>
             {title}
           </h2>
           {badge}
         </div>
         <svg
-          className={`h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -48,7 +48,7 @@ export default function CollapsibleSection({
         </svg>
       </button>
       {open && (
-        <div className="border-t border-gray-100 px-6 pb-6 pt-4">
+        <div className="border-t border-gray-100 px-4 pb-4 pt-3">
           {children}
         </div>
       )}
