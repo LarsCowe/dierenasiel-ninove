@@ -210,6 +210,18 @@ export const vetVisits = pgTable("vet_visits", {
   index("idx_vet_visits_animal_id").on(table.animalId),
 ]);
 
+export const operations = pgTable("operations", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(),
+  date: date("date").notNull(),
+  recordedBy: integer("recorded_by").references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_operations_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
