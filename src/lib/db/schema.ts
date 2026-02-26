@@ -222,6 +222,22 @@ export const operations = pgTable("operations", {
   index("idx_operations_animal_id").on(table.animalId),
 ]);
 
+export const medications = pgTable("medications", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  medicationName: varchar("medication_name", { length: 200 }).notNull(),
+  dosage: varchar("dosage", { length: 100 }).notNull(),
+  quantity: varchar("quantity", { length: 100 }),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"),
+  recordedBy: integer("recorded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_medications_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

@@ -16,6 +16,7 @@ import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection
 import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
 import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import OperationSection from "@/components/beheerder/dieren/OperationSection";
+import MedicationSection from "@/components/beheerder/dieren/MedicationSection";
 import CollapsibleSection from "@/components/beheerder/shared/CollapsibleSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
@@ -23,6 +24,7 @@ import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
 import { getDewormingsByAnimalId } from "@/lib/queries/dewormings";
 import { getVetVisitsByAnimalId } from "@/lib/queries/vet-visits";
 import { getOperationsByAnimalId } from "@/lib/queries/operations";
+import { getMedicationsByAnimalId } from "@/lib/queries/medications";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -46,7 +48,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -58,6 +60,7 @@ export default async function DierDetailPage({ params }: Props) {
     getDewormingsByAnimalId(animalId),
     getVetVisitsByAnimalId(animalId),
     getOperationsByAnimalId(animalId),
+    getMedicationsByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -180,6 +183,13 @@ export default async function DierDetailPage({ params }: Props) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Operaties</h3>
           <div className="mt-2">
             <OperationSection animalId={animalId} operations={operationsList} />
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Medicatie</h3>
+          <div className="mt-2">
+            <MedicationSection animalId={animalId} medications={medicationsList} />
           </div>
         </div>
       </CollapsibleSection>
