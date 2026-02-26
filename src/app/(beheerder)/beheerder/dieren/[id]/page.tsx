@@ -17,6 +17,7 @@ import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
 import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import OperationSection from "@/components/beheerder/dieren/OperationSection";
 import MedicationSection from "@/components/beheerder/dieren/MedicationSection";
+import TodoSection from "@/components/beheerder/dieren/TodoSection";
 import CollapsibleSection from "@/components/beheerder/shared/CollapsibleSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
@@ -26,6 +27,7 @@ import { getVetVisitsByAnimalId } from "@/lib/queries/vet-visits";
 import { getOperationsByAnimalId } from "@/lib/queries/operations";
 import { getMedicationsByAnimalId } from "@/lib/queries/medications";
 import { getTodayMedicationLogsByAnimalId } from "@/lib/queries/medication-logs";
+import { getTodosByAnimalId, countOpenTodosByAnimalId } from "@/lib/queries/animal-todos";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -49,7 +51,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -63,6 +65,8 @@ export default async function DierDetailPage({ params }: Props) {
     getOperationsByAnimalId(animalId),
     getMedicationsByAnimalId(animalId),
     getTodayMedicationLogsByAnimalId(animalId),
+    getTodosByAnimalId(animalId),
+    countOpenTodosByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -156,6 +160,18 @@ export default async function DierDetailPage({ params }: Props) {
       {/* Voedingsplan */}
       <CollapsibleSection title="Voedingsplan">
         <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
+      </CollapsibleSection>
+
+      {/* To-do Lijst */}
+      <CollapsibleSection
+        title="To-do Lijst"
+        badge={openTodoCount > 0 ? (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+            {openTodoCount} open
+          </span>
+        ) : undefined}
+      >
+        <TodoSection animalId={animalId} todos={todosList} />
       </CollapsibleSection>
 
       {/* Medische fiche */}

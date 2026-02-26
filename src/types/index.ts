@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -50,6 +50,9 @@ export type NewMedication = typeof medications.$inferInsert;
 
 export type MedicationLog = typeof medicationLogs.$inferSelect;
 export type NewMedicationLog = typeof medicationLogs.$inferInsert;
+
+export type AnimalTodo = typeof animalTodos.$inferSelect;
+export type NewAnimalTodo = typeof animalTodos.$inferInsert;
 
 export interface BehaviorChecklist {
   benaderingHok: number;       // 1-5: Reactie bij nadering hok

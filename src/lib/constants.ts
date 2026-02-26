@@ -7,6 +7,56 @@ export const BACKOFFICE_ROLES = [
   "coördinator",
 ] as const;
 
+export const TODO_TYPES = [
+  "vaccinatie",
+  "paspoort",
+  "chip",
+  "operatie",
+  "castratie",
+  "sterilisatie",
+  "ontworming",
+  "vlooienbehandeling",
+  "bloedonderzoek",
+  "tandencontrole",
+  "gewichtscontrole",
+  "gedragstest",
+  "fotosessie",
+  "adoptievoorbereiding",
+  "anders",
+] as const;
+
+export const TODO_TYPE_LABELS: Record<(typeof TODO_TYPES)[number], string> = {
+  vaccinatie: "Vaccinatie",
+  paspoort: "Paspoort",
+  chip: "Chip",
+  operatie: "Operatie",
+  castratie: "Castratie",
+  sterilisatie: "Sterilisatie",
+  ontworming: "Ontworming",
+  vlooienbehandeling: "Vlooienbehandeling",
+  bloedonderzoek: "Bloedonderzoek",
+  tandencontrole: "Tandencontrole",
+  gewichtscontrole: "Gewichtscontrole",
+  gedragstest: "Gedragstest",
+  fotosessie: "Fotosessie",
+  adoptievoorbereiding: "Adoptievoorbereiding",
+  anders: "Anders",
+};
+
+export const TODO_PRIORITIES = [
+  "laag",
+  "normaal",
+  "hoog",
+  "dringend",
+] as const;
+
+export const TODO_PRIORITY_LABELS: Record<(typeof TODO_PRIORITIES)[number], string> = {
+  laag: "Laag",
+  normaal: "Normaal",
+  hoog: "Hoog",
+  dringend: "Dringend",
+};
+
 export const SITE_NAME = "Dierenasiel Ninove VZW";
 export const SITE_TAGLINE =
   "Het Dierenasiel Ninove (Denderwindeke) geeft nieuwe kansen aan dieren die een nieuwe thuis zoeken.";
