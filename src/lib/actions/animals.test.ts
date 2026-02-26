@@ -228,6 +228,76 @@ describe("createAnimalIntake", () => {
       expect(result.error).toBeDefined();
     }
   });
+
+  // IBN intake tests
+  it("calculates ibnDecisionDeadline = intakeDate + 60 days for IBN intake", async () => {
+    const fd = makeFormData({
+      ...validFormData,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+      pvNr: "PV-2026-001",
+      intakeDate: "2026-02-26",
+    });
+
+    await createAnimalIntake(null, fd);
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dossierNr: "DWV-2026-12345",
+        pvNr: "PV-2026-001",
+        ibnDecisionDeadline: "2026-04-27",
+      }),
+    );
+  });
+
+  it("does not set ibnDecisionDeadline for non-IBN intake", async () => {
+    await createAnimalIntake(null, makeFormData(validFormData));
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dossierNr: null,
+        pvNr: null,
+        ibnDecisionDeadline: null,
+      }),
+    );
+  });
+
+  it("returns validation error when IBN intake missing dossierNr", async () => {
+    const fd = makeFormData({
+      ...validFormData,
+      intakeReason: "ibn",
+      pvNr: "PV-2026-001",
+    });
+
+    const result = await createAnimalIntake(null, fd);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.fieldErrors?.dossierNr).toBeDefined();
+    }
+  });
+
+  it("stores betrokkenInstanties in intakeMetadata for IBN", async () => {
+    const fd = makeFormData({
+      ...validFormData,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+      pvNr: "PV-2026-001",
+      isPickedUpByShelter: "true",
+      "intakeMetadata.melderNaam": "Politie Ninove",
+      "intakeMetadata.betrokkenInstanties": "Politiezone Ninove, Dierenwelzijn Vlaanderen",
+    });
+
+    await createAnimalIntake(null, fd);
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intakeMetadata: expect.objectContaining({
+          betrokkenInstanties: "Politiezone Ninove, Dierenwelzijn Vlaanderen",
+        }),
+      }),
+    );
+  });
 });
 
 const existingAnimal = {

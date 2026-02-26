@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { animals } from "@/lib/db/schema";
-import { eq, and, ne, desc, asc, or, ilike, sql } from "drizzle-orm";
+import { eq, and, ne, desc, asc, or, ilike, sql, isNotNull } from "drizzle-orm";
 import type { Animal } from "@/types";
 
 export interface AdminAnimalListOptions {
@@ -136,5 +136,29 @@ export async function getAnimalsForAdmin(
   } catch (err) {
     console.error("getAnimalsForAdmin query failed:", err);
     return { animals: [], total: 0 };
+  }
+}
+
+/**
+ * Returns animals with an IBN deadline within the next 7 days.
+ * Used for the dashboard deadline widget (FR-06).
+ */
+export async function getIbnDeadlineAlerts(): Promise<Animal[]> {
+  try {
+    const results = await db
+      .select()
+      .from(animals)
+      .where(
+        and(
+          isNotNull(animals.ibnDecisionDeadline),
+          eq(animals.isInShelter, true),
+          sql`${animals.ibnDecisionDeadline} <= CURRENT_DATE + INTERVAL '7 days'`,
+        ),
+      )
+      .orderBy(asc(animals.ibnDecisionDeadline));
+    return results as Animal[];
+  } catch (err) {
+    console.error("getIbnDeadlineAlerts query failed:", err);
+    return [];
   }
 }

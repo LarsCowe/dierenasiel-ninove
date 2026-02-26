@@ -67,7 +67,7 @@ vi.mock("drizzle-orm", () => ({
   count: vi.fn(),
 }));
 
-import { getAnimalsForAdmin, getAnimalById } from "./animals";
+import { getAnimalsForAdmin, getAnimalById, getIbnDeadlineAlerts } from "./animals";
 import { db } from "@/lib/db";
 
 describe("getAnimalsForAdmin", () => {
@@ -231,5 +231,56 @@ describe("getAnimalById", () => {
     const result = await getAnimalById(1);
 
     expect(result).toBeNull();
+  });
+});
+
+describe("getIbnDeadlineAlerts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResults.length = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)._resetIndex();
+  });
+
+  it("returns animals with IBN deadline approaching (within 7 days)", async () => {
+    const ibnAnimal = {
+      id: 5,
+      name: "Fido",
+      species: "hond",
+      intakeReason: "ibn",
+      ibnDecisionDeadline: "2026-03-01",
+      isInShelter: true,
+    };
+    mockResults.push([ibnAnimal]);
+
+    const result = await getIbnDeadlineAlerts();
+
+    expect(result).toEqual([ibnAnimal]);
+  });
+
+  it("returns empty array when no IBN deadlines approaching", async () => {
+    mockResults.push([]);
+
+    const result = await getIbnDeadlineAlerts();
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array on database error (graceful fallback)", async () => {
+    vi.mocked(db.select).mockImplementationOnce(() => {
+      throw new Error("Connection refused");
+    });
+
+    const result = await getIbnDeadlineAlerts();
+
+    expect(result).toEqual([]);
+  });
+
+  it("calls db.select to query animals", async () => {
+    mockResults.push([]);
+
+    await getIbnDeadlineAlerts();
+
+    expect(db.select).toHaveBeenCalled();
   });
 });

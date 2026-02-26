@@ -87,10 +87,18 @@ describe("animalIntakeSchema", () => {
   });
 
   it("accepts valid intake reasons", () => {
-    for (const reason of ["afstand", "zwerfhond", "ibn", "vondeling", "overig"]) {
+    for (const reason of ["afstand", "zwerfhond", "vondeling", "overig"]) {
       const result = animalIntakeSchema.safeParse({ ...validIntake, intakeReason: reason });
       expect(result.success).toBe(true);
     }
+    // IBN requires extra fields
+    const ibnResult = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+      pvNr: "PV-2026-001",
+    });
+    expect(ibnResult.success).toBe(true);
   });
 
   it("rejects an invalid intake reason", () => {
@@ -135,6 +143,88 @@ describe("animalIntakeSchema", () => {
       isPickedUpByShelter: false,
     });
     expect(result.success).toBe(true);
+  });
+
+  // IBN-specific validation
+  it("requires dossierNr when intakeReason is ibn", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      pvNr: "PV-2026-001",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const errors = result.error.flatten().fieldErrors;
+      expect(errors.dossierNr).toBeDefined();
+    }
+  });
+
+  it("requires pvNr when intakeReason is ibn", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const errors = result.error.flatten().fieldErrors;
+      expect(errors.pvNr).toBeDefined();
+    }
+  });
+
+  it("accepts valid IBN intake with all required fields", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+      pvNr: "PV-2026-001",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("does not require dossierNr/pvNr for non-IBN intake", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "afstand",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("does not require dossierNr/pvNr when intakeReason is omitted", () => {
+    const result = animalIntakeSchema.safeParse(validIntake);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts IBN intake with betrokken instanties metadata", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      dossierNr: "DWV-2026-12345",
+      pvNr: "PV-2026-001",
+      isPickedUpByShelter: true,
+      intakeMetadata: {
+        melderNaam: "Politie Ninove",
+        melderLocatie: "Centrumlaan 100",
+        melderDatum: "2026-02-20",
+        betrokkenInstanties: "Politiezone Ninove, Dierenwelzijn Vlaanderen",
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.intakeMetadata?.betrokkenInstanties).toBe(
+        "Politiezone Ninove, Dierenwelzijn Vlaanderen",
+      );
+    }
+  });
+
+  it("rejects IBN intake when both dossierNr and pvNr are empty strings", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+      dossierNr: "",
+      pvNr: "",
+    });
+    expect(result.success).toBe(false);
   });
 });
 

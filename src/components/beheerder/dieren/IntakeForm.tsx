@@ -35,12 +35,13 @@ const INTAKE_REASONS = [
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
-  return <p className="mt-1 text-sm text-red-600">{errors[0]}</p>;
+  return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
 export default function IntakeForm() {
   const [state, formAction, isPending] = useActionState(createAnimalIntake, null);
   const [species, setSpecies] = useState("");
+  const [intakeReason, setIntakeReason] = useState("");
   const [isPickedUp, setIsPickedUp] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -48,6 +49,7 @@ export default function IntakeForm() {
     if (state?.success) {
       formRef.current?.reset();
       setSpecies("");
+      setIntakeReason("");
       setIsPickedUp(false);
     }
   }, [state]);
@@ -251,6 +253,8 @@ export default function IntakeForm() {
             <select
               id="intakeReason"
               name="intakeReason"
+              value={intakeReason}
+              onChange={(e) => setIntakeReason(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             >
               {INTAKE_REASONS.map((opt) => (
@@ -261,6 +265,46 @@ export default function IntakeForm() {
             </select>
           </div>
         </div>
+
+        {/* IBN-specifieke velden */}
+        {intakeReason === "ibn" && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+            <h3 className="text-sm font-semibold text-red-800">
+              Inbeslagname (IBN) gegevens
+            </h3>
+            <p className="mt-1 text-xs text-red-600">
+              Bij een IBN-intake wordt automatisch een deadline van 60 dagen berekend.
+            </p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="dossierNr" className="block text-sm font-medium text-gray-700">
+                  Dossiernummer DWV <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="dossierNr"
+                  name="dossierNr"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  placeholder="Bijv. DWV-2026-12345"
+                />
+                <FieldError errors={fieldErrors?.dossierNr} />
+              </div>
+              <div>
+                <label htmlFor="pvNr" className="block text-sm font-medium text-gray-700">
+                  PV-nummer politie <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="pvNr"
+                  name="pvNr"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  placeholder="Bijv. PV-2026-001"
+                />
+                <FieldError errors={fieldErrors?.pvNr} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Shelter pickup toggle */}
         <div className="mt-4">
@@ -279,8 +323,8 @@ export default function IntakeForm() {
           </label>
         </div>
 
-        {/* Melder details - shown when isPickedUp */}
-        {isPickedUp && (
+        {/* Melder details - shown when isPickedUp or IBN */}
+        {(isPickedUp || intakeReason === "ibn") && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <h3 className="text-sm font-semibold text-amber-800">
               Melding details
@@ -321,6 +365,20 @@ export default function IntakeForm() {
                   placeholder="Adres of locatie waar het dier is opgehaald"
                 />
               </div>
+              {intakeReason === "ibn" && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="intakeMetadata.betrokkenInstanties" className="block text-sm font-medium text-gray-700">
+                    Betrokken instanties
+                  </label>
+                  <input
+                    type="text"
+                    id="intakeMetadata.betrokkenInstanties"
+                    name="intakeMetadata.betrokkenInstanties"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    placeholder="Bijv. Politiezone Ninove, Dierenwelzijn Vlaanderen"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

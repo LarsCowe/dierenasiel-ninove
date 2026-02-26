@@ -16,13 +16,33 @@ export const animalIntakeSchema = z.object({
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   isPickedUpByShelter: z.boolean().optional().default(false),
+  dossierNr: z.string().optional(),
+  pvNr: z.string().optional(),
   intakeMetadata: z
     .object({
       melderNaam: z.string().optional(),
       melderLocatie: z.string().optional(),
       melderDatum: z.string().optional(),
+      betrokkenInstanties: z.string().optional(),
     })
     .optional(),
+}).superRefine((data, ctx) => {
+  if (data.intakeReason === "ibn") {
+    if (!data.dossierNr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Dossiernummer Dierenwelzijn Vlaanderen is verplicht bij IBN",
+        path: ["dossierNr"],
+      });
+    }
+    if (!data.pvNr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "PV-nummer politie is verplicht bij IBN",
+        path: ["pvNr"],
+      });
+    }
+  }
 });
 
 export type AnimalIntakeInput = z.infer<typeof animalIntakeSchema>;

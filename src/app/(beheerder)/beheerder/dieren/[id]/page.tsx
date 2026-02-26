@@ -9,6 +9,19 @@ import KennelSelector from "@/components/beheerder/dieren/KennelSelector";
 import StatusChanger from "@/components/beheerder/dieren/StatusChanger";
 import OuttakeForm from "@/components/beheerder/dieren/OuttakeForm";
 
+function IbnMetadata({ metadata }: { metadata: unknown }) {
+  if (!metadata || typeof metadata !== "object") return null;
+  const meta = metadata as Record<string, string>;
+  return (
+    <div className="mt-4 border-t border-red-200 pt-4">
+      <p className="text-xs font-medium text-gray-500">Betrokken instanties</p>
+      <p className="mt-1 text-sm text-gray-800">
+        {meta.betrokkenInstanties || "Niet opgegeven"}
+      </p>
+    </div>
+  );
+}
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -66,6 +79,47 @@ export default async function DierDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* IBN Info */}
+      {animal.intakeReason === "ibn" && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <h2 className="font-heading text-lg font-bold text-red-800">
+            Inbeslagname (IBN)
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Dossiernummer DWV</p>
+              <p className="mt-1 text-sm font-semibold text-gray-800">
+                {animal.dossierNr || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500">PV-nummer politie</p>
+              <p className="mt-1 text-sm font-semibold text-gray-800">
+                {animal.pvNr || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500">Intake datum</p>
+              <p className="mt-1 text-sm font-semibold text-gray-800">
+                {animal.intakeDate || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500">Beslissingsdeadline (60d)</p>
+              <p className={`mt-1 text-sm font-semibold ${
+                animal.ibnDecisionDeadline &&
+                new Date(animal.ibnDecisionDeadline) <= new Date()
+                  ? "text-red-700"
+                  : "text-gray-800"
+              }`}>
+                {animal.ibnDecisionDeadline || "—"}
+              </p>
+            </div>
+          </div>
+          <IbnMetadata metadata={animal.intakeMetadata} />
+        </div>
+      )}
 
       {/* Foto's & Bijlagen */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

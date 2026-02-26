@@ -21,6 +21,18 @@ export async function createAnimalIntake(
   }
 
   const isPickedUp = formData.get("isPickedUpByShelter") === "true";
+  const intakeReason = (formData.get("intakeReason") as string) || undefined;
+
+  // Build intakeMetadata when shelter pickup or IBN
+  const hasMetadata = isPickedUp || intakeReason === "ibn";
+  const intakeMetadata = hasMetadata
+    ? {
+        melderNaam: (formData.get("intakeMetadata.melderNaam") as string) || undefined,
+        melderLocatie: (formData.get("intakeMetadata.melderLocatie") as string) || undefined,
+        melderDatum: (formData.get("intakeMetadata.melderDatum") as string) || undefined,
+        betrokkenInstanties: (formData.get("intakeMetadata.betrokkenInstanties") as string) || undefined,
+      }
+    : undefined;
 
   const raw = {
     name: (formData.get("name") as string) || "",
@@ -32,17 +44,13 @@ export async function createAnimalIntake(
     identificationNr: (formData.get("identificationNr") as string) || undefined,
     passportNr: (formData.get("passportNr") as string) || undefined,
     intakeDate: (formData.get("intakeDate") as string) || "",
-    intakeReason: (formData.get("intakeReason") as string) || undefined,
+    intakeReason,
     description: (formData.get("description") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
     isPickedUpByShelter: isPickedUp,
-    intakeMetadata: isPickedUp
-      ? {
-          melderNaam: (formData.get("intakeMetadata.melderNaam") as string) || undefined,
-          melderLocatie: (formData.get("intakeMetadata.melderLocatie") as string) || undefined,
-          melderDatum: (formData.get("intakeMetadata.melderDatum") as string) || undefined,
-        }
-      : undefined,
+    dossierNr: (formData.get("dossierNr") as string) || undefined,
+    pvNr: (formData.get("pvNr") as string) || undefined,
+    intakeMetadata,
   };
 
   const parsed = animalIntakeSchema.safeParse(raw);
@@ -55,6 +63,15 @@ export async function createAnimalIntake(
 
   try {
     const slug = slugify(parsed.data.name);
+
+    // Calculate IBN 60-day deadline (FR-06)
+    let ibnDecisionDeadline: string | null = null;
+    if (parsed.data.intakeReason === "ibn" && parsed.data.intakeDate) {
+      const deadline = new Date(parsed.data.intakeDate + "T12:00:00");
+      deadline.setDate(deadline.getDate() + 60);
+      ibnDecisionDeadline = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, "0")}-${String(deadline.getDate()).padStart(2, "0")}`;
+    }
+
     const [animal] = await db
       .insert(animals)
       .values({
@@ -73,12 +90,16 @@ export async function createAnimalIntake(
         shortDescription: parsed.data.shortDescription || null,
         isPickedUpByShelter: parsed.data.isPickedUpByShelter,
         intakeMetadata: parsed.data.intakeMetadata || null,
+        dossierNr: parsed.data.dossierNr || null,
+        pvNr: parsed.data.pvNr || null,
+        ibnDecisionDeadline,
         status: "beschikbaar",
         isInShelter: true,
       })
       .returning();
 
     await logAudit("create_animal", "animal", animal.id, null, animal);
+    revalidatePath("/beheerder/dieren");
 
     return { success: true, data: animal };
   } catch (err: unknown) {
