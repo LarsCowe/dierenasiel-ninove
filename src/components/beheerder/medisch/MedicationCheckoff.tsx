@@ -61,7 +61,7 @@ export default function MedicationCheckoff({
           )}
           {isDone && todayLog && (
             <p className="text-xs text-emerald-600">
-              Toegediend om {new Date(todayLog.administeredAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
+              Toegediend om {new Date(todayLog.administeredAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Brussels" })}
               {todayLog.administeredBy && ` door ${todayLog.administeredBy}`}
             </p>
           )}

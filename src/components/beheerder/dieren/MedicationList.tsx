@@ -66,7 +66,7 @@ function MedicationRow({ medication, todayLog }: { medication: Medication; today
           {/* Today's checkoff status */}
           {medication.isActive && todayLog && (
             <p className="text-xs text-emerald-600">
-              Vandaag toegediend om {new Date(todayLog.administeredAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
+              Vandaag toegediend om {new Date(todayLog.administeredAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Brussels" })}
               {todayLog.administeredBy && ` door ${todayLog.administeredBy}`}
             </p>
           )}

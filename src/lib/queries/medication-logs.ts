@@ -76,15 +76,20 @@ export async function getActiveMedicationsWithTodayStatus(): Promise<
       .where(eq(medications.isActive, true))
       .orderBy(animals.name, medications.medicationName);
 
+    const medIds = activeMeds.map((r) => r.medication.id);
+    if (medIds.length === 0) return [];
+
     const todayLogs = await db
       .select()
       .from(medicationLogs)
       .where(
         and(
+          inArray(medicationLogs.medicationId, medIds),
           gte(medicationLogs.administeredAt, start),
           lt(medicationLogs.administeredAt, end),
         ),
-      );
+      )
+      .orderBy(desc(medicationLogs.administeredAt));
 
     const logMap = new Map<number, MedicationLog>();
     for (const log of todayLogs as MedicationLog[]) {

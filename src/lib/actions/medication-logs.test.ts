@@ -67,9 +67,9 @@ function makeFormData(data: Record<string, string>): FormData {
 }
 
 const createdLog = {
-  id: 1, medicationId: 5, administeredAt: new Date(),
+  id: 1, medicationId: 5, administeredAt: new Date("2026-02-26T10:00:00Z"),
   administeredBy: "Jan Peeters", administeredByUserId: 3,
-  notes: null, createdAt: new Date(),
+  notes: null, createdAt: new Date("2026-02-26T10:00:00Z"),
 };
 
 const existingMedication = {
@@ -190,6 +190,17 @@ describe("deleteMedicationLog", () => {
     const result = await deleteMedicationLog(null, makeFormData({ id: "999" }));
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toBe("Log niet gevonden");
+  });
+
+  it("returns error when log is not from today", async () => {
+    const historicalLog = {
+      ...createdLog,
+      administeredAt: new Date("2026-02-20T10:00:00Z"),
+    };
+    mockSelectLimit.mockResolvedValue([historicalLog]);
+    const result = await deleteMedicationLog(null, makeFormData({ id: "1" }));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Alleen logs van vandaag kunnen ongedaan gemaakt worden");
   });
 
   it("deletes successfully", async () => {

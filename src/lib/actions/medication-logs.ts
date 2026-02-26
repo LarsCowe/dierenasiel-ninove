@@ -113,6 +113,12 @@ export async function deleteMedicationLog(
       .limit(1);
     if (!existing) return { success: false, error: "Log niet gevonden" };
 
+    // Only allow deleting today's logs (Belgian time)
+    const { start, end } = getBelgianDayBounds();
+    if (existing.administeredAt < start || existing.administeredAt >= end) {
+      return { success: false, error: "Alleen logs van vandaag kunnen ongedaan gemaakt worden" };
+    }
+
     await db.delete(medicationLogs).where(eq(medicationLogs.id, id));
 
     await logAudit("delete_medication_log", "medication_log", existing.id, existing, null);
