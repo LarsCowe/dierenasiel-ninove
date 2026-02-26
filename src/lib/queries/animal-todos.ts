@@ -1,7 +1,14 @@
 import { db } from "@/lib/db";
 import { animalTodos, animals } from "@/lib/db/schema";
-import { eq, and, asc, desc, count } from "drizzle-orm";
+import { eq, and, asc, count, sql } from "drizzle-orm";
 import type { AnimalTodo } from "@/types";
+
+const priorityOrder = sql`CASE ${animalTodos.priority}
+  WHEN 'dringend' THEN 1
+  WHEN 'hoog' THEN 2
+  WHEN 'normaal' THEN 3
+  WHEN 'laag' THEN 4
+  ELSE 5 END`;
 
 export interface DashboardTodo {
   todo: {
@@ -28,7 +35,7 @@ export async function getTodosByAnimalId(animalId: number): Promise<AnimalTodo[]
       .where(eq(animalTodos.animalId, animalId))
       .orderBy(
         asc(animalTodos.isCompleted),
-        desc(animalTodos.priority),
+        asc(priorityOrder),
         asc(animalTodos.dueDate),
       ) as AnimalTodo[];
   } catch (err) {
@@ -59,7 +66,7 @@ export async function getOpenTodosForDashboard(limit = 10): Promise<DashboardTod
       .from(animalTodos)
       .innerJoin(animals, eq(animalTodos.animalId, animals.id))
       .where(eq(animalTodos.isCompleted, false))
-      .orderBy(asc(animalTodos.dueDate), desc(animalTodos.priority))
+      .orderBy(asc(priorityOrder), asc(animalTodos.dueDate))
       .limit(limit) as DashboardTodo[];
   } catch (err) {
     console.error("getOpenTodosForDashboard query failed:", err);

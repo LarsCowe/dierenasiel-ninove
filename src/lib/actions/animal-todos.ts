@@ -2,10 +2,10 @@
 
 import { db } from "@/lib/db";
 import { animalTodos } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { createAnimalTodoSchema, completeAnimalTodoSchema } from "@/lib/validations/animal-todos";
+import { createAnimalTodoSchema } from "@/lib/validations/animal-todos";
 import { getSession } from "@/lib/auth/session";
 import { getAnimalById } from "@/lib/queries/animals";
 import { revalidatePath } from "next/cache";
@@ -86,6 +86,7 @@ export async function completeAnimalTodo(
   }
 
   try {
+    // Read current state for audit trail
     const [existing] = await db
       .select()
       .from(animalTodos)
@@ -96,19 +97,20 @@ export async function completeAnimalTodo(
 
     const session = await getSession();
 
-    await db
+    // Conditional update to prevent race condition
+    const [updated] = await db
       .update(animalTodos)
       .set({
         isCompleted: true,
         completedAt: new Date(),
         completedByUserId: session?.userId ?? null,
       })
-      .where(eq(animalTodos.id, id));
+      .where(and(eq(animalTodos.id, id), eq(animalTodos.isCompleted, false)))
+      .returning();
 
-    await logAudit("complete_animal_todo", "animal_todo", existing.id, existing, {
-      ...existing,
-      isCompleted: true,
-    });
+    if (!updated) return { success: false, error: "Taak is al afgerond" };
+
+    await logAudit("complete_animal_todo", "animal_todo", existing.id, existing, updated);
     revalidateTodoPaths();
 
     return { success: true, data: undefined };

@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { getIbnDeadlineAlerts } from "@/lib/queries/animals";
-
-function daysUntil(dateStr: string): number {
-  const deadline = new Date(dateStr + "T12:00:00");
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { daysUntil } from "@/lib/utils/date";
 
 function urgencyColor(days: number): string {
   if (days <= 0) return "text-red-700 bg-red-100";

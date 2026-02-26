@@ -18,9 +18,10 @@ export default function TodoForm({ animalId, onCancel }: TodoFormProps) {
   const [state, formAction, isPending] = useActionState(createAnimalTodo, null);
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
+  const formKey = state?.success ? Date.now() : 0;
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form key={formKey} action={formAction} className="space-y-3">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
           <p className="text-sm font-medium text-emerald-800">Taak aangemaakt!</p>

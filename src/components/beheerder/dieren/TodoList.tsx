@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { completeAnimalTodo, deleteAnimalTodo } from "@/lib/actions/animal-todos";
 import { TODO_TYPE_LABELS, TODO_PRIORITY_LABELS } from "@/lib/constants";
+import { daysUntil } from "@/lib/utils/date";
 import type { AnimalTodo } from "@/types";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -11,13 +12,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   normaal: "bg-gray-100 text-gray-600",
   laag: "bg-blue-100 text-blue-700",
 };
-
-function daysUntil(dateStr: string): number {
-  const deadline = new Date(dateStr + "T12:00:00");
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
 
 function deadlineLabel(dateStr: string): { text: string; color: string } {
   const days = daysUntil(dateStr);
@@ -92,11 +86,14 @@ function TodoRow({ todo }: { todo: AnimalTodo }) {
           <p className={`text-sm ${todo.isCompleted ? "text-gray-400 line-through" : "text-gray-800"}`}>
             {todo.description}
           </p>
-          {todo.dueDate && !todo.isCompleted && (
-            <p className={`text-xs ${deadlineLabel(todo.dueDate).color}`}>
-              Deadline: {deadlineLabel(todo.dueDate).text}
-            </p>
-          )}
+          {todo.dueDate && !todo.isCompleted && (() => {
+            const dl = deadlineLabel(todo.dueDate);
+            return (
+              <p className={`text-xs ${dl.color}`}>
+                Deadline: {dl.text}
+              </p>
+            );
+          })()}
           {todo.isCompleted && todo.completedAt && (
             <p className="text-xs text-gray-400">
               Afgerond op {new Date(todo.completedAt).toLocaleDateString("nl-BE", { timeZone: "Europe/Brussels" })}

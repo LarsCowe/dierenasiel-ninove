@@ -1,0 +1,1 @@
+ALTER TABLE "animal_todos" ALTER COLUMN "completed_at" SET DATA TYPE timestamp with time zone;

@@ -36,3 +36,14 @@ export function getBelgianDayBounds(): { start: Date; end: Date } {
 
   return { start, end };
 }
+
+/**
+ * Returns the number of days from today until the given date string (YYYY-MM-DD).
+ * Positive = in the future, 0 or negative = today or past.
+ */
+export function daysUntil(dateStr: string): number {
+  const deadline = new Date(dateStr + "T12:00:00");
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}

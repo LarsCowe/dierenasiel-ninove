@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockReturning, mockInsert,
-  mockUpdateWhere, mockUpdateSet, mockUpdate,
+  mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
   mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
@@ -10,7 +10,8 @@ const {
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockInsert = vi.fn();
-  const mockUpdateWhere = vi.fn();
+  const mockUpdateReturning = vi.fn();
+  const mockUpdateWhere = vi.fn().mockReturnValue({ returning: mockUpdateReturning });
   const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
   const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
   const mockDeleteWhere = vi.fn();
@@ -25,7 +26,7 @@ const {
   const mockGetAnimalById = vi.fn();
   return {
     mockReturning, mockInsert,
-    mockUpdateWhere, mockUpdateSet, mockUpdate,
+    mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
     mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
@@ -56,6 +57,7 @@ vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
+  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
 }));
 
 import { createAnimalTodo, completeAnimalTodo, deleteAnimalTodo } from "./animal-todos";
@@ -162,6 +164,14 @@ describe("createAnimalTodo", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder");
   });
 
+  it("stores null createdByUserId when session is null", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const result = await createAnimalTodo(null, makeFormData({
+      animalId: "10", type: "vaccinatie", description: "Test",
+    }));
+    expect(result.success).toBe(true);
+  });
+
   it("returns graceful error on DB failure", async () => {
     mockReturning.mockRejectedValue(new Error("Connection refused"));
     const result = await createAnimalTodo(null, makeFormData({
@@ -172,6 +182,13 @@ describe("createAnimalTodo", () => {
   });
 });
 
+const completedTodo = {
+  ...createdTodo,
+  isCompleted: true,
+  completedAt: new Date("2026-02-26T12:00:00Z"),
+  completedByUserId: 3,
+};
+
 describe("completeAnimalTodo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -179,7 +196,7 @@ describe("completeAnimalTodo", () => {
     mockLogAudit.mockResolvedValue(undefined);
     mockGetSession.mockResolvedValue({ userId: 3, name: "Jan Peeters", role: "medewerker" });
     mockSelectLimit.mockResolvedValue([createdTodo]);
-    mockUpdateWhere.mockResolvedValue(undefined);
+    mockUpdateReturning.mockResolvedValue([completedTodo]);
   });
 
   it("requires animal:write permission", async () => {
@@ -215,7 +232,14 @@ describe("completeAnimalTodo", () => {
     expect(mockUpdate).toHaveBeenCalled();
   });
 
-  it("calls logAudit with old value", async () => {
+  it("returns error when conditional update matches nothing (race condition)", async () => {
+    mockUpdateReturning.mockResolvedValue([]);
+    const result = await completeAnimalTodo(null, makeFormData({ id: "1" }));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Taak is al afgerond");
+  });
+
+  it("calls logAudit with old and new value", async () => {
     await completeAnimalTodo(null, makeFormData({ id: "1" }));
     expect(mockLogAudit).toHaveBeenCalledWith(
       "complete_animal_todo", "animal_todo", 1,
@@ -232,7 +256,7 @@ describe("completeAnimalTodo", () => {
   });
 
   it("returns graceful error on DB failure", async () => {
-    mockUpdateWhere.mockRejectedValue(new Error("Connection refused"));
+    mockUpdateReturning.mockRejectedValue(new Error("Connection refused"));
     const result = await completeAnimalTodo(null, makeFormData({ id: "1" }));
     expect(result.success).toBe(false);
   });

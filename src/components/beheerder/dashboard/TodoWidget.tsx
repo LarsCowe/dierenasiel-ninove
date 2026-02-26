@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { getOpenTodosForDashboard } from "@/lib/queries/animal-todos";
 import { TODO_TYPE_LABELS } from "@/lib/constants";
-
-function daysUntil(dateStr: string): number {
-  const deadline = new Date(dateStr + "T12:00:00");
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
+import { daysUntil } from "@/lib/utils/date";
 
 function urgencyColor(days: number): string {
   if (days <= 0) return "text-red-700 bg-red-100";
@@ -64,15 +58,14 @@ export default async function TodoWidget() {
                         {row.todo.priority === "dringend" ? "Dringend" : "Hoog"}
                       </span>
                     )}
-                    {row.todo.dueDate && (
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${urgencyColor(daysUntil(row.todo.dueDate))}`}>
-                        {daysUntil(row.todo.dueDate) <= 0
-                          ? "Verlopen!"
-                          : daysUntil(row.todo.dueDate) === 1
-                            ? "Morgen"
-                            : `${daysUntil(row.todo.dueDate)}d`}
-                      </span>
-                    )}
+                    {row.todo.dueDate && (() => {
+                      const days = daysUntil(row.todo.dueDate);
+                      return (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${urgencyColor(days)}`}>
+                          {days <= 0 ? "Verlopen!" : days === 1 ? "Morgen" : `${days}d`}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </Link>
               </li>
