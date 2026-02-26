@@ -170,6 +170,30 @@ export const feedingPlans = pgTable("feeding_plans", {
   index("idx_feeding_plans_animal_id").on(table.animalId),
 ]);
 
+export const vaccinations = pgTable("vaccinations", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(),
+  date: date("date").notNull(),
+  nextDueDate: date("next_due_date"),
+  administeredBy: integer("administered_by").references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_vaccinations_animal_id").on(table.animalId),
+]);
+
+export const dewormings = pgTable("dewormings", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(),
+  date: date("date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_dewormings_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

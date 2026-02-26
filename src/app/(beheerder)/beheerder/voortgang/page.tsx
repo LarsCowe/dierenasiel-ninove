@@ -29,26 +29,26 @@ const EPICS: Epic[] = [
   {
     id: 2,
     title: "Dierenbeheer & Intake",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "2.1", title: "Dier Registreren bij Intake", status: "done" },
-      { id: "2.2", title: "Dierenoverzicht met Zoek- en Filterfunctie", status: "ready-for-dev" },
-      { id: "2.3", title: "Dier Profiel Bewerken en Websitemarkering", status: "backlog" },
-      { id: "2.4", title: "Foto's en Bijlagen Uploaden", status: "backlog" },
-      { id: "2.5", title: "Kennel Toewijzing en Beheer", status: "backlog" },
-      { id: "2.6", title: "Status Wijzigen en Uitstroom Registreren", status: "backlog" },
-      { id: "2.7", title: "IBN-intake met 60-dagen Deadline", status: "backlog" },
-      { id: "2.8", title: "Verwaarlozing Rapport bij IBN", status: "backlog" },
-      { id: "2.9", title: "Gedragsfiches Invullen (max 3 per hond)", status: "backlog" },
-      { id: "2.10", title: "Voedingsplan per Dier", status: "backlog" },
+      { id: "2.2", title: "Dierenoverzicht met Zoek- en Filterfunctie", status: "done" },
+      { id: "2.3", title: "Dier Profiel Bewerken en Websitemarkering", status: "done" },
+      { id: "2.4", title: "Foto's en Bijlagen Uploaden", status: "done" },
+      { id: "2.5", title: "Kennel Toewijzing en Beheer", status: "done" },
+      { id: "2.6", title: "Status Wijzigen en Uitstroom Registreren", status: "done" },
+      { id: "2.7", title: "IBN-intake met 60-dagen Deadline", status: "done" },
+      { id: "2.8", title: "Verwaarlozing Rapport bij IBN", status: "done" },
+      { id: "2.9", title: "Gedragsfiches Invullen (max 3 per hond)", status: "done" },
+      { id: "2.10", title: "Voedingsplan per Dier", status: "done" },
     ],
   },
   {
     id: 3,
     title: "Medische Opvolging",
-    status: "backlog",
+    status: "in-progress",
     stories: [
-      { id: "3.1", title: "Vaccinaties en Ontwormingen Registreren", status: "backlog" },
+      { id: "3.1", title: "Vaccinaties en Ontwormingen Registreren", status: "done" },
       { id: "3.2", title: "Dierenarts Bezoeken Loggen", status: "backlog" },
       { id: "3.3", title: "Operaties Registreren", status: "backlog" },
       { id: "3.4", title: "Medicatie Voorschrijven", status: "backlog" },
@@ -291,7 +291,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 25 februari 2026
+        Laatst bijgewerkt: 26 februari 2026
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -32,6 +32,12 @@ export interface FeedingQuestionnaire {
   allergieen: string[];
   specifiekeBehoeften: string;
 }
+
+export type Vaccination = typeof vaccinations.$inferSelect;
+export type NewVaccination = typeof vaccinations.$inferInsert;
+
+export type Deworming = typeof dewormings.$inferSelect;
+export type NewDeworming = typeof dewormings.$inferInsert;
 
 export interface BehaviorChecklist {
   benaderingHok: number;       // 1-5: Reactie bij nadering hok

@@ -12,8 +12,12 @@ import OuttakeForm from "@/components/beheerder/dieren/OuttakeForm";
 import NeglectReportSection from "@/components/beheerder/dieren/NeglectReportSection";
 import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordSection";
 import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
+import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection";
+import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
+import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
+import { getDewormingsByAnimalId } from "@/lib/queries/dewormings";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -37,7 +41,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -45,6 +49,8 @@ export default async function DierDetailPage({ params }: Props) {
     getBehaviorRecordsByAnimalId(animalId),
     countBehaviorRecords(animalId),
     getFeedingPlanByAnimalId(animalId),
+    getVaccinationsByAnimalId(animalId),
+    getDewormingsByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -154,6 +160,27 @@ export default async function DierDetailPage({ params }: Props) {
         </h2>
         <div className="mt-4">
           <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
+        </div>
+      </div>
+
+      {/* Medische fiche */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
+          Medische fiche
+        </h2>
+
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-700">Vaccinaties</h3>
+          <div className="mt-3">
+            <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-gray-100 pt-6">
+          <h3 className="text-sm font-semibold text-gray-700">Ontwormingen</h3>
+          <div className="mt-3">
+            <DewormingSection animalId={animalId} dewormings={dewormingsList} />
+          </div>
         </div>
       </div>
 
