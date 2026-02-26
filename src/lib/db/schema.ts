@@ -14,6 +14,7 @@ import {
 export const animals = pgTable("animals", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
+  aliasName: varchar("alias_name", { length: 100 }),
   slug: varchar("slug", { length: 100 }).unique().notNull(),
   species: varchar("species", { length: 50 }).notNull(),
   breed: varchar("breed", { length: 100 }),
@@ -105,6 +106,19 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const animalAttachments = pgTable("animal_attachments", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileType: varchar("file_type", { length: 50 }).notNull(),
+  context: varchar("context", { length: 20 }).default("dossier").notNull(),
+  description: varchar("description", { length: 255 }),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_animal_attachments_animal_id").on(table.animalId),
+]);
 
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),

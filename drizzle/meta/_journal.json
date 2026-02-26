@@ -15,6 +15,20 @@
       "when": 1772061916472,
       "tag": "0001_graceful_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772100878503,
+      "tag": "0002_handy_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772104192326,
+      "tag": "0003_simple_gamma_corps",
+      "breakpoints": true
     }
   ]
 }
