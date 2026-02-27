@@ -46,7 +46,7 @@ const EPICS: Epic[] = [
   {
     id: 3,
     title: "Medische Opvolging",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "3.1", title: "Vaccinaties en Ontwormingen Registreren", status: "done" },
       { id: "3.2", title: "Dierenarts Bezoeken Loggen", status: "done" },
@@ -55,7 +55,7 @@ const EPICS: Epic[] = [
       { id: "3.5", title: "Medicatie Dagelijks Afvinken", status: "done" },
       { id: "3.6", title: "To-do Lijst per Dier", status: "done" },
       { id: "3.7", title: "Medische Alerts op Dashboard", status: "done" },
-      { id: "3.8", title: "Bezoekrapport Contractdierenarts", status: "backlog" },
+      { id: "3.8", title: "Bezoekrapport Contractdierenarts", status: "done" },
     ],
   },
   {
@@ -291,7 +291,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 26 februari 2026
+        Laatst bijgewerkt: 27 februari 2026
       </div>
     </div>
   );

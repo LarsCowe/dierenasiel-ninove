@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -91,6 +91,34 @@ export type NewPage = typeof pages.$inferInsert;
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export type VetInspectionReport = typeof vetInspectionReports.$inferSelect;
+export type NewVetInspectionReport = typeof vetInspectionReports.$inferInsert;
+
+export interface TreatedAnimalEntry {
+  animalId: number;
+  animalName: string;
+  species: string;
+  chipNr: string | null;
+  diagnosis: string;
+  treatment: string;
+}
+
+export interface EuthanizedAnimalEntry {
+  animalId: number;
+  animalName: string;
+  species: string;
+  chipNr: string | null;
+  reason: string;
+}
+
+export interface AbnormalBehaviorEntry {
+  animalId: number;
+  animalName: string;
+  species: string;
+  chipNr: string | null;
+  description: string;
+}
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

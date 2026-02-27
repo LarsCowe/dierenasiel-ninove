@@ -273,6 +273,22 @@ export const animalTodos = pgTable("animal_todos", {
   index("idx_animal_todos_due_date").on(table.dueDate),
 ]);
 
+export const vetInspectionReports = pgTable("vet_inspection_reports", {
+  id: serial("id").primaryKey(),
+  visitDate: date("visit_date").notNull(),
+  vetUserId: integer("vet_user_id").references(() => users.id),
+  vetName: varchar("vet_name", { length: 200 }).notNull(),
+  vetSignature: boolean("vet_signature").default(false).notNull(),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+  animalsTreated: jsonb("animals_treated").default([]),
+  animalsEuthanized: jsonb("animals_euthanized").default([]),
+  abnormalBehavior: jsonb("abnormal_behavior").default([]),
+  recommendations: text("recommendations"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_vet_inspection_reports_visit_date").on(table.visitDate),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
