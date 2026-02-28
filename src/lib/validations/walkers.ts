@@ -4,21 +4,25 @@ export const walkerRegistrationSchema = z
   .object({
     firstName: z
       .string()
+      .trim()
       .min(1, "Voornaam is verplicht")
       .max(100, "Voornaam mag maximaal 100 tekens bevatten"),
     lastName: z
       .string()
+      .trim()
       .min(1, "Achternaam is verplicht")
       .max(100, "Achternaam mag maximaal 100 tekens bevatten"),
-    email: z.string().email("Ongeldig e-mailadres"),
+    email: z.string().trim().toLowerCase().email("Ongeldig e-mailadres"),
     phone: z
       .string()
+      .trim()
       .min(1, "Telefoonnummer is verplicht")
       .max(20, "Telefoonnummer mag maximaal 20 tekens bevatten"),
     dateOfBirth: z
       .string()
+      .trim()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Geboortedatum moet in JJJJ-MM-DD formaat"),
-    address: z.string().min(1, "Adres is verplicht"),
+    address: z.string().trim().min(1, "Adres is verplicht"),
     allergies: z.string().optional().default(""),
     childrenWalkAlong: z.boolean().default(false),
     regulationsRead: z.literal(true, {
