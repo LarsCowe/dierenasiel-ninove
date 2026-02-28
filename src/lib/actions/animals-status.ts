@@ -1,11 +1,12 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { animals } from "@/lib/db/schema";
+import { animals, vaccinations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import { evaluateCatOutgoingGuards, type GuardContext, type GuardWarning } from "@/lib/workflow/guards";
 import {
   changeStatusSchema,
   registerOuttakeSchema,
@@ -82,7 +83,9 @@ export async function registerOuttake(
   animalId: number,
   outtakeReason: string,
   outtakeDate: string,
-): Promise<ActionResult> {
+  overrideGuards?: boolean,
+  overrideReason?: string,
+): Promise<ActionResult & { guardWarnings?: GuardWarning[] }> {
   const permCheck = await requirePermission("animal:write");
   if (permCheck && !permCheck.success) {
     return { success: false, error: permCheck.error };
@@ -108,24 +111,41 @@ export async function registerOuttake(
       return { success: false, error: "Dier niet gevonden" };
     }
 
-    // Cat validation for adoptie/terug_eigenaar (FR-02)
+    // Cat guard evaluation for adoptie/terug_eigenaar (FR-10)
     if (
       animal.species === "kat" &&
       (parsed.data.outtakeReason === "adoptie" || parsed.data.outtakeReason === "terug_eigenaar")
     ) {
-      const errors: string[] = [];
-      if (!animal.identificationNr) {
-        errors.push("De kat moet gechipt zijn (chipnummer ontbreekt)");
-      }
-      if (!animal.isNeutered) {
-        errors.push("De kat moet gesteriliseerd/gecastreerd zijn");
-      }
-      // TODO: vaccinatiecheck toevoegen wanneer Epic 3 (Medische Opvolging) is geïmplementeerd
-      if (errors.length > 0) {
-        return {
-          success: false,
-          error: errors.join(". "),
-        };
+      const vaccinationResults = await db
+        .select({ id: vaccinations.id })
+        .from(vaccinations)
+        .where(eq(vaccinations.animalId, parsed.data.animalId))
+        .limit(1);
+
+      const guardContext: GuardContext = {
+        animal: {
+          id: animal.id,
+          species: animal.species,
+          identificationNr: animal.identificationNr,
+          isNeutered: animal.isNeutered ?? false,
+        },
+        hasVaccinations: vaccinationResults.length > 0,
+        hasAdoptionContract: true, // not relevant for outtake
+      };
+
+      const warnings = evaluateCatOutgoingGuards(guardContext);
+
+      if (warnings.length > 0) {
+        if (!overrideGuards) {
+          return {
+            success: false,
+            error: "Er zijn waarschuwingen bij deze uitstroom.",
+            guardWarnings: warnings,
+          };
+        }
+        if (!overrideReason) {
+          return { success: false, error: "Reden is verplicht bij het overriden van waarschuwingen." };
+        }
       }
     }
 
@@ -144,7 +164,10 @@ export async function registerOuttake(
       .where(eq(animals.id, parsed.data.animalId))
       .returning();
 
-    await logAudit("register_outtake", "animal", parsed.data.animalId, animal, updated);
+    const auditNewValues = overrideGuards && overrideReason
+      ? { ...updated, guardOverrideReason: overrideReason }
+      : updated;
+    await logAudit("register_outtake", "animal", parsed.data.animalId, animal, auditNewValues);
     revalidatePath("/beheerder/dieren");
     revalidatePath(`/beheerder/dieren/${parsed.data.animalId}`);
     revalidatePath("/beheerder/dieren/kennel");

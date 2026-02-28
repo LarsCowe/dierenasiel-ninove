@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockGetSession, mockHasPermission, mockGetWorkflowSettings, mockLogAudit,
-  mockRevalidatePath,
+  mockRevalidatePath, mockGetAnimalGuardContext,
   mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockInsertValues, mockInsert,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
@@ -12,6 +12,7 @@ const {
   const mockGetWorkflowSettings = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
+  const mockGetAnimalGuardContext = vi.fn();
   const mockUpdateWhere = vi.fn();
   const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
   const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
@@ -22,7 +23,7 @@ const {
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
   return {
     mockGetSession, mockHasPermission, mockGetWorkflowSettings, mockLogAudit,
-    mockRevalidatePath,
+    mockRevalidatePath, mockGetAnimalGuardContext,
     mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockInsertValues, mockInsert,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
@@ -71,6 +72,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: mockRevalidatePath,
 }));
 
+vi.mock("@/lib/queries/workflow", () => ({
+  getAnimalGuardContext: mockGetAnimalGuardContext,
+}));
+
 import { transitionAnimalPhase } from "./workflow";
 
 describe("transitionAnimalPhase", () => {
@@ -84,6 +89,12 @@ describe("transitionAnimalPhase", () => {
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockUpdateWhere.mockResolvedValue(undefined);
     mockInsertValues.mockResolvedValue(undefined);
+    // Default guard context: no guards will fire (all conditions met)
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
   });
 
   // --- Auth & Permission ---
@@ -214,6 +225,148 @@ describe("transitionAnimalPhase", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual({ fromPhase: "intake", toPhase: "registratie" });
+    }
+  });
+
+  // --- Guard integration (Story 6.3) ---
+
+  it("returns guard warnings when guards fail and no override (medisch → verblijf)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toBeDefined();
+      expect(result.guardWarnings).toHaveLength(1);
+      expect(result.guardWarnings![0].code).toBe("identification_missing");
+    }
+  });
+
+  it("returns multiple guard warnings for cat missing all conditions (verblijf → adoptie)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "kat", identificationNr: null, isNeutered: false },
+      hasVaccinations: false,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toHaveLength(3);
+      const codes = result.guardWarnings!.map((w: { code: string }) => w.code);
+      expect(codes).toContain("cat_chip_missing");
+      expect(codes).toContain("cat_vaccination_missing");
+      expect(codes).toContain("cat_neutering_missing");
+    }
+  });
+
+  it("returns error when override attempted without reason", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5, undefined, true);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Reden is verplicht");
+  });
+
+  it("succeeds when override with reason despite guard warnings", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5, "Chip wordt later geregistreerd", true);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        fromPhase: "medisch",
+        toPhase: "verblijf",
+        guardsOverridden: true,
+      });
+    }
+  });
+
+  it("stores override reason in history record", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    await transitionAnimalPhase(5, "Override: chip later", true);
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changeReason: "Override: chip later",
+      }),
+    );
+  });
+
+  it("succeeds without warnings when no guards apply (intake → registratie) (AC6)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ fromPhase: "intake", toPhase: "registratie" });
+      expect(result.data.guardsOverridden).toBeUndefined();
+    }
+  });
+
+  it("succeeds when all guard conditions met (AC6)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ fromPhase: "medisch", toPhase: "verblijf" });
+    }
+  });
+
+  it("succeeds for dog at verblijf → adoptie (cat guards do not apply)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: false },
+      hasVaccinations: false,
+      hasAdoptionContract: false,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ fromPhase: "verblijf", toPhase: "adoptie" });
+    }
+  });
+
+  it("returns error when guard context cannot be fetched", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockGetAnimalGuardContext.mockResolvedValue(null);
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("guard-context");
+  });
+
+  it("returns adoption contract warning (adoptie → afgerond)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "adoptie" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: false,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toHaveLength(1);
+      expect(result.guardWarnings![0].code).toBe("adoption_contract_missing");
     }
   });
 });

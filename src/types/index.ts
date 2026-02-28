@@ -1,4 +1,5 @@
 import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory } from "@/lib/db/schema";
+import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -188,6 +189,10 @@ export interface WalkStats {
 
 export type AnimalWorkflowHistory = typeof animalWorkflowHistory.$inferSelect;
 export type NewAnimalWorkflowHistory = typeof animalWorkflowHistory.$inferInsert;
+
+export type TransitionActionResult =
+  | { success: true; data: { fromPhase: string; toPhase: string; guardsOverridden?: boolean } }
+  | { success: false; error: string; guardWarnings?: GuardWarning[] };
 
 export type ShelterSetting = typeof shelterSettings.$inferSelect;
 export type NewShelterSetting = typeof shelterSettings.$inferInsert;

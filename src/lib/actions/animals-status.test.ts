@@ -60,6 +60,10 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/db/schema", () => ({
   animals: Symbol("animals"),
+  vaccinations: {
+    id: Symbol("vaccinations.id"),
+    animalId: Symbol("vaccinations.animalId"),
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -248,48 +252,63 @@ describe("registerOuttake", () => {
     );
   });
 
-  it("blocks cat outtake (adoptie) when not chipped", async () => {
-    mockSelectLimit.mockResolvedValueOnce([{
-      ...mockAnimal,
-      species: "kat",
-      identificationNr: null,
-      isNeutered: true,
-    }]);
-
-    const result = await registerOuttake(1, "adoptie", "2026-02-26");
-
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("gechipt");
-  });
-
-  it("blocks cat outtake (terug_eigenaar) when not sterilized", async () => {
-    mockSelectLimit.mockResolvedValueOnce([{
-      ...mockAnimal,
-      species: "kat",
-      identificationNr: "981000123456789",
-      isNeutered: false,
-    }]);
-
-    const result = await registerOuttake(1, "terug_eigenaar", "2026-02-26");
-
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("gesteriliseerd");
-  });
-
-  it("blocks cat outtake when both chip and sterilization are missing", async () => {
-    mockSelectLimit.mockResolvedValueOnce([{
-      ...mockAnimal,
-      species: "kat",
-      identificationNr: null,
-      isNeutered: false,
-    }]);
+  it("returns guard warnings for cat outtake (adoptie) when not chipped", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: null,
+        isNeutered: true,
+      }])
+      .mockResolvedValueOnce([{ id: 10 }]); // has vaccinations
 
     const result = await registerOuttake(1, "adoptie", "2026-02-26");
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toContain("gechipt");
-      expect(result.error).toContain("gesteriliseerd");
+      expect(result.guardWarnings).toBeDefined();
+      expect(result.guardWarnings!.some((w: { code: string }) => w.code === "cat_chip_missing")).toBe(true);
+    }
+  });
+
+  it("returns guard warnings for cat outtake (terug_eigenaar) when not sterilized", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: "981000123456789",
+        isNeutered: false,
+      }])
+      .mockResolvedValueOnce([{ id: 10 }]); // has vaccinations
+
+    const result = await registerOuttake(1, "terug_eigenaar", "2026-02-26");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toBeDefined();
+      expect(result.guardWarnings!.some((w: { code: string }) => w.code === "cat_neutering_missing")).toBe(true);
+    }
+  });
+
+  it("returns guard warnings for cat with chip, sterilization, and vaccination missing", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: null,
+        isNeutered: false,
+      }])
+      .mockResolvedValueOnce([]); // no vaccinations
+
+    const result = await registerOuttake(1, "adoptie", "2026-02-26");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toHaveLength(3);
+      const codes = result.guardWarnings!.map((w: { code: string }) => w.code);
+      expect(codes).toContain("cat_chip_missing");
+      expect(codes).toContain("cat_vaccination_missing");
+      expect(codes).toContain("cat_neutering_missing");
     }
   });
 
@@ -345,5 +364,78 @@ describe("registerOuttake", () => {
     const result = await registerOuttake(1, "adoptie", "2026-02-26");
 
     expect(result.success).toBe(false);
+  });
+
+  // --- Guard override tests (Story 6.3 AC2) ---
+
+  it("allows cat outtake override with reason", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: null,
+        isNeutered: true,
+      }])
+      .mockResolvedValueOnce([{ id: 10 }]); // has vaccinations
+
+    const result = await registerOuttake(1, "adoptie", "2026-02-26", true, "Chip wordt morgen geplaatst");
+
+    expect(result.success).toBe(true);
+  });
+
+  it("returns error on cat outtake override without reason", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: null,
+        isNeutered: true,
+      }])
+      .mockResolvedValueOnce([{ id: 10 }]); // has vaccinations
+
+    const result = await registerOuttake(1, "adoptie", "2026-02-26", true);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Reden is verplicht");
+  });
+
+  it("stores override reason in audit log when guards are overridden", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: null,
+        isNeutered: true,
+      }])
+      .mockResolvedValueOnce([{ id: 10 }]); // has vaccinations
+
+    await registerOuttake(1, "adoptie", "2026-02-26", true, "Chip wordt morgen geplaatst");
+
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "register_outtake",
+      "animal",
+      1,
+      expect.anything(),
+      expect.objectContaining({ guardOverrideReason: "Chip wordt morgen geplaatst" }),
+    );
+  });
+
+  it("returns vaccination warning for cat without vaccinations", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{
+        ...mockAnimal,
+        species: "kat",
+        identificationNr: "981000123456789",
+        isNeutered: true,
+      }])
+      .mockResolvedValueOnce([]); // no vaccinations
+
+    const result = await registerOuttake(1, "adoptie", "2026-02-26");
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.guardWarnings).toBeDefined();
+      expect(result.guardWarnings!.some((w: { code: string }) => w.code === "cat_vaccination_missing")).toBe(true);
+    }
   });
 });

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
-  mockSelectOrderBy, mockSelectWhere, mockSelectFrom,
+  mockSelectOrderBy, mockSelectWhere, mockSelectFrom, mockSelectLimit,
 } = vi.hoisted(() => {
   const mockSelectOrderBy = vi.fn();
+  const mockSelectLimit = vi.fn();
   const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy });
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
-  return { mockSelectOrderBy, mockSelectWhere, mockSelectFrom };
+  return { mockSelectOrderBy, mockSelectWhere, mockSelectFrom, mockSelectLimit };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -22,7 +23,18 @@ vi.mock("@/lib/db/schema", () => ({
   },
   animals: {
     id: Symbol("animals.id"),
+    species: Symbol("animals.species"),
+    identificationNr: Symbol("animals.identificationNr"),
+    isNeutered: Symbol("animals.isNeutered"),
     workflowPhase: Symbol("animals.workflowPhase"),
+  },
+  vaccinations: {
+    id: Symbol("vaccinations.id"),
+    animalId: Symbol("vaccinations.animalId"),
+  },
+  adoptionContracts: {
+    id: Symbol("adoptionContracts.id"),
+    animalId: Symbol("adoptionContracts.animalId"),
   },
 }));
 
@@ -31,7 +43,7 @@ vi.mock("drizzle-orm", () => ({
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
 }));
 
-import { getWorkflowHistoryByAnimalId, getCurrentPhase } from "./workflow";
+import { getWorkflowHistoryByAnimalId, getCurrentPhase, getAnimalGuardContext } from "./workflow";
 
 describe("getWorkflowHistoryByAnimalId", () => {
   beforeEach(() => {
@@ -94,6 +106,56 @@ describe("getCurrentPhase", () => {
     mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
 
     const result = await getCurrentPhase(5);
+    expect(result).toBeNull();
+  });
+});
+
+describe("getAnimalGuardContext", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
+  });
+
+  it("returns guard context for existing animal with no vaccinations or contracts", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{ id: 5, species: "kat", identificationNr: null, isNeutered: false }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const result = await getAnimalGuardContext(5);
+    expect(result).toEqual({
+      animal: { id: 5, species: "kat", identificationNr: null, isNeutered: false },
+      hasVaccinations: false,
+      hasAdoptionContract: false,
+    });
+  });
+
+  it("returns guard context with hasVaccinations and hasAdoptionContract true", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{ id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true }])
+      .mockResolvedValueOnce([{ id: 10 }])
+      .mockResolvedValueOnce([{ id: 20 }]);
+
+    const result = await getAnimalGuardContext(5);
+    expect(result).toEqual({
+      animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+  });
+
+  it("returns null when animal not found", async () => {
+    mockSelectLimit.mockResolvedValueOnce([]);
+
+    const result = await getAnimalGuardContext(999);
+    expect(result).toBeNull();
+  });
+
+  it("returns null on database error", async () => {
+    mockSelectLimit.mockRejectedValueOnce(new Error("DB error"));
+
+    const result = await getAnimalGuardContext(5);
     expect(result).toBeNull();
   });
 });

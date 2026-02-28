@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { animalWorkflowHistory, animals } from "@/lib/db/schema";
+import { animalWorkflowHistory, animals, vaccinations, adoptionContracts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import type { AnimalWorkflowHistory } from "@/types";
+import type { GuardContext } from "@/lib/workflow/guards";
 
 export async function getWorkflowHistoryByAnimalId(animalId: number): Promise<AnimalWorkflowHistory[]> {
   try {
@@ -28,6 +29,50 @@ export async function getCurrentPhase(animalId: number): Promise<string | null> 
     return results[0].workflowPhase;
   } catch (err) {
     console.error("getCurrentPhase query failed:", err);
+    return null;
+  }
+}
+
+export async function getAnimalGuardContext(animalId: number): Promise<GuardContext | null> {
+  try {
+    const animalResults = await db
+      .select({
+        id: animals.id,
+        species: animals.species,
+        identificationNr: animals.identificationNr,
+        isNeutered: animals.isNeutered,
+      })
+      .from(animals)
+      .where(eq(animals.id, animalId))
+      .limit(1);
+
+    if (animalResults.length === 0) return null;
+
+    const vaccinationResults = await db
+      .select({ id: vaccinations.id })
+      .from(vaccinations)
+      .where(eq(vaccinations.animalId, animalId))
+      .limit(1);
+
+    const contractResults = await db
+      .select({ id: adoptionContracts.id })
+      .from(adoptionContracts)
+      .where(eq(adoptionContracts.animalId, animalId))
+      .limit(1);
+
+    const animal = animalResults[0];
+    return {
+      animal: {
+        id: animal.id,
+        species: animal.species,
+        identificationNr: animal.identificationNr,
+        isNeutered: animal.isNeutered ?? false,
+      },
+      hasVaccinations: vaccinationResults.length > 0,
+      hasAdoptionContract: contractResults.length > 0,
+    };
+  } catch (err) {
+    console.error("getAnimalGuardContext query failed:", err);
     return null;
   }
 }

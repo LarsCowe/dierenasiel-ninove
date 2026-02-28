@@ -6,16 +6,19 @@ import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
+import { getAnimalGuardContext } from "@/lib/queries/workflow";
 import { WORKFLOW_PHASES, getNextPhase } from "@/lib/workflow/phases";
+import { evaluateGuards } from "@/lib/workflow/guards";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/types";
+import type { TransitionActionResult } from "@/types";
 import type { WorkflowPhase } from "@/lib/workflow/phases";
 
 export async function transitionAnimalPhase(
   animalId: number,
   reason?: string,
-): Promise<ActionResult<{ fromPhase: string; toPhase: string }>> {
+  overrideGuards?: boolean,
+): Promise<TransitionActionResult> {
   const session = await getSession();
   if (!session) {
     return { success: false, error: "Je bent niet ingelogd." };
@@ -58,6 +61,27 @@ export async function transitionAnimalPhase(
       return { success: false, error: "Dit dier heeft het traject voltooid — geen verdere fasen beschikbaar." };
     }
 
+    // Guard evaluation
+    const guardContext = await getAnimalGuardContext(animalId);
+    if (!guardContext) {
+      return { success: false, error: "Kon guard-context niet ophalen voor dit dier." };
+    }
+
+    const warnings = evaluateGuards(currentPhase, nextPhase, guardContext);
+
+    if (warnings.length > 0) {
+      if (!overrideGuards) {
+        return {
+          success: false,
+          error: "Er zijn waarschuwingen bij deze fase-overgang.",
+          guardWarnings: warnings,
+        };
+      }
+      if (!reason) {
+        return { success: false, error: "Reden is verplicht bij het overriden van waarschuwingen." };
+      }
+    }
+
     await db
       .update(animals)
       .set({ workflowPhase: nextPhase })
@@ -87,7 +111,8 @@ export async function transitionAnimalPhase(
 
     revalidatePath(`/beheerder/dieren/${animalId}`);
 
-    return { success: true, data: { fromPhase: currentPhase, toPhase: nextPhase } };
+    const guardsOverridden = warnings.length > 0 ? true : undefined;
+    return { success: true, data: { fromPhase: currentPhase, toPhase: nextPhase, guardsOverridden } };
   } catch {
     return { success: false, error: "Er ging iets mis. Probeer het later opnieuw." };
   }
