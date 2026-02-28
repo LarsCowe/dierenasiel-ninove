@@ -120,6 +120,16 @@ const EPICS: Epic[] = [
       { id: "8.3", title: "Bewaartermijnen Monitoring en Data Minimalisatie", status: "backlog" },
     ],
   },
+  {
+    id: 9,
+    title: "Zwerfkattenbeleid",
+    status: "backlog",
+    stories: [
+      { id: "9.1", title: "Zwerfkat-campagne Registreren en Opvolgen", status: "backlog" },
+      { id: "9.2", title: "Zwerfkattenbeleid Overzicht en Filters", status: "backlog" },
+      { id: "9.3", title: "Zwerfkattenbeleid Rapportage", status: "backlog" },
+    ],
+  },
 ];
 
 const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string; icon: string }> = {
@@ -291,7 +301,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 27 februari 2026
+        Laatst bijgewerkt: 28 februari 2026
       </div>
     </div>
   );
