@@ -6,6 +6,7 @@ const {
   mockSelectWhere, mockSelectFrom, mockSelect,
   mockSelectLimit, mockSelectOrderBy,
   mockGetSession, mockLogAudit, mockRevalidatePath,
+  mockGetWalkingClubThreshold,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
@@ -22,12 +23,14 @@ const {
   const mockGetSession = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
+  const mockGetWalkingClubThreshold = vi.fn();
   return {
     mockReturning, mockValues, mockInsert,
     mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockSelectWhere, mockSelectFrom, mockSelect,
     mockSelectLimit, mockSelectOrderBy,
     mockGetSession, mockLogAudit, mockRevalidatePath,
+    mockGetWalkingClubThreshold,
   };
 });
 
@@ -49,6 +52,7 @@ vi.mock("@/lib/db/schema", () => ({
     userId: Symbol("walkers.userId"),
     id: Symbol("walkers.id"),
     walkCount: Symbol("walkers.walkCount"),
+    isWalkingClubMember: Symbol("walkers.isWalkingClubMember"),
   },
   animals: {
     id: Symbol("animals.id"),
@@ -67,6 +71,10 @@ vi.mock("@/lib/audit", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: mockRevalidatePath,
+}));
+
+vi.mock("@/lib/queries/shelter-settings", () => ({
+  getWalkingClubThreshold: mockGetWalkingClubThreshold,
 }));
 
 import { bookWalk, checkInWalk, checkOutWalk } from "./walks";
@@ -417,11 +425,12 @@ describe("checkOutWalk", () => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ userId: 99, role: "wandelaar", email: "jan@example.com", name: "Jan" });
     mockLogAudit.mockResolvedValue(undefined);
+    mockGetWalkingClubThreshold.mockResolvedValue(10);
     // Default: walker lookup then walk lookup
     let callCount = 0;
     mockSelectLimit.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return Promise.resolve([mockWalker]);
+      if (callCount === 1) return Promise.resolve([{ ...mockWalker, walkCount: 0, isWalkingClubMember: false }]);
       if (callCount === 2) return Promise.resolve([mockActiveWalk]);
       return Promise.resolve([]);
     });
@@ -495,5 +504,60 @@ describe("checkOutWalk", () => {
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/wandelaar");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/wandelaars");
+  });
+
+  it("promotes walker to wandelclub when reaching threshold", async () => {
+    // Walker has 9 walks, threshold is 10 → after checkout walkCount becomes 10
+    const walkerNearThreshold = { ...mockWalker, walkCount: 9, isWalkingClubMember: false };
+    mockGetWalkingClubThreshold.mockResolvedValue(10);
+
+    let callCount = 0;
+    mockSelectLimit.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return Promise.resolve([walkerNearThreshold]);
+      if (callCount === 2) return Promise.resolve([mockActiveWalk]);
+      return Promise.resolve([]);
+    });
+
+    await checkOutWalk(10, "");
+
+    // update #1: walk completed, #2: walkCount increment, #3: isWalkingClubMember
+    expect(mockUpdate).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not promote walker when below threshold", async () => {
+    const walkerBelowThreshold = { ...mockWalker, walkCount: 5, isWalkingClubMember: false };
+    mockGetWalkingClubThreshold.mockResolvedValue(10);
+
+    let callCount = 0;
+    mockSelectLimit.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return Promise.resolve([walkerBelowThreshold]);
+      if (callCount === 2) return Promise.resolve([mockActiveWalk]);
+      return Promise.resolve([]);
+    });
+
+    await checkOutWalk(10, "");
+
+    // Only update #1 (walk completed) and #2 (walkCount) — no #3
+    expect(mockUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not promote walker who is already a club member", async () => {
+    const alreadyMember = { ...mockWalker, walkCount: 15, isWalkingClubMember: true };
+    mockGetWalkingClubThreshold.mockResolvedValue(10);
+
+    let callCount = 0;
+    mockSelectLimit.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return Promise.resolve([alreadyMember]);
+      if (callCount === 2) return Promise.resolve([mockActiveWalk]);
+      return Promise.resolve([]);
+    });
+
+    await checkOutWalk(10, "");
+
+    // Only update #1 and #2 — no promotion needed
+    expect(mockUpdate).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { animals, walkers, walks } from "@/lib/db/schema";
-import { eq, and, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, max } from "drizzle-orm";
 import type { Animal, Walker, Walk, ActiveWalkForAdmin, WalkHistoryEntry, WalkStats } from "@/types";
 
 export async function getDogsAvailableForWalking(): Promise<Animal[]> {
@@ -130,6 +130,37 @@ export function computeWalkStats(
   }
 
   return { totalWalks: entries.length, avgDurationMinutes, topCompanion };
+}
+
+export async function getLastWalkDates(walkerIds: number[]): Promise<Map<number, string>> {
+  const result = new Map<number, string>();
+  if (walkerIds.length === 0) return result;
+
+  try {
+    const rows = await db
+      .select({
+        walkerId: walks.walkerId,
+        lastDate: max(walks.date),
+      })
+      .from(walks)
+      .where(
+        and(
+          inArray(walks.walkerId, walkerIds),
+          eq(walks.status, "completed"),
+        ),
+      )
+      .groupBy(walks.walkerId);
+
+    for (const row of rows) {
+      if (row.lastDate) {
+        result.set(row.walkerId, row.lastDate);
+      }
+    }
+  } catch (err) {
+    console.error("getLastWalkDates query failed:", err);
+  }
+
+  return result;
 }
 
 export async function getActiveWalksForAdmin(): Promise<ActiveWalkForAdmin[]> {

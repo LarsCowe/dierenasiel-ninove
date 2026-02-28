@@ -413,3 +413,9 @@ export const walks = pgTable("walks", {
   index("idx_walks_date").on(table.date),
   index("idx_walks_status").on(table.status),
 ]);
+
+export const shelterSettings = pgTable("shelter_settings", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

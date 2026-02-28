@@ -22,16 +22,21 @@ vi.mock("@/lib/db/schema", () => ({
     status: Symbol("walkers.status"),
     email: Symbol("walkers.email"),
     createdAt: Symbol("walkers.createdAt"),
+    walkCount: Symbol("walkers.walkCount"),
+    isWalkingClubMember: Symbol("walkers.isWalkingClubMember"),
   },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
+  gte: vi.fn((...args: unknown[]) => ({ type: "gte", args })),
+  lt: vi.fn((...args: unknown[]) => ({ type: "lt", args })),
+  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
   sql: vi.fn(),
 }));
 
-import { getWalkersForAdmin, getWalkerById } from "./walkers";
+import { getWalkersForAdmin, getWalkerById, getWalkingClubMembers, getNearThresholdWalkers } from "./walkers";
 
 const mockWalker = {
   id: 1,
@@ -112,5 +117,59 @@ describe("getWalkerById", () => {
     mockSelectLimit.mockRejectedValue(new Error("DB error"));
     const result = await getWalkerById(1);
     expect(result).toBeNull();
+  });
+});
+
+const mockClubMember = {
+  ...mockWalker,
+  id: 2,
+  firstName: "Marie",
+  lastName: "Peeters",
+  walkCount: 15,
+  isWalkingClubMember: true,
+  status: "approved",
+};
+
+describe("getWalkingClubMembers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelectLimit.mockResolvedValue([mockClubMember]);
+  });
+
+  it("returns walking club members", async () => {
+    const result = await getWalkingClubMembers();
+    expect(result).toEqual([mockClubMember]);
+  });
+
+  it("returns empty array on error", async () => {
+    mockSelectLimit.mockRejectedValue(new Error("DB error"));
+    const result = await getWalkingClubMembers();
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getNearThresholdWalkers", () => {
+  const nearWalker = { ...mockWalker, walkCount: 8, status: "approved" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+    mockSelectLimit.mockResolvedValue([nearWalker]);
+  });
+
+  it("returns walkers near threshold", async () => {
+    const result = await getNearThresholdWalkers(10);
+    expect(result).toEqual([nearWalker]);
+  });
+
+  it("returns empty array on error", async () => {
+    mockSelectLimit.mockRejectedValue(new Error("DB error"));
+    const result = await getNearThresholdWalkers(10);
+    expect(result).toEqual([]);
   });
 });

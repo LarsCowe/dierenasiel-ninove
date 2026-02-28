@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -184,4 +184,17 @@ export interface WalkStats {
   totalWalks: number;
   avgDurationMinutes: number | null;
   topCompanion: string | null;
+}
+
+export type ShelterSetting = typeof shelterSettings.$inferSelect;
+
+export interface WalkingClubMember {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  walkCount: number;
+  isWalkingClubMember: boolean;
+  lastWalkDate: string | null;
 }

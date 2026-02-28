@@ -190,6 +190,13 @@
       "when": 1772291327305,
       "tag": "0026_awesome_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1772299284301,
+      "tag": "0027_abandoned_silverclaw",
+      "breakpoints": true
     }
   ]
 }

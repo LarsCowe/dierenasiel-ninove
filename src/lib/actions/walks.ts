@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
+import { getWalkingClubThreshold } from "@/lib/queries/shelter-settings";
 import type { ActionResult } from "@/types";
 import type { Walk } from "@/types";
 
@@ -239,6 +240,20 @@ export async function checkOutWalk(walkId: number, remarks: string): Promise<Act
       .update(walkers)
       .set({ walkCount: sql`${walkers.walkCount} + 1` })
       .where(eq(walkers.id, walker.id));
+
+    // Auto-promote to walking club if threshold reached (Story 5.6 AC1)
+    if (!walker.isWalkingClubMember) {
+      const threshold = await getWalkingClubThreshold();
+      const newCount = (walker.walkCount ?? 0) + 1;
+      if (newCount >= threshold) {
+        await db
+          .update(walkers)
+          .set({ isWalkingClubMember: true })
+          .where(eq(walkers.id, walker.id));
+
+        await logAudit("walker.walking_club_promoted", "walker", walker.id, { isWalkingClubMember: false }, { isWalkingClubMember: true, walkCount: newCount });
+      }
+    }
 
     await logAudit("walk.checked_out", "walk", walkId, { status: walk.status }, { status: "completed", endTime, durationMinutes });
     revalidatePath("/wandelaar");

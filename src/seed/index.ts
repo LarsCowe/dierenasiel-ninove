@@ -72,6 +72,15 @@ async function seed() {
   }
   console.log(`  Inserted ${userSeeds.length} users`);
 
+  // Seed shelter settings
+  console.log("Seeding shelter settings...");
+  await db.delete(schema.shelterSettings);
+  await db.insert(schema.shelterSettings).values({
+    key: "walking_club_threshold",
+    value: "10",
+  });
+  console.log("  Inserted shelter settings");
+
   console.log("Seeding complete!");
 }
 
