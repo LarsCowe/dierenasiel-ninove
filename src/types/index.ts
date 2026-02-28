@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -150,3 +150,6 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 
 export type Walker = typeof walkers.$inferSelect;
 export type NewWalker = typeof walkers.$inferInsert;
+
+export type Walk = typeof walks.$inferSelect;
+export type NewWalk = typeof walks.$inferInsert;

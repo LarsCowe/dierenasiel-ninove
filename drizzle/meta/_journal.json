@@ -183,6 +183,13 @@
       "when": 1772288680191,
       "tag": "0025_supreme_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1772291327305,
+      "tag": "0026_awesome_ser_duncan",
+      "breakpoints": true
     }
   ]
 }

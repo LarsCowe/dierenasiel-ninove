@@ -388,8 +388,28 @@ export const walkers = pgTable("walkers", {
   isWalkingClubMember: boolean("is_walking_club_member").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   rejectionReason: text("rejection_reason"),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_walkers_status").on(table.status),
   index("idx_walkers_email").on(table.email),
+  index("idx_walkers_user_id").on(table.userId),
+]);
+
+export const walks = pgTable("walks", {
+  id: serial("id").primaryKey(),
+  walkerId: integer("walker_id").notNull().references(() => walkers.id, { onDelete: "cascade" }),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  startTime: varchar("start_time", { length: 5 }).notNull(),
+  endTime: varchar("end_time", { length: 5 }),
+  durationMinutes: integer("duration_minutes"),
+  remarks: text("remarks"),
+  status: varchar("status", { length: 20 }).default("planned").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_walks_walker_id").on(table.walkerId),
+  index("idx_walks_animal_id").on(table.animalId),
+  index("idx_walks_date").on(table.date),
+  index("idx_walks_status").on(table.status),
 ]);

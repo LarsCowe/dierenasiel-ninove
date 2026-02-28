@@ -6,6 +6,7 @@ const {
   mockSelectWhere, mockSelectFrom, mockSelect,
   mockSelectLimit,
   mockRequirePermission, mockLogAudit, mockRevalidatePath,
+  mockHashPassword,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
@@ -21,12 +22,14 @@ const {
   const mockRequirePermission = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
+  const mockHashPassword = vi.fn();
   return {
     mockReturning, mockValues, mockInsert,
     mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockSelectWhere, mockSelectFrom, mockSelect,
     mockSelectLimit,
     mockRequirePermission, mockLogAudit, mockRevalidatePath,
+    mockHashPassword,
   };
 });
 
@@ -43,7 +46,16 @@ vi.mock("@/lib/db/schema", () => ({
     id: Symbol("walkers.id"),
     email: Symbol("walkers.email"),
     status: Symbol("walkers.status"),
+    userId: Symbol("walkers.userId"),
   },
+  users: {
+    id: Symbol("users.id"),
+    email: Symbol("users.email"),
+  },
+}));
+
+vi.mock("@/lib/auth/password", () => ({
+  hashPassword: mockHashPassword,
 }));
 
 vi.mock("@/lib/permissions", () => ({
@@ -348,5 +360,94 @@ describe("updateWalkerStatus", () => {
     if (!result.success) {
       expect(result.error).toBeDefined();
     }
+  });
+
+  describe("user creation on approval", () => {
+    beforeEach(() => {
+      mockHashPassword.mockResolvedValue("hashed-password");
+      // For user lookup: select().from(users).where() → no existing user
+      // We need the select mock to handle multiple calls differently
+      // First call: walker lookup (returns existingWalker)
+      // Second call: user lookup by email (returns [])
+      let selectCallCount = 0;
+      mockSelectLimit.mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) return Promise.resolve([existingWalker]);
+        return Promise.resolve([]); // no existing user
+      });
+      // User insert: returns new user
+      mockReturning.mockResolvedValue([{ id: 99, email: "jan@example.com", name: "Jan Janssens", role: "wandelaar" }]);
+      // Walker update with userId
+      mockUpdateReturning.mockResolvedValue([{ ...existingWalker, status: "approved", isApproved: true, userId: 99 }]);
+    });
+
+    it("creates user account when walker is approved", async () => {
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      // Should insert a new user
+      expect(mockInsert).toHaveBeenCalled();
+      expect(mockValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "jan@example.com",
+          role: "wandelaar",
+        }),
+      );
+    });
+
+    it("uses barcode as temporary password", async () => {
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      expect(mockHashPassword).toHaveBeenCalledWith("WLK-1");
+    });
+
+    it("sets walkers.userId to created user id", async () => {
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      // The update should include userId
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 99,
+        }),
+      );
+    });
+
+    it("reuses existing user if email already exists", async () => {
+      let selectCallCount = 0;
+      mockSelectLimit.mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) return Promise.resolve([existingWalker]);
+        return Promise.resolve([{ id: 50, email: "jan@example.com", role: "wandelaar", isActive: false }]);
+      });
+      mockUpdateReturning.mockResolvedValue([{ ...existingWalker, status: "approved", isApproved: true, userId: 50 }]);
+
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      // Should NOT insert a new user — should update existing
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 50,
+        }),
+      );
+    });
+
+    it("assigns role wandelaar to created user", async () => {
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      expect(mockValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role: "wandelaar",
+        }),
+      );
+    });
+
+    it("uses walker firstName + lastName for user name", async () => {
+      await updateWalkerStatus(null, makeFormData({ walkerId: "1", status: "approved" }));
+
+      expect(mockValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Jan Janssens",
+        }),
+      );
+    });
   });
 });

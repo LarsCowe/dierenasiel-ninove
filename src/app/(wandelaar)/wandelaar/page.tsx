@@ -1,40 +1,52 @@
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { getWalkerByUserId, getDogsAvailableForWalking, getWalksByWalkerId } from "@/lib/queries/walks";
+import WalkerNotApprovedMessage from "@/components/wandelaar/WalkerNotApprovedMessage";
+import AvailableDogsGrid from "@/components/wandelaar/AvailableDogsGrid";
+import MyWalksSection from "@/components/wandelaar/MyWalksSection";
 import LogoutButton from "@/components/layout/LogoutButton";
 
-export default function WandelaarDashboard() {
+export default async function WandelaarDashboard() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+
+  const walker = await getWalkerByUserId(session.userId);
+
+  if (!walker || walker.status !== "approved") {
+    return <WalkerNotApprovedMessage />;
+  }
+
+  const [dogs, walks] = await Promise.all([
+    getDogsAvailableForWalking(),
+    getWalksByWalkerId(walker.id),
+  ]);
+
   return (
-    <div className="flex flex-col items-center px-6 pt-12 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#2d6a4f] text-4xl shadow-lg">
-        🐕
-      </div>
-      <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
-        Welkom, wandelaar!
-      </h1>
-      <p className="mt-3 max-w-md text-[#2d6a4f]/80">
-        Dit platform wordt binnenkort beschikbaar. Hier kan je je wandelingen
-        plannen, beschikbare honden bekijken en je wandelgeschiedenis raadplegen.
-      </p>
-      <div className="mt-8 rounded-xl border border-[#d1fae5] bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-[#2d6a4f]">
-          Functies in ontwikkeling:
-        </p>
-        <ul className="mt-3 space-y-2 text-left text-sm text-[#2d6a4f]/70">
-          <li className="flex items-center gap-2">
-            <span>📅</span> Wandelingen plannen
-          </li>
-          <li className="flex items-center gap-2">
-            <span>🐾</span> Beschikbare honden bekijken
-          </li>
-          <li className="flex items-center gap-2">
-            <span>📊</span> Wandelgeschiedenis
-          </li>
-          <li className="flex items-center gap-2">
-            <span>📋</span> Wandelreglement
-          </li>
-        </ul>
-      </div>
-      <div className="mt-8">
+    <div className="px-4 pt-6 pb-8">
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-xl font-bold text-[#1b4332]">
+          Hallo, {walker.firstName}!
+        </h1>
         <LogoutButton />
       </div>
+
+      {/* Available dogs */}
+      <section className="mt-6">
+        <h2 className="mb-3 font-heading text-lg font-semibold text-[#1b4332]">
+          Beschikbare honden
+        </h2>
+        <AvailableDogsGrid dogs={dogs} />
+      </section>
+
+      {/* My walks */}
+      <section className="mt-8">
+        <h2 className="mb-3 font-heading text-lg font-semibold text-[#1b4332]">
+          Mijn wandelingen
+        </h2>
+        <MyWalksSection walks={walks} />
+      </section>
     </div>
   );
 }

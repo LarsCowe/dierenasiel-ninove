@@ -1,11 +1,12 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { walkers } from "@/lib/db/schema";
+import { walkers, users } from "@/lib/db/schema";
 import { walkerRegistrationSchema } from "@/lib/validations/walkers";
 import { walkerStatusUpdateSchema } from "@/lib/validations/walker-status";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { hashPassword } from "@/lib/auth/password";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import type { ActionResult } from "@/types";
@@ -140,6 +141,41 @@ export async function updateWalkerStatus(
 
     if (newStatus === "rejected") {
       updateData.rejectionReason = parsed.data.rejectionReason.trim();
+    }
+
+    // Auto-create user account on approval
+    if (newStatus === "approved") {
+      const existingUsers = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, oldWalker.email))
+        .limit(1);
+
+      let userId: number;
+
+      if (existingUsers.length > 0) {
+        // Reactivate existing user
+        userId = existingUsers[0].id;
+        await db
+          .update(users)
+          .set({ isActive: true })
+          .where(eq(users.id, userId));
+      } else {
+        // Create new user with barcode as temporary password
+        const passwordHash = await hashPassword(oldWalker.barcode || `WLK-${walkerId}`);
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            email: oldWalker.email,
+            passwordHash,
+            name: `${oldWalker.firstName} ${oldWalker.lastName}`,
+            role: "wandelaar",
+          })
+          .returning();
+        userId = newUser.id;
+      }
+
+      updateData.userId = userId;
     }
 
     const [updated] = await db
