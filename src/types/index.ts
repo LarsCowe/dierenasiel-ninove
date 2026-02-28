@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs } from "@/lib/db/schema";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
@@ -118,6 +118,22 @@ export interface AbnormalBehaviorEntry {
   species: string;
   chipNr: string | null;
   description: string;
+}
+
+export type AdoptionCandidate = typeof adoptionCandidates.$inferSelect;
+export type NewAdoptionCandidate = typeof adoptionCandidates.$inferInsert;
+
+export interface QuestionnaireAnswers {
+  woonsituatie: string;        // "huis_met_tuin" | "appartement" | "boerderij" | "andere"
+  tuinOmheind: boolean | null; // Alleen relevant bij tuin
+  eerderHuisdieren: boolean;
+  huidigeHuisdieren: string;   // Vrij tekstveld
+  kinderenInHuis: string;      // "geen" | "0_5" | "6_12" | "12_plus"
+  werkSituatie: string;        // "voltijds_thuis" | "deeltijds" | "voltijds_buitenshuis"
+  uurAlleen: string;           // Geschat aantal uur per dag alleen
+  ervaring: string;            // Vrij tekstveld — ervaring met dieren
+  motivatie: string;           // Vrij tekstveld — waarom dit dier
+  opmerkingen: string;         // Vrij tekstveld — extra opmerkingen
 }
 
 export type AuditLog = typeof auditLogs.$inferSelect;

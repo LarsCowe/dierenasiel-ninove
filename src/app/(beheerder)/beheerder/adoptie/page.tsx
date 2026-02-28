@@ -1,0 +1,32 @@
+import Link from "next/link";
+import { getAdoptionCandidates } from "@/lib/queries/adoption-candidates";
+import AdoptionCandidateList from "@/components/beheerder/adoptie/AdoptionCandidateList";
+
+export default async function AdoptiePage() {
+  const candidates = await getAdoptionCandidates();
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
+            Adoptie-aanvragen
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Overzicht van alle kandidaat-adoptanten en hun screeningstatus.
+          </p>
+        </div>
+        <Link
+          href="/beheerder/adoptie/nieuw"
+          className="rounded-md bg-[#1b4332] px-5 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+        >
+          Nieuwe aanvraag
+        </Link>
+      </div>
+
+      <div className="mt-6">
+        <AdoptionCandidateList candidates={candidates} />
+      </div>
+    </div>
+  );
+}

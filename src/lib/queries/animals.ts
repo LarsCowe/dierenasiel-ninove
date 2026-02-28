@@ -140,6 +140,29 @@ export async function getAnimalsForAdmin(
 }
 
 /**
+ * Returns animals available for adoption (FR-07).
+ * Only shows animals that are marked as available AND still in the shelter.
+ */
+export async function getAnimalsAvailableForAdoption(): Promise<Animal[]> {
+  try {
+    const results = await db
+      .select()
+      .from(animals)
+      .where(
+        and(
+          eq(animals.isAvailableForAdoption, true),
+          eq(animals.isInShelter, true),
+        ),
+      )
+      .orderBy(asc(animals.name));
+    return results as Animal[];
+  } catch (err) {
+    console.error("getAnimalsAvailableForAdoption query failed:", err);
+    return [];
+  }
+}
+
+/**
  * Returns animals with an IBN deadline within the next 7 days.
  * Used for the dashboard deadline widget (FR-06).
  */

@@ -289,6 +289,25 @@ export const vetInspectionReports = pgTable("vet_inspection_reports", {
   index("idx_vet_inspection_reports_visit_date").on(table.visitDate),
 ]);
 
+export const adoptionCandidates = pgTable("adoption_candidates", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 200 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  animalId: integer("animal_id").notNull().references(() => animals.id),
+  questionnaireAnswers: jsonb("questionnaire_answers").notNull().default({}),
+  category: varchar("category", { length: 30 }), // niet_weerhouden, mogelijks, goede_kandidaat
+  categorySetBy: varchar("category_set_by", { length: 100 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, screening, approved, rejected, adopted
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_adoption_candidates_animal_id").on(table.animalId),
+  index("idx_adoption_candidates_status").on(table.status),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
