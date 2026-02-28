@@ -61,22 +61,22 @@ const EPICS: Epic[] = [
   {
     id: 4,
     title: "Adoptieproces",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "4.1", title: "Adoptie-aanvraag Ontvangen en Screenen", status: "done" },
       { id: "4.2", title: "Kandidaat-adoptant Categoriseren", status: "done" },
       { id: "4.3", title: "Kennismaking Organiseren", status: "done" },
       { id: "4.4", title: "Adoptiecontract Opmaken", status: "done" },
       { id: "4.5", title: "DogID/CatID Overdracht (Automatische Taak)", status: "done" },
-      { id: "4.6", title: "Post-adoptie Opvolging", status: "in-progress" },
+      { id: "4.6", title: "Post-adoptie Opvolging", status: "done" },
     ],
   },
   {
     id: 5,
     title: "Wandelaarsbeheer",
-    status: "backlog",
+    status: "in-progress",
     stories: [
-      { id: "5.1", title: "Wandelaar Online Registratie", status: "backlog" },
+      { id: "5.1", title: "Wandelaar Online Registratie", status: "in-progress" },
       { id: "5.2", title: "Wandelaar Profiel Beheren en Goedkeuren", status: "backlog" },
       { id: "5.3", title: "Wandeling Boeken", status: "backlog" },
       { id: "5.4", title: "Wandeling Inchecken en Uitchecken", status: "backlog" },

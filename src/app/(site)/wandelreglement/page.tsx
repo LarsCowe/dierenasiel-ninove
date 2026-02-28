@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AnimateOnScroll from "@/components/ui/AnimateOnScroll";
 
 export const metadata: Metadata = {
@@ -83,6 +84,24 @@ export default function WandelreglementPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </AnimateOnScroll>
+
+        <AnimateOnScroll className="mt-10">
+          <div className="bg-primary/5 rounded-2xl p-8 text-center">
+            <h2 className="font-heading text-xl font-bold text-primary-dark mb-3">
+              Wil je wandelen met onze honden?
+            </h2>
+            <p className="text-text-light mb-6 max-w-md mx-auto">
+              Registreer je online als wandelaar. Na goedkeuring door de
+              coördinator kan je onze honden uitlaten.
+            </p>
+            <Link
+              href="/wandelaar-registratie"
+              className="inline-block px-8 py-3 bg-accent text-white rounded-full font-bold shadow-lg shadow-accent/40 hover:bg-accent/90 hover:-translate-y-0.5 transition-all"
+            >
+              Registreer als wandelaar →
+            </Link>
           </div>
         </AnimateOnScroll>
       </div>

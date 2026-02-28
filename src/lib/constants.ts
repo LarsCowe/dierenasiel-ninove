@@ -128,6 +128,7 @@ export const FOOTER_LINKS = {
   ],
   info: [
     { label: "Wandelreglement", href: "/wandelreglement" },
+    { label: "Wandelaar worden", href: "/wandelaar-registratie" },
     { label: "Dier afstaan", href: "/een-dier-afstaan" },
     { label: "Dierenverwaarlozing", href: "/dierenverwaarlozing" },
     { label: "Lid worden", href: "/lid-worden" },

@@ -369,3 +369,26 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_user").on(table.userId),
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
+
+export const walkers = pgTable("walkers", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  dateOfBirth: date("date_of_birth").notNull(),
+  address: text("address").notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  email: varchar("email", { length: 200 }).notNull(),
+  allergies: text("allergies"),
+  childrenWalkAlong: boolean("children_walk_along").default(false).notNull(),
+  regulationsRead: boolean("regulations_read").default(false).notNull(),
+  barcode: varchar("barcode", { length: 50 }),
+  photoUrl: varchar("photo_url", { length: 500 }),
+  isApproved: boolean("is_approved").default(false).notNull(),
+  walkCount: integer("walk_count").default(0).notNull(),
+  isWalkingClubMember: boolean("is_walking_club_member").default(false).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_walkers_status").on(table.status),
+  index("idx_walkers_email").on(table.email),
+]);
