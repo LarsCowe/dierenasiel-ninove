@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAdoptionCandidateById } from "@/lib/queries/adoption-candidates";
+import { getKennismakingenByCandidateId } from "@/lib/queries/kennismakingen";
 import AdoptionCandidateView from "@/components/beheerder/adoptie/AdoptionCandidateView";
+import KennismakingList from "@/components/beheerder/adoptie/KennismakingList";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -13,7 +15,10 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
 
   if (isNaN(candidateId)) notFound();
 
-  const candidate = await getAdoptionCandidateById(candidateId);
+  const [candidate, kennismakingen] = await Promise.all([
+    getAdoptionCandidateById(candidateId),
+    getKennismakingenByCandidateId(candidateId),
+  ]);
   if (!candidate) notFound();
 
   return (
@@ -36,6 +41,14 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
 
       <div className="mt-6">
         <AdoptionCandidateView candidate={candidate} />
+      </div>
+
+      {/* Kennismakingshistorie (AC3) */}
+      <div className="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <h2 className="font-heading text-sm font-bold text-[#1b4332]">Kennismakingen</h2>
+        <div className="mt-3">
+          <KennismakingList kennismakingen={kennismakingen} />
+        </div>
       </div>
     </div>
   );

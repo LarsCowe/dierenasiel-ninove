@@ -308,6 +308,21 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   index("idx_adoption_candidates_status").on(table.status),
 ]);
 
+export const kennismakingen = pgTable("kennismakingen", {
+  id: serial("id").primaryKey(),
+  adoptionCandidateId: integer("adoption_candidate_id").notNull().references(() => adoptionCandidates.id),
+  animalId: integer("animal_id").notNull().references(() => animals.id),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+  location: varchar("location", { length: 200 }),
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // scheduled, completed, cancelled
+  outcome: varchar("outcome", { length: 20 }), // positief, twijfel
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 100 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_kennismakingen_candidate_id").on(table.adoptionCandidateId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
