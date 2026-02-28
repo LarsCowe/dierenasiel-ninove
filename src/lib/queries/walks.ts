@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { animals, walkers, walks } from "@/lib/db/schema";
 import { eq, and, asc, desc } from "drizzle-orm";
-import type { Animal, Walker, Walk, ActiveWalkForAdmin } from "@/types";
+import type { Animal, Walker, Walk, ActiveWalkForAdmin, WalkHistoryEntry, WalkStats } from "@/types";
 
 export async function getDogsAvailableForWalking(): Promise<Animal[]> {
   try {
@@ -48,6 +48,88 @@ export async function getWalksByWalkerId(walkerId: number): Promise<Walk[]> {
     console.error("getWalksByWalkerId query failed:", err);
     return [];
   }
+}
+
+const walkHistorySelect = {
+  id: walks.id,
+  date: walks.date,
+  startTime: walks.startTime,
+  endTime: walks.endTime,
+  durationMinutes: walks.durationMinutes,
+  remarks: walks.remarks,
+  status: walks.status,
+  walkerFirstName: walkers.firstName,
+  walkerLastName: walkers.lastName,
+  animalName: animals.name,
+};
+
+export async function getWalkHistoryByWalkerId(walkerId: number): Promise<WalkHistoryEntry[]> {
+  try {
+    const results = await db
+      .select(walkHistorySelect)
+      .from(walks)
+      .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+      .innerJoin(animals, eq(walks.animalId, animals.id))
+      .where(eq(walks.walkerId, walkerId))
+      .orderBy(desc(walks.date));
+    return results as WalkHistoryEntry[];
+  } catch (err) {
+    console.error("getWalkHistoryByWalkerId query failed:", err);
+    return [];
+  }
+}
+
+export async function getWalkHistoryByAnimalId(animalId: number): Promise<WalkHistoryEntry[]> {
+  try {
+    const results = await db
+      .select(walkHistorySelect)
+      .from(walks)
+      .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+      .innerJoin(animals, eq(walks.animalId, animals.id))
+      .where(eq(walks.animalId, animalId))
+      .orderBy(desc(walks.date));
+    return results as WalkHistoryEntry[];
+  } catch (err) {
+    console.error("getWalkHistoryByAnimalId query failed:", err);
+    return [];
+  }
+}
+
+export function computeWalkStats(
+  entries: WalkHistoryEntry[],
+  companionField: "animalName" | "walkerName",
+): WalkStats {
+  if (entries.length === 0) {
+    return { totalWalks: 0, avgDurationMinutes: null, topCompanion: null };
+  }
+
+  const durations = entries
+    .map((e) => e.durationMinutes)
+    .filter((d): d is number => d !== null);
+
+  const avgDurationMinutes = durations.length > 0
+    ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+    : null;
+
+  // Count companion frequency
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    const name = companionField === "animalName"
+      ? entry.animalName
+      : `${entry.walkerFirstName} ${entry.walkerLastName}`;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+
+  let topCompanion: string | null = null;
+  let maxCount = 0;
+  for (const [name, count] of counts) {
+    if (count > maxCount) {
+      maxCount = count;
+      topCompanion = name;
+    }
+  }
+
+  return { totalWalks: entries.length, avgDurationMinutes, topCompanion };
 }
 
 export async function getActiveWalksForAdmin(): Promise<ActiveWalkForAdmin[]> {

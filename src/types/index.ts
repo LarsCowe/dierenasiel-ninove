@@ -166,3 +166,22 @@ export interface ActiveWalkForAdmin {
   walkerPhone: string;
   animalName: string;
 }
+
+export interface WalkHistoryEntry {
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string | null;
+  durationMinutes: number | null;
+  remarks: string | null;
+  status: string;
+  walkerFirstName: string;
+  walkerLastName: string;
+  animalName: string;
+}
+
+export interface WalkStats {
+  totalWalks: number;
+  avgDurationMinutes: number | null;
+  topCompanion: string | null;
+}

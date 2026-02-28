@@ -28,6 +28,8 @@ import { getOperationsByAnimalId } from "@/lib/queries/operations";
 import { getMedicationsByAnimalId } from "@/lib/queries/medications";
 import { getTodayMedicationLogsByAnimalId } from "@/lib/queries/medication-logs";
 import { getTodosByAnimalId, countOpenTodosByAnimalId } from "@/lib/queries/animal-todos";
+import { getWalkHistoryByAnimalId, computeWalkStats } from "@/lib/queries/walks";
+import WalkHistorySection from "@/components/beheerder/wandelaars/WalkHistorySection";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -51,7 +53,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -67,6 +69,7 @@ export default async function DierDetailPage({ params }: Props) {
     getTodayMedicationLogsByAnimalId(animalId),
     getTodosByAnimalId(animalId),
     countOpenTodosByAnimalId(animalId),
+    getWalkHistoryByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -211,6 +214,18 @@ export default async function DierDetailPage({ params }: Props) {
           </div>
         </div>
       </CollapsibleSection>
+
+      {/* Wandelgeschiedenis (alleen voor honden) */}
+      {animal.species === "hond" && (
+        <CollapsibleSection title="Wandelgeschiedenis">
+          <WalkHistorySection
+            entries={walkHistory}
+            stats={computeWalkStats(walkHistory, "walkerName")}
+            animalId={animalId}
+            companionLabel="Meest frequente wandelaar"
+          />
+        </CollapsibleSection>
+      )}
 
       {/* Foto's & Bijlagen */}
       <CollapsibleSection title={"Foto's & Bijlagen"}>

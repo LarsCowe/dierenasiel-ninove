@@ -47,7 +47,11 @@ vi.mock("@/lib/db/schema", () => ({
   },
 }));
 
-import { getDogsAvailableForWalking, getWalkerByUserId, getWalksByWalkerId, getActiveWalksForAdmin } from "./walks";
+import {
+  getDogsAvailableForWalking, getWalkerByUserId, getWalksByWalkerId,
+  getActiveWalksForAdmin, getWalkHistoryByWalkerId, getWalkHistoryByAnimalId,
+  computeWalkStats,
+} from "./walks";
 
 describe("getDogsAvailableForWalking", () => {
   beforeEach(() => {
@@ -192,5 +196,123 @@ describe("getActiveWalksForAdmin", () => {
     const result = await getActiveWalksForAdmin();
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("getWalkHistoryByWalkerId", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockJoinWhere.mockReturnValue({ orderBy: mockJoinOrderBy });
+    mockInnerJoin.mockReturnValue({ innerJoin: mockInnerJoin, where: mockJoinWhere });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, innerJoin: mockInnerJoin });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+  });
+
+  it("returns walk history with joined walker and animal names", async () => {
+    const history = [
+      {
+        id: 1, date: "2026-03-20", startTime: "10:00", endTime: "11:30",
+        durationMinutes: 90, remarks: "Leuke wandeling", status: "completed",
+        walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex",
+      },
+    ];
+    mockJoinOrderBy.mockResolvedValue(history);
+
+    const result = await getWalkHistoryByWalkerId(1);
+
+    expect(result).toEqual(history);
+    expect(mockInnerJoin).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns empty array on error", async () => {
+    mockJoinWhere.mockReturnValue({
+      orderBy: vi.fn().mockRejectedValue(new Error("DB error")),
+    });
+
+    const result = await getWalkHistoryByWalkerId(1);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getWalkHistoryByAnimalId", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockJoinWhere.mockReturnValue({ orderBy: mockJoinOrderBy });
+    mockInnerJoin.mockReturnValue({ innerJoin: mockInnerJoin, where: mockJoinWhere });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, innerJoin: mockInnerJoin });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+  });
+
+  it("returns walk history with joined walker and animal names", async () => {
+    const history = [
+      {
+        id: 2, date: "2026-03-18", startTime: "14:00", endTime: "15:00",
+        durationMinutes: 60, remarks: null, status: "completed",
+        walkerFirstName: "Els", walkerLastName: "Peeters", animalName: "Buddy",
+      },
+    ];
+    mockJoinOrderBy.mockResolvedValue(history);
+
+    const result = await getWalkHistoryByAnimalId(5);
+
+    expect(result).toEqual(history);
+    expect(mockInnerJoin).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns empty array on error", async () => {
+    mockJoinWhere.mockReturnValue({
+      orderBy: vi.fn().mockRejectedValue(new Error("DB error")),
+    });
+
+    const result = await getWalkHistoryByAnimalId(5);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("computeWalkStats", () => {
+  it("returns zero stats for empty list", () => {
+    const stats = computeWalkStats([], "animalName");
+
+    expect(stats).toEqual({ totalWalks: 0, avgDurationMinutes: null, topCompanion: null });
+  });
+
+  it("computes correct stats for completed walks", () => {
+    const entries = [
+      { id: 1, date: "2026-03-20", startTime: "10:00", endTime: "11:30", durationMinutes: 90, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+      { id: 2, date: "2026-03-18", startTime: "14:00", endTime: "15:00", durationMinutes: 60, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Buddy" },
+      { id: 3, date: "2026-03-15", startTime: "09:00", endTime: "10:30", durationMinutes: 90, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+    ];
+
+    const stats = computeWalkStats(entries, "animalName");
+
+    expect(stats.totalWalks).toBe(3);
+    expect(stats.avgDurationMinutes).toBe(80);
+    expect(stats.topCompanion).toBe("Rex");
+  });
+
+  it("uses walker name as companion for animal stats", () => {
+    const entries = [
+      { id: 1, date: "2026-03-20", startTime: "10:00", endTime: "11:30", durationMinutes: 60, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+      { id: 2, date: "2026-03-18", startTime: "14:00", endTime: "15:00", durationMinutes: 60, remarks: null, status: "completed", walkerFirstName: "Els", walkerLastName: "Peeters", animalName: "Rex" },
+      { id: 3, date: "2026-03-15", startTime: "09:00", endTime: "10:30", durationMinutes: 60, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+    ];
+
+    const stats = computeWalkStats(entries, "walkerName");
+
+    expect(stats.topCompanion).toBe("Jan Janssens");
+  });
+
+  it("ignores walks without duration in average", () => {
+    const entries = [
+      { id: 1, date: "2026-03-20", startTime: "10:00", endTime: "11:00", durationMinutes: 60, remarks: null, status: "completed", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+      { id: 2, date: "2026-03-18", startTime: "14:00", endTime: null, durationMinutes: null, remarks: null, status: "planned", walkerFirstName: "Jan", walkerLastName: "Janssens", animalName: "Rex" },
+    ];
+
+    const stats = computeWalkStats(entries, "animalName");
+
+    expect(stats.totalWalks).toBe(2);
+    expect(stats.avgDurationMinutes).toBe(60);
   });
 });
