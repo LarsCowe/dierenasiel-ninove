@@ -414,6 +414,20 @@ export const walks = pgTable("walks", {
   index("idx_walks_status").on(table.status),
 ]);
 
+export const animalWorkflowHistory = pgTable("animal_workflow_history", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").references(() => animals.id).notNull(),
+  fromPhase: varchar("from_phase", { length: 50 }),
+  toPhase: varchar("to_phase", { length: 50 }).notNull(),
+  changedBy: integer("changed_by").references(() => users.id).notNull(),
+  changeReason: text("change_reason"),
+  autoActionsTriggered: jsonb("auto_actions_triggered"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_workflow_history_animal_id").on(table.animalId),
+  index("idx_workflow_history_created_at").on(table.createdAt),
+]);
+
 export const shelterSettings = pgTable("shelter_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).unique().notNull(),

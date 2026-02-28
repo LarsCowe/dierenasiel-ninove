@@ -21,6 +21,10 @@ describe("ROLE_PERMISSIONS", () => {
     expect(ROLE_PERMISSIONS.medewerker).not.toContain("user:manage");
   });
 
+  it("gives medewerker workflow:write for phase transitions", () => {
+    expect(ROLE_PERMISSIONS.medewerker).toContain("workflow:write");
+  });
+
   it("gives dierenarts medical:write", () => {
     expect(ROLE_PERMISSIONS.dierenarts).toContain("medical:write");
   });

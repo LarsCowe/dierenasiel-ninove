@@ -13,6 +13,7 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "walker:read",
     "kennel:read",
     "kennel:write",
+    "workflow:write",
     "website:read",
   ],
 
