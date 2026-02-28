@@ -47,7 +47,7 @@ vi.mock("@/lib/db/schema", () => ({
   adoptionContracts: { id: Symbol("adoptionContracts.id") },
   adoptionCandidates: { id: Symbol("adoptionCandidates.id") },
   animals: { id: Symbol("animals.id") },
-  animalTodos: { id: Symbol("animalTodos.id") },
+  animalTodos: { id: Symbol("animalTodos.id"), animalId: Symbol("animalTodos.animalId"), type: Symbol("animalTodos.type"), isCompleted: Symbol("animalTodos.isCompleted") },
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
