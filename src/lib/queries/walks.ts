@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { animals, walkers, walks } from "@/lib/db/schema";
 import { eq, and, asc, desc } from "drizzle-orm";
-import type { Animal, Walker, Walk } from "@/types";
+import type { Animal, Walker, Walk, ActiveWalkForAdmin } from "@/types";
 
 export async function getDogsAvailableForWalking(): Promise<Animal[]> {
   try {
@@ -46,6 +46,33 @@ export async function getWalksByWalkerId(walkerId: number): Promise<Walk[]> {
     return results as Walk[];
   } catch (err) {
     console.error("getWalksByWalkerId query failed:", err);
+    return [];
+  }
+}
+
+export async function getActiveWalksForAdmin(): Promise<ActiveWalkForAdmin[]> {
+  try {
+    const results = await db
+      .select({
+        id: walks.id,
+        walkerId: walks.walkerId,
+        animalId: walks.animalId,
+        date: walks.date,
+        startTime: walks.startTime,
+        status: walks.status,
+        walkerFirstName: walkers.firstName,
+        walkerLastName: walkers.lastName,
+        walkerPhone: walkers.phone,
+        animalName: animals.name,
+      })
+      .from(walks)
+      .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+      .innerJoin(animals, eq(walks.animalId, animals.id))
+      .where(eq(walks.status, "in_progress"))
+      .orderBy(asc(walks.startTime));
+    return results as ActiveWalkForAdmin[];
+  } catch (err) {
+    console.error("getActiveWalksForAdmin query failed:", err);
     return [];
   }
 }

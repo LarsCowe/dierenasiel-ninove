@@ -153,3 +153,16 @@ export type NewWalker = typeof walkers.$inferInsert;
 
 export type Walk = typeof walks.$inferSelect;
 export type NewWalk = typeof walks.$inferInsert;
+
+export interface ActiveWalkForAdmin {
+  id: number;
+  walkerId: number;
+  animalId: number;
+  date: string;
+  startTime: string;
+  status: string;
+  walkerFirstName: string;
+  walkerLastName: string;
+  walkerPhone: string;
+  animalName: string;
+}

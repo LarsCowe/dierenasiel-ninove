@@ -6,9 +6,19 @@ import { walkBookingSchema } from "@/lib/validations/walks";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { ActionResult } from "@/types";
 import type { Walk } from "@/types";
+
+function currentTime(): string {
+  return new Date().toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function calculateDuration(startTime: string, endTime: string): number {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
 
 export async function bookWalk(
   _prevState: unknown,
@@ -95,6 +105,149 @@ export async function bookWalk(
       success: true,
       data: walk as Walk,
       message: "Wandeling succesvol geboekt!",
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function checkInWalk(walkId: number): Promise<ActionResult<Walk>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Je bent niet ingelogd." };
+  }
+
+  try {
+    // Look up walker
+    const walkerResults = await db
+      .select()
+      .from(walkers)
+      .where(eq(walkers.userId, session.userId))
+      .limit(1);
+
+    if (walkerResults.length === 0) {
+      return { success: false, error: "Wandelaar profiel niet gevonden." };
+    }
+
+    const walker = walkerResults[0];
+
+    // Look up walk
+    const walkResults = await db
+      .select()
+      .from(walks)
+      .where(eq(walks.id, walkId))
+      .limit(1);
+
+    if (walkResults.length === 0) {
+      return { success: false, error: "Wandeling niet gevonden." };
+    }
+
+    const walk = walkResults[0];
+
+    if (walk.walkerId !== walker.id) {
+      return { success: false, error: "Deze wandeling behoort niet tot uw profiel." };
+    }
+
+    if (walk.status !== "planned") {
+      return { success: false, error: "Deze wandeling kan niet worden ingecheckt." };
+    }
+
+    const startTime = currentTime();
+
+    const [updated] = await db
+      .update(walks)
+      .set({ status: "in_progress", startTime })
+      .where(eq(walks.id, walkId))
+      .returning();
+
+    await logAudit("walk.checked_in", "walk", walkId, { status: walk.status }, { status: "in_progress", startTime });
+    revalidatePath("/wandelaar");
+
+    return {
+      success: true,
+      data: updated as Walk,
+      message: "Inchecken geslaagd! Veel plezier met de wandeling.",
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function checkOutWalk(walkId: number, remarks: string): Promise<ActionResult<Walk>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Je bent niet ingelogd." };
+  }
+
+  try {
+    // Look up walker
+    const walkerResults = await db
+      .select()
+      .from(walkers)
+      .where(eq(walkers.userId, session.userId))
+      .limit(1);
+
+    if (walkerResults.length === 0) {
+      return { success: false, error: "Wandelaar profiel niet gevonden." };
+    }
+
+    const walker = walkerResults[0];
+
+    // Look up walk
+    const walkResults = await db
+      .select()
+      .from(walks)
+      .where(eq(walks.id, walkId))
+      .limit(1);
+
+    if (walkResults.length === 0) {
+      return { success: false, error: "Wandeling niet gevonden." };
+    }
+
+    const walk = walkResults[0];
+
+    if (walk.walkerId !== walker.id) {
+      return { success: false, error: "Deze wandeling behoort niet tot uw profiel." };
+    }
+
+    if (walk.status !== "in_progress") {
+      return { success: false, error: "Deze wandeling is niet ingecheckt." };
+    }
+
+    const endTime = currentTime();
+    const durationMinutes = calculateDuration(walk.startTime, endTime);
+
+    const [updated] = await db
+      .update(walks)
+      .set({
+        status: "completed",
+        endTime,
+        durationMinutes,
+        remarks: remarks || null,
+      })
+      .where(eq(walks.id, walkId))
+      .returning();
+
+    // Increment walker walkCount (AC3)
+    await db
+      .update(walkers)
+      .set({ walkCount: sql`${walkers.walkCount} + 1` })
+      .where(eq(walkers.id, walker.id));
+
+    await logAudit("walk.checked_out", "walk", walkId, { status: walk.status }, { status: "completed", endTime, durationMinutes });
+    revalidatePath("/wandelaar");
+    revalidatePath("/beheerder/wandelaars");
+
+    return {
+      success: true,
+      data: updated as Walk,
+      message: `Wandeling voltooid! Duur: ${durationMinutes} minuten.`,
     };
   } catch {
     return {

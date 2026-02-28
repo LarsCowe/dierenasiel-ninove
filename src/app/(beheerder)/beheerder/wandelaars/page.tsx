@@ -1,5 +1,7 @@
 import { getWalkersForAdmin } from "@/lib/queries/walkers";
+import { getActiveWalksForAdmin } from "@/lib/queries/walks";
 import WalkerList from "@/components/beheerder/wandelaars/WalkerList";
+import ActiveWalksPanel from "@/components/beheerder/wandelaars/ActiveWalksPanel";
 
 interface Props {
   searchParams: Promise<{ status?: string }>;
@@ -9,7 +11,11 @@ export default async function WandelaarsPage({ searchParams }: Props) {
   const { status } = await searchParams;
   const validStatuses = ["pending", "approved", "rejected", "inactive"];
   const activeStatus = status && validStatuses.includes(status) ? status : undefined;
-  const walkers = await getWalkersForAdmin(activeStatus);
+
+  const [walkers, activeWalks] = await Promise.all([
+    getWalkersForAdmin(activeStatus),
+    getActiveWalksForAdmin(),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -22,7 +28,15 @@ export default async function WandelaarsPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <div className="mt-6">
+      {/* Active walks panel (AC5) */}
+      <section className="mt-6">
+        <h2 className="mb-3 font-heading text-lg font-semibold text-[#1b4332]">
+          Actieve wandelingen ({activeWalks.length})
+        </h2>
+        <ActiveWalksPanel walks={activeWalks} />
+      </section>
+
+      <div className="mt-8">
         <WalkerList walkers={walkers} activeStatus={activeStatus} />
       </div>
     </div>

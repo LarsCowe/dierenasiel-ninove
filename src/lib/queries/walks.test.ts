@@ -3,13 +3,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const {
   mockSelectWhere, mockSelectFrom, mockSelect,
   mockSelectLimit, mockSelectOrderBy,
+  mockJoinOrderBy, mockJoinWhere, mockInnerJoin,
 } = vi.hoisted(() => {
   const mockSelectOrderBy = vi.fn();
   const mockSelectLimit = vi.fn();
   const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
-  const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
+  const mockJoinOrderBy = vi.fn();
+  const mockJoinWhere = vi.fn().mockReturnValue({ orderBy: mockJoinOrderBy });
+  const mockInnerJoin = vi.fn();
+  mockInnerJoin.mockReturnValue({ innerJoin: mockInnerJoin, where: mockJoinWhere });
+  const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere, innerJoin: mockInnerJoin });
   const mockSelect = vi.fn().mockReturnValue({ from: mockSelectFrom });
-  return { mockSelectWhere, mockSelectFrom, mockSelect, mockSelectLimit, mockSelectOrderBy };
+  return {
+    mockSelectWhere, mockSelectFrom, mockSelect,
+    mockSelectLimit, mockSelectOrderBy,
+    mockJoinOrderBy, mockJoinWhere, mockInnerJoin,
+  };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -29,12 +38,16 @@ vi.mock("@/lib/db/schema", () => ({
     id: Symbol("walkers.id"),
   },
   walks: {
+    id: Symbol("walks.id"),
     walkerId: Symbol("walks.walkerId"),
+    animalId: Symbol("walks.animalId"),
     date: Symbol("walks.date"),
+    startTime: Symbol("walks.startTime"),
+    status: Symbol("walks.status"),
   },
 }));
 
-import { getDogsAvailableForWalking, getWalkerByUserId, getWalksByWalkerId } from "./walks";
+import { getDogsAvailableForWalking, getWalkerByUserId, getWalksByWalkerId, getActiveWalksForAdmin } from "./walks";
 
 describe("getDogsAvailableForWalking", () => {
   beforeEach(() => {
@@ -125,6 +138,58 @@ describe("getWalksByWalkerId", () => {
     });
 
     const result = await getWalksByWalkerId(1);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getActiveWalksForAdmin", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset the join chain
+    mockInnerJoin.mockReturnValue({ innerJoin: mockInnerJoin, where: mockJoinWhere });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, innerJoin: mockInnerJoin });
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+  });
+
+  it("returns active walks with walker and animal info", async () => {
+    const activeWalks = [
+      {
+        id: 1,
+        walkerId: 10,
+        animalId: 5,
+        date: "2026-03-15",
+        startTime: "10:00",
+        status: "in_progress",
+        walkerFirstName: "Jan",
+        walkerLastName: "Janssens",
+        walkerPhone: "0471234567",
+        animalName: "Rex",
+      },
+    ];
+    mockJoinOrderBy.mockResolvedValue(activeWalks);
+
+    const result = await getActiveWalksForAdmin();
+
+    expect(result).toEqual(activeWalks);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockInnerJoin).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns empty array when no active walks", async () => {
+    mockJoinOrderBy.mockResolvedValue([]);
+
+    const result = await getActiveWalksForAdmin();
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array on error", async () => {
+    mockJoinWhere.mockReturnValue({
+      orderBy: vi.fn().mockRejectedValue(new Error("DB error")),
+    });
+
+    const result = await getActiveWalksForAdmin();
 
     expect(result).toEqual([]);
   });

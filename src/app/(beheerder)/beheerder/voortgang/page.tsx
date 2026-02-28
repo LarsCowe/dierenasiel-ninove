@@ -79,7 +79,7 @@ const EPICS: Epic[] = [
       { id: "5.1", title: "Wandelaar Online Registratie", status: "done" },
       { id: "5.2", title: "Wandelaar Profiel Beheren en Goedkeuren", status: "done" },
       { id: "5.3", title: "Wandeling Boeken", status: "done" },
-      { id: "5.4", title: "Wandeling Inchecken en Uitchecken", status: "backlog" },
+      { id: "5.4", title: "Wandeling Inchecken en Uitchecken", status: "done" },
       { id: "5.5", title: "Wandelgeschiedenis en Statistieken", status: "backlog" },
       { id: "5.6", title: "Wandelclub", status: "backlog" },
       { id: "5.7", title: "Realtime Wandeloverzicht", status: "backlog" },
