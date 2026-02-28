@@ -323,6 +323,23 @@ export const kennismakingen = pgTable("kennismakingen", {
   index("idx_kennismakingen_candidate_id").on(table.adoptionCandidateId),
 ]);
 
+export const adoptionContracts = pgTable("adoption_contracts", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id),
+  candidateId: integer("candidate_id").notNull().references(() => adoptionCandidates.id),
+  contractDate: date("contract_date").notNull(),
+  paymentAmount: varchar("payment_amount", { length: 20 }).notNull(), // stored as string for decimal precision
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // cash, payconiq, overschrijving
+  contractPdfUrl: varchar("contract_pdf_url", { length: 500 }),
+  dogidCatidTransferDeadline: date("dogid_catid_transfer_deadline"),
+  dogidCatidTransferred: boolean("dogid_catid_transferred").default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_adoption_contracts_candidate_id").on(table.candidateId),
+  index("idx_adoption_contracts_animal_id").on(table.animalId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
