@@ -1,6 +1,7 @@
 import { getWalkersForAdmin, getWalkingClubMembers, getNearThresholdWalkers } from "@/lib/queries/walkers";
 import { getActiveWalksForAdmin, getLastWalkDates } from "@/lib/queries/walks";
 import { getWalkingClubThreshold } from "@/lib/queries/shelter-settings";
+import Link from "next/link";
 import WalkerList from "@/components/beheerder/wandelaars/WalkerList";
 import ActiveWalksPanel from "@/components/beheerder/wandelaars/ActiveWalksPanel";
 import WandelclubPanel from "@/components/beheerder/wandelaars/WandelclubPanel";
@@ -45,11 +46,19 @@ export default async function WandelaarsPage({ searchParams }: Props) {
         </p>
       </div>
 
-      {/* Active walks panel (Story 5.4 AC5) */}
+      {/* Active walks panel (Story 5.4 AC5, Story 5.7 AC1) */}
       <section className="mt-6">
-        <h2 className="mb-3 font-heading text-lg font-semibold text-[#1b4332]">
-          Actieve wandelingen ({activeWalks.length})
-        </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-heading text-lg font-semibold text-[#1b4332]">
+            Actieve wandelingen ({activeWalks.length})
+          </h2>
+          <Link
+            href="/beheerder/wandelaars/actief"
+            className="text-sm font-medium text-[#2d6a4f] hover:underline"
+          >
+            Volledig overzicht &rarr;
+          </Link>
+        </div>
         <ActiveWalksPanel walks={activeWalks} />
       </section>
 
