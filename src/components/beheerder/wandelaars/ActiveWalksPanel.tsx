@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getWalkStatus, elapsedTime } from "@/lib/utils/walk-duration";
+import type { WalkStatus } from "@/lib/utils/walk-duration";
 import type { ActiveWalkForAdmin } from "@/types";
 
 interface ActiveWalksPanelProps {
@@ -83,7 +84,7 @@ export default function ActiveWalksPanel({ walks }: ActiveWalksPanelProps) {
   );
 }
 
-function WalkStatusBadge({ status }: { status: "normal" | "long" | "overdue" }) {
+function WalkStatusBadge({ status }: { status: WalkStatus }) {
   if (status === "overdue") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">

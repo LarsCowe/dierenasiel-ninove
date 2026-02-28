@@ -24,10 +24,10 @@ describe("getWalkStatus", () => {
     expect(getWalkStatus("14:00")).toBe("normal");
   });
 
-  it("returns 'overdue' at exactly 4 hours + 1 minute", () => {
+  it("returns 'long' at exactly 4 hours (boundary)", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-02-28T18:01:00"));
-    expect(getWalkStatus("14:00")).toBe("overdue");
+    vi.setSystemTime(new Date("2026-02-28T18:00:00"));
+    expect(getWalkStatus("14:00")).toBe("long");
   });
 
   it("returns 'long' at exactly 2 hours + 1 minute", () => {
