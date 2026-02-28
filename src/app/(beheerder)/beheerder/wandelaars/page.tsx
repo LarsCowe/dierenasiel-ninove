@@ -14,16 +14,14 @@ export default async function WandelaarsPage({ searchParams }: Props) {
   const validStatuses = ["pending", "approved", "rejected", "inactive"];
   const activeStatus = status && validStatuses.includes(status) ? status : undefined;
 
-  const [walkers, activeWalks, threshold] = await Promise.all([
+  const [walkers, activeWalks, threshold, clubMembers] = await Promise.all([
     getWalkersForAdmin(activeStatus),
     getActiveWalksForAdmin(),
     getWalkingClubThreshold(),
+    getWalkingClubMembers(),
   ]);
 
-  const [clubMembers, nearThreshold] = await Promise.all([
-    getWalkingClubMembers(),
-    getNearThresholdWalkers(threshold),
-  ]);
+  const nearThreshold = await getNearThresholdWalkers(threshold);
 
   // Get last walk dates for all relevant walkers (AC4)
   const allWalkerIds = [

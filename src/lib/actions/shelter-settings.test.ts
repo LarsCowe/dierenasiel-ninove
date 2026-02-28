@@ -2,30 +2,23 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockGetSession, mockLogAudit, mockRevalidatePath,
-  mockSelectLimit, mockSelectWhere, mockSelectFrom,
-  mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
+  mockOnConflictDoUpdate, mockInsertValues, mockInsert,
 } = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
-  const mockSelectLimit = vi.fn();
-  const mockSelectWhere = vi.fn().mockReturnValue({ limit: mockSelectLimit });
-  const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
-  const mockUpdateReturning = vi.fn();
-  const mockUpdateWhere = vi.fn().mockReturnValue({ returning: mockUpdateReturning });
-  const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
-  const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
+  const mockOnConflictDoUpdate = vi.fn();
+  const mockInsertValues = vi.fn().mockReturnValue({ onConflictDoUpdate: mockOnConflictDoUpdate });
+  const mockInsert = vi.fn().mockReturnValue({ values: mockInsertValues });
   return {
     mockGetSession, mockLogAudit, mockRevalidatePath,
-    mockSelectLimit, mockSelectWhere, mockSelectFrom,
-    mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
+    mockOnConflictDoUpdate, mockInsertValues, mockInsert,
   };
 });
 
 vi.mock("@/lib/db", () => ({
   db: {
-    select: vi.fn().mockReturnValue({ from: mockSelectFrom }),
-    update: mockUpdate,
+    insert: mockInsert,
   },
 }));
 
@@ -59,7 +52,7 @@ describe("updateWalkingClubThreshold", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ userId: 1, role: "admin" });
-    mockUpdateReturning.mockResolvedValue([{ key: "walking_club_threshold", value: "15" }]);
+    mockOnConflictDoUpdate.mockResolvedValue(undefined);
   });
 
   it("returns error when not logged in", async () => {
@@ -88,10 +81,14 @@ describe("updateWalkingClubThreshold", () => {
     if (!result.success) expect(result.error).toContain("positief");
   });
 
-  it("updates threshold successfully", async () => {
+  it("upserts threshold successfully", async () => {
     const result = await updateWalkingClubThreshold(15);
     expect(result.success).toBe(true);
-    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockInsert).toHaveBeenCalled();
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "walking_club_threshold", value: "15" }),
+    );
+    expect(mockOnConflictDoUpdate).toHaveBeenCalled();
   });
 
   it("logs audit on success", async () => {

@@ -5,7 +5,6 @@ import { shelterSettings } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
 import type { ActionResult } from "@/types";
 
 export async function updateWalkingClubThreshold(
@@ -26,9 +25,12 @@ export async function updateWalkingClubThreshold(
 
   try {
     await db
-      .update(shelterSettings)
-      .set({ value: String(threshold), updatedAt: new Date() })
-      .where(eq(shelterSettings.key, "walking_club_threshold"));
+      .insert(shelterSettings)
+      .values({ key: "walking_club_threshold", value: String(threshold) })
+      .onConflictDoUpdate({
+        target: shelterSettings.key,
+        set: { value: String(threshold), updatedAt: new Date() },
+      });
 
     await logAudit(
       "settings.walking_club_threshold_updated",

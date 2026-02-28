@@ -187,14 +187,3 @@ export interface WalkStats {
 }
 
 export type ShelterSetting = typeof shelterSettings.$inferSelect;
-
-export interface WalkingClubMember {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  walkCount: number;
-  isWalkingClubMember: boolean;
-  lastWalkDate: string | null;
-}
