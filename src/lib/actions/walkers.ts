@@ -3,6 +3,10 @@
 import { db } from "@/lib/db";
 import { walkers } from "@/lib/db/schema";
 import { walkerRegistrationSchema } from "@/lib/validations/walkers";
+import { walkerStatusUpdateSchema } from "@/lib/validations/walker-status";
+import { requirePermission } from "@/lib/permissions";
+import { logAudit } from "@/lib/audit";
+import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import type { ActionResult } from "@/types";
 import type { Walker } from "@/types";
@@ -77,6 +81,87 @@ export async function submitWalkerRegistration(
       success: true,
       data: updated,
       message: "Bedankt voor je registratie! Je aanvraag wordt zo snel mogelijk behandeld door de coördinator.",
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function updateWalkerStatus(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ActionResult<Walker>> {
+  const permResult = await requirePermission("walker:write");
+  if (permResult && !permResult.success) {
+    return { success: false, error: permResult.error };
+  }
+
+  const raw = {
+    status: formData.get("status") as string,
+    rejectionReason: (formData.get("rejectionReason") as string) || "",
+  };
+
+  const parsed = walkerStatusUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      success: false,
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const walkerId = Number(formData.get("walkerId"));
+  if (!walkerId || isNaN(walkerId)) {
+    return { success: false, error: "Ongeldig wandelaar-id." };
+  }
+
+  try {
+    // Fetch existing walker
+    const existing = await db
+      .select()
+      .from(walkers)
+      .where(eq(walkers.id, walkerId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return { success: false, error: "Wandelaar niet gevonden." };
+    }
+
+    const oldWalker = existing[0];
+    const newStatus = parsed.data.status;
+    const isApproved = newStatus === "approved";
+
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
+      isApproved,
+    };
+
+    if (newStatus === "rejected") {
+      updateData.rejectionReason = parsed.data.rejectionReason.trim();
+    }
+
+    const [updated] = await db
+      .update(walkers)
+      .set(updateData)
+      .where(eq(walkers.id, walkerId))
+      .returning();
+
+    await logAudit(
+      `walker.${newStatus}`,
+      "walker",
+      walkerId,
+      { status: oldWalker.status },
+      { status: newStatus },
+    );
+
+    revalidatePath("/beheerder/wandelaars");
+
+    return {
+      success: true,
+      data: updated,
+      message: `Wandelaar status bijgewerkt naar ${newStatus}.`,
     };
   } catch {
     return {

@@ -1,0 +1,1 @@
+ALTER TABLE "walkers" ADD COLUMN "rejection_reason" text;

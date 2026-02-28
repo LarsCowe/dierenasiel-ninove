@@ -387,6 +387,7 @@ export const walkers = pgTable("walkers", {
   walkCount: integer("walk_count").default(0).notNull(),
   isWalkingClubMember: boolean("is_walking_club_member").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_walkers_status").on(table.status),
