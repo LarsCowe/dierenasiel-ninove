@@ -25,8 +25,17 @@ export async function POST(request: Request) {
   const animalId = Number(formData.get("animalId"));
   const description = formData.get("description") as string | null;
   const context = (formData.get("context") as string) || "dossier";
+  const followupIdRaw = formData.get("followupId");
+  const followupId = followupIdRaw ? Number(followupIdRaw) : undefined;
+  if (followupId !== undefined && (isNaN(followupId) || followupId <= 0)) {
+    return NextResponse.json({ error: "Ongeldig opvolging-ID" }, { status: 400 });
+  }
 
-  const requiredPermission = context === "verwaarlozing" ? "medical:write" : "animal:write";
+  const requiredPermission = context === "verwaarlozing"
+    ? "medical:write"
+    : context === "post_adoptie"
+      ? "adoption:write"
+      : "animal:write";
   if (!hasPermission(session.role, requiredPermission)) {
     return NextResponse.json({ error: "Onvoldoende rechten" }, { status: 403 });
   }
@@ -76,6 +85,7 @@ export async function POST(request: Request) {
         fileType: file.type,
         context,
         description: description || undefined,
+        followupId,
       })
       .returning();
 

@@ -48,6 +48,7 @@ vi.mock("@/lib/db/schema", () => ({
   adoptionCandidates: { id: Symbol("adoptionCandidates.id") },
   animals: { id: Symbol("animals.id") },
   animalTodos: { id: Symbol("animalTodos.id"), animalId: Symbol("animalTodos.animalId"), type: Symbol("animalTodos.type"), isCompleted: Symbol("animalTodos.isCompleted") },
+  postAdoptionFollowups: { id: Symbol("postAdoptionFollowups.id"), contractId: Symbol("postAdoptionFollowups.contractId") },
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
@@ -227,8 +228,28 @@ describe("createAdoptionContract", () => {
   it("creates dogid_catid_overdracht todo on successful contract", async () => {
     const result = await createAdoptionContract(null, makeFormData(validData));
     expect(result.success).toBe(true);
-    // insert should be called twice: once for contract, once for auto-todo
-    expect(mockInsert).toHaveBeenCalledTimes(2);
+    // insert should be called 3x: contract + auto-todo + auto-followups
+    expect(mockInsert).toHaveBeenCalledTimes(3);
+  });
+
+  // Story 4.6 AC2: Automatische post-adoptie opvolgingen
+  it("creates 2 post-adoption followups on successful contract", async () => {
+    const result = await createAdoptionContract(null, makeFormData(validData));
+    expect(result.success).toBe(true);
+    // insert called 3x: contract, auto-todo, auto-followups
+    expect(mockInsert).toHaveBeenCalledTimes(3);
+  });
+
+  it("still succeeds even if followup creation fails", async () => {
+    // Make the 3rd insert call (followups) fail
+    mockReturning.mockResolvedValueOnce([createdContract]); // 1st: contract
+    const mockValues = vi.fn()
+      .mockReturnValueOnce({ returning: mockReturning }) // 1st: contract
+      .mockReturnValueOnce({ returning: vi.fn().mockResolvedValue(undefined) }) // 2nd: auto-todo
+      .mockRejectedValueOnce(new Error("followup insert fail")); // 3rd: followups
+    mockInsert.mockReturnValue({ values: mockValues });
+    const result = await createAdoptionContract(null, makeFormData(validData));
+    expect(result.success).toBe(true);
   });
 
   it("returns graceful error on DB failure", async () => {

@@ -3,9 +3,11 @@ import Link from "next/link";
 import { getAdoptionCandidateById } from "@/lib/queries/adoption-candidates";
 import { getKennismakingenByCandidateId } from "@/lib/queries/kennismakingen";
 import { getContractByCandidateId } from "@/lib/queries/adoption-contracts";
+import { getFollowupsByContractId } from "@/lib/queries/post-adoption-followups";
 import AdoptionCandidateView from "@/components/beheerder/adoptie/AdoptionCandidateView";
 import KennismakingList from "@/components/beheerder/adoptie/KennismakingList";
 import AdoptionContractInfo from "@/components/beheerder/adoptie/AdoptionContractInfo";
+import FollowupList from "@/components/beheerder/adoptie/FollowupList";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,6 +25,8 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
     getContractByCandidateId(candidateId),
   ]);
   if (!candidate) notFound();
+
+  const followups = contract ? await getFollowupsByContractId(contract.id) : [];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -50,6 +54,13 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
       {contract && (
         <div className="mt-6">
           <AdoptionContractInfo contract={contract} />
+        </div>
+      )}
+
+      {/* Post-adoptie opvolgingen (Story 4.6) */}
+      {contract && (
+        <div className="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <FollowupList followups={followups} contractId={contract.id} />
         </div>
       )}
 

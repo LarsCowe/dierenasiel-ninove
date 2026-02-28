@@ -120,6 +120,7 @@ export const users = pgTable("users", {
 export const animalAttachments = pgTable("animal_attachments", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  followupId: integer("followup_id").references(() => postAdoptionFollowups.id, { onDelete: "set null" }),
   fileUrl: text("file_url").notNull(),
   fileName: varchar("file_name", { length: 255 }).notNull(),
   fileType: varchar("file_type", { length: 50 }).notNull(),
@@ -338,6 +339,19 @@ export const adoptionContracts = pgTable("adoption_contracts", {
 }, (table) => [
   index("idx_adoption_contracts_candidate_id").on(table.candidateId),
   index("idx_adoption_contracts_animal_id").on(table.animalId),
+]);
+
+export const postAdoptionFollowups = pgTable("post_adoption_followups", {
+  id: serial("id").primaryKey(),
+  contractId: integer("contract_id").notNull().references(() => adoptionContracts.id, { onDelete: "cascade" }),
+  followupType: varchar("followup_type", { length: 20 }).notNull(), // '1_week' | '1_month' | 'custom'
+  date: date("date").notNull(),
+  notes: text("notes"),
+  status: varchar("status", { length: 20 }).notNull().default("planned"), // 'planned' | 'completed' | 'no_response'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_post_adoption_followups_contract_id").on(table.contractId),
+  index("idx_post_adoption_followups_status_date").on(table.status, table.date),
 ]);
 
 export const auditLogs = pgTable("audit_logs", {

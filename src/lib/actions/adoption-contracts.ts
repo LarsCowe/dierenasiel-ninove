@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { adoptionContracts, adoptionCandidates, animals, animalTodos } from "@/lib/db/schema";
+import { adoptionContracts, adoptionCandidates, animals, animalTodos, postAdoptionFollowups } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
@@ -128,6 +128,16 @@ export async function createAdoptionContract(
       });
     } catch (err) {
       console.error("Auto-todo creation failed (non-critical):", err);
+    }
+
+    // Story 4.6 AC2: Auto-create post-adoption followups (non-critical)
+    try {
+      await db.insert(postAdoptionFollowups).values([
+        { contractId: record.id, followupType: "1_week", date: addDays(parsed.data.contractDate, 7), status: "planned" },
+        { contractId: record.id, followupType: "1_month", date: addDays(parsed.data.contractDate, 30), status: "planned" },
+      ]);
+    } catch (err) {
+      console.error("Auto-followup creation failed (non-critical):", err);
     }
 
     await logAudit("create_adoption_contract", "adoption_contract", record.id, null, record);
