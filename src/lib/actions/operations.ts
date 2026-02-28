@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { operations } from "@/lib/db/schema";
+import { animals, operations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
@@ -50,6 +50,14 @@ export async function createOperation(
         notes: parsed.data.notes || null,
       })
       .returning();
+
+    // AC2: Auto-update is_neutered when steriliseren or castreren
+    if (parsed.data.type === "steriliseren" || parsed.data.type === "castreren") {
+      await db
+        .update(animals)
+        .set({ isNeutered: true })
+        .where(eq(animals.id, parsed.data.animalId));
+    }
 
     await logAudit("create_operation", "operation", record.id, null, record);
     revalidatePath("/beheerder/dieren");

@@ -4,6 +4,7 @@ const {
   mockReturning, mockInsert,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
+  mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
   mockGetAnimalById,
 } = vi.hoisted(() => {
@@ -14,6 +15,9 @@ const {
   const mockSelectLimit = vi.fn();
   const mockSelectWhere = vi.fn().mockReturnValue({ limit: mockSelectLimit });
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
+  const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+  const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
   const mockRequirePermission = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
@@ -23,6 +27,7 @@ const {
     mockReturning, mockInsert,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
+    mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
     mockGetAnimalById,
   };
@@ -36,6 +41,7 @@ vi.mock("@/lib/db", () => {
       insert: mockInsert,
       delete: mockDelete,
       select: vi.fn().mockReturnValue({ from: mockSelectFrom }),
+      update: mockUpdate,
     },
   };
 });
@@ -43,6 +49,7 @@ vi.mock("@/lib/db", () => {
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 vi.mock("@/lib/db/schema", () => ({
   operations: { id: Symbol("operations.id") },
+  animals: { id: Symbol("animals.id"), isNeutered: Symbol("animals.isNeutered") },
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
@@ -125,6 +132,34 @@ describe("createOperation", () => {
     const result = await createOperation(null, makeFormData(validFormData));
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toBeDefined();
+  });
+
+  it("sets is_neutered to true when type is steriliseren", async () => {
+    const result = await createOperation(null, makeFormData({ ...validFormData, type: "steriliseren" }));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith({ isNeutered: true });
+  });
+
+  it("sets is_neutered to true when type is castreren", async () => {
+    const result = await createOperation(null, makeFormData({ ...validFormData, type: "castreren" }));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith({ isNeutered: true });
+  });
+
+  it("does NOT set is_neutered for tanden_opkuisen", async () => {
+    mockReturning.mockResolvedValue([{ ...createdRecord, type: "tanden_opkuisen" }]);
+    const result = await createOperation(null, makeFormData({ ...validFormData, type: "tanden_opkuisen" }));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("does NOT set is_neutered for gezwel_weghalen", async () => {
+    mockReturning.mockResolvedValue([{ ...createdRecord, type: "gezwel_weghalen" }]);
+    const result = await createOperation(null, makeFormData({ ...validFormData, type: "gezwel_weghalen" }));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });
 
