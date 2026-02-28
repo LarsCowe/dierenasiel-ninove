@@ -187,3 +187,4 @@ export interface WalkStats {
 }
 
 export type ShelterSetting = typeof shelterSettings.$inferSelect;
+export type NewShelterSetting = typeof shelterSettings.$inferInsert;

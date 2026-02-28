@@ -74,7 +74,7 @@ const EPICS: Epic[] = [
   {
     id: 5,
     title: "Wandelaarsbeheer",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "5.1", title: "Wandelaar Online Registratie", status: "done" },
       { id: "5.2", title: "Wandelaar Profiel Beheren en Goedkeuren", status: "done" },
@@ -88,9 +88,9 @@ const EPICS: Epic[] = [
   {
     id: 6,
     title: "Workflow Engine",
-    status: "backlog",
+    status: "in-progress",
     stories: [
-      { id: "6.1", title: "Workflow Instellingen en Feature Toggles", status: "backlog" },
+      { id: "6.1", title: "Workflow Instellingen en Feature Toggles", status: "done" },
       { id: "6.2", title: "Workflow Fase-overgang Engine", status: "backlog" },
       { id: "6.3", title: "Transition Guards met Override", status: "backlog" },
       { id: "6.4", title: "Automatische Acties bij Fase-overgang", status: "backlog" },

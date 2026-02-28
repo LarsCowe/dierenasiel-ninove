@@ -415,7 +415,9 @@ export const walks = pgTable("walks", {
 ]);
 
 export const shelterSettings = pgTable("shelter_settings", {
-  key: varchar("key", { length: 100 }).primaryKey(),
-  value: text("value").notNull(),
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 100 }).unique().notNull(),
+  value: jsonb("value").notNull(),
+  updatedBy: integer("updated_by").references(() => users.id),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

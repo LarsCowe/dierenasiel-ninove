@@ -75,11 +75,16 @@ async function seed() {
   // Seed shelter settings
   console.log("Seeding shelter settings...");
   await db.delete(schema.shelterSettings);
-  await db.insert(schema.shelterSettings).values({
-    key: "walking_club_threshold",
-    value: "10",
-  });
-  console.log("  Inserted shelter settings");
+  const shelterSettingsData = [
+    { key: "walking_club_threshold", value: 10 },
+    { key: "workflow_enabled", value: true },
+    { key: "workflow_stepbar_visible", value: true },
+    { key: "workflow_auto_actions_enabled", value: true },
+  ];
+  for (const setting of shelterSettingsData) {
+    await db.insert(schema.shelterSettings).values(setting);
+  }
+  console.log(`  Inserted ${shelterSettingsData.length} shelter settings`);
 
   console.log("Seeding complete!");
 }
