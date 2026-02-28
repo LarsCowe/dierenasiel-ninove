@@ -5,8 +5,9 @@ import { adoptionCandidates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { adoptionCandidateSchema } from "@/lib/validations/adoption-candidates";
+import { adoptionCandidateSchema, categorySchema, updateStatusSchema } from "@/lib/validations/adoption-candidates";
 import { getAnimalById } from "@/lib/queries/animals";
+import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, AdoptionCandidate } from "@/types";
 
@@ -59,6 +60,122 @@ export async function createAdoptionCandidate(
     revalidatePath("/beheerder/adoptie");
 
     return { success: true, data: record as AdoptionCandidate };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis bij het opslaan. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function setCategoryAdoptionCandidate(
+  _prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(formData.get("json") as string);
+  } catch {
+    return { success: false, error: "Ongeldige gegevens" };
+  }
+
+  const { id, ...rest } = raw as { id: number; category: string };
+  const parsed = categorySchema.safeParse(rest);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige categorie" };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionCandidates)
+      .where(eq(adoptionCandidates.id, id))
+      .limit(1);
+    if (!existing) return { success: false, error: "Kandidaat niet gevonden" };
+
+    const session = await getSession();
+    const updateData: Record<string, string> = {
+      category: parsed.data.category,
+      categorySetBy: session?.name || "Onbekend",
+    };
+
+    if (existing.status === "pending") {
+      updateData.status = "screening";
+    }
+
+    await db
+      .update(adoptionCandidates)
+      .set(updateData)
+      .where(eq(adoptionCandidates.id, id));
+
+    await logAudit(
+      "set_category_adoption_candidate",
+      "adoption_candidate",
+      id,
+      { category: existing.category, categorySetBy: existing.categorySetBy },
+      { category: parsed.data.category, categorySetBy: updateData.categorySetBy },
+    );
+    revalidatePath("/beheerder/adoptie");
+
+    return { success: true, data: undefined };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis bij het opslaan. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function updateStatusAdoptionCandidate(
+  _prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(formData.get("json") as string);
+  } catch {
+    return { success: false, error: "Ongeldige gegevens" };
+  }
+
+  const { id, ...rest } = raw as { id: number; status: string };
+  const parsed = updateStatusSchema.safeParse(rest);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige status" };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionCandidates)
+      .where(eq(adoptionCandidates.id, id))
+      .limit(1);
+    if (!existing) return { success: false, error: "Kandidaat niet gevonden" };
+
+    await db
+      .update(adoptionCandidates)
+      .set({ status: parsed.data.status })
+      .where(eq(adoptionCandidates.id, id));
+
+    await logAudit(
+      "update_status_adoption_candidate",
+      "adoption_candidate",
+      id,
+      { status: existing.status },
+      { status: parsed.data.status },
+    );
+    revalidatePath("/beheerder/adoptie");
+
+    return { success: true, data: undefined };
   } catch {
     return {
       success: false,

@@ -5,7 +5,7 @@ const {
 } = vi.hoisted(() => {
   const mockSelectLimit = vi.fn();
   const mockSelectOrderBy = vi.fn().mockReturnValue({ limit: mockSelectLimit });
-  const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy });
+  const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
   return { mockSelectLimit, mockSelectOrderBy, mockSelectWhere, mockSelectFrom };
 });
@@ -20,6 +20,7 @@ vi.mock("@/lib/db/schema", () => ({
   adoptionCandidates: {
     id: Symbol("adoptionCandidates.id"),
     status: Symbol("adoptionCandidates.status"),
+    category: Symbol("adoptionCandidates.category"),
     createdAt: Symbol("adoptionCandidates.createdAt"),
   },
 }));
@@ -98,5 +99,33 @@ describe("getAdoptionCandidateById", () => {
     mockSelectLimit.mockRejectedValue(new Error("DB error"));
     const result = await getAdoptionCandidateById(1);
     expect(result).toBeNull();
+  });
+});
+
+describe("getAdoptionCandidates with category filter", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([mockCandidate]);
+    // Reset chain: from → where → orderBy → limit
+    mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+  });
+
+  it("filters by category when provided", async () => {
+    const result = await getAdoptionCandidates("goede_kandidaat");
+    expect(result).toEqual([mockCandidate]);
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("returns all candidates when no filter", async () => {
+    const result = await getAdoptionCandidates();
+    expect(result).toEqual([mockCandidate]);
+  });
+
+  it("returns empty array on error with filter", async () => {
+    mockSelectLimit.mockRejectedValue(new Error("DB error"));
+    const result = await getAdoptionCandidates("niet_weerhouden");
+    expect(result).toEqual([]);
   });
 });

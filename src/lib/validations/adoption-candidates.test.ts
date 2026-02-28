@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   adoptionCandidateSchema,
   questionnaireSchema,
+  categorySchema,
+  updateStatusSchema,
 } from "./adoption-candidates";
 
 const validQuestionnaire = {
@@ -219,6 +221,70 @@ describe("adoptionCandidateSchema", () => {
       ...validCandidate,
       email: "a".repeat(190) + "@example.com",
     });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("categorySchema", () => {
+  it("accepts niet_weerhouden", () => {
+    const result = categorySchema.safeParse({ category: "niet_weerhouden" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts mogelijks", () => {
+    const result = categorySchema.safeParse({ category: "mogelijks" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts goede_kandidaat", () => {
+    const result = categorySchema.safeParse({ category: "goede_kandidaat" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid category", () => {
+    const result = categorySchema.safeParse({ category: "excellent" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty category", () => {
+    const result = categorySchema.safeParse({ category: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("requires category field", () => {
+    const result = categorySchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updateStatusSchema", () => {
+  it("accepts screening", () => {
+    const result = updateStatusSchema.safeParse({ status: "screening" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts approved", () => {
+    const result = updateStatusSchema.safeParse({ status: "approved" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts rejected", () => {
+    const result = updateStatusSchema.safeParse({ status: "rejected" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects pending (cannot go back to pending)", () => {
+    const result = updateStatusSchema.safeParse({ status: "pending" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects adopted (separate workflow)", () => {
+    const result = updateStatusSchema.safeParse({ status: "adopted" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid status", () => {
+    const result = updateStatusSchema.safeParse({ status: "cancelled" });
     expect(result.success).toBe(false);
   });
 });

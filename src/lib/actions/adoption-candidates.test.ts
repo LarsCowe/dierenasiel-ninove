@@ -4,6 +4,7 @@ const {
   mockReturning, mockInsert,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
+  mockUpdateSetWhere, mockUpdateSet, mockUpdate,
   mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
   mockGetAnimalById,
 } = vi.hoisted(() => {
@@ -14,6 +15,9 @@ const {
   const mockSelectLimit = vi.fn();
   const mockSelectWhere = vi.fn().mockReturnValue({ limit: mockSelectLimit });
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
+  const mockUpdateSetWhere = vi.fn();
+  const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateSetWhere });
+  const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
   const mockRequirePermission = vi.fn();
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
@@ -23,6 +27,7 @@ const {
     mockReturning, mockInsert,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
+    mockUpdateSetWhere, mockUpdateSet, mockUpdate,
     mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
     mockGetAnimalById,
   };
@@ -35,6 +40,7 @@ vi.mock("@/lib/db", () => {
     db: {
       insert: mockInsert,
       delete: mockDelete,
+      update: mockUpdate,
       select: vi.fn().mockReturnValue({ from: mockSelectFrom }),
     },
   };
@@ -54,7 +60,12 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
 }));
 
-import { createAdoptionCandidate, deleteAdoptionCandidate } from "./adoption-candidates";
+import {
+  createAdoptionCandidate,
+  deleteAdoptionCandidate,
+  setCategoryAdoptionCandidate,
+  updateStatusAdoptionCandidate,
+} from "./adoption-candidates";
 
 const validData = {
   firstName: "Jan",
@@ -253,6 +264,157 @@ describe("deleteAdoptionCandidate", () => {
   it("returns graceful error on DB failure", async () => {
     mockDeleteWhere.mockRejectedValue(new Error("Connection refused"));
     const result = await deleteAdoptionCandidate(null, makeDeleteFormData("1"));
+    expect(result.success).toBe(false);
+  });
+});
+
+function makeCategoryFormData(id: string, category: string): FormData {
+  const fd = new FormData();
+  fd.append("json", JSON.stringify({ id: Number(id), category }));
+  return fd;
+}
+
+function makeStatusFormData(id: string, status: string): FormData {
+  const fd = new FormData();
+  fd.append("json", JSON.stringify({ id: Number(id), status }));
+  return fd;
+}
+
+describe("setCategoryAdoptionCandidate", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockGetSession.mockResolvedValue({ userId: 3, role: "adoptieconsulent", name: "Marie Janssens" });
+    mockSelectLimit.mockResolvedValue([{ ...createdRecord, status: "screening" }]);
+    mockUpdateSetWhere.mockResolvedValue(undefined);
+  });
+
+  it("requires adoption:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "goede_kandidaat"));
+    expect(mockRequirePermission).toHaveBeenCalledWith("adoption:write");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when JSON is invalid", async () => {
+    const fd = new FormData();
+    fd.append("json", "not-valid");
+    const result = await setCategoryAdoptionCandidate(null, fd);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid category value", async () => {
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "excellent"));
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when candidate not found", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("999", "goede_kandidaat"));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Kandidaat niet gevonden");
+  });
+
+  it("sets category and categorySetBy on success", async () => {
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "goede_kandidaat"));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "goede_kandidaat", categorySetBy: "Marie Janssens" }),
+    );
+  });
+
+  it("also sets status to screening if currently pending", async () => {
+    mockSelectLimit.mockResolvedValue([{ ...createdRecord, status: "pending" }]);
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "mogelijks"));
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "mogelijks", status: "screening" }),
+    );
+  });
+
+  it("does not change status if already screening or later", async () => {
+    mockSelectLimit.mockResolvedValue([{ ...createdRecord, status: "screening" }]);
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "mogelijks"));
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.not.objectContaining({ status: expect.anything() }),
+    );
+  });
+
+  it("calls logAudit after success", async () => {
+    await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "goede_kandidaat"));
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "set_category_adoption_candidate", "adoption_candidate", 1,
+      expect.objectContaining({ category: null }),
+      expect.objectContaining({ category: "goede_kandidaat" }),
+    );
+  });
+
+  it("revalidates adoptie path", async () => {
+    await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "goede_kandidaat"));
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/adoptie");
+  });
+
+  it("returns graceful error on DB failure", async () => {
+    mockUpdateSetWhere.mockRejectedValue(new Error("Connection refused"));
+    const result = await setCategoryAdoptionCandidate(null, makeCategoryFormData("1", "goede_kandidaat"));
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updateStatusAdoptionCandidate", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockSelectLimit.mockResolvedValue([{ ...createdRecord, status: "screening" }]);
+    mockUpdateSetWhere.mockResolvedValue(undefined);
+  });
+
+  it("requires adoption:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+    const result = await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "rejected"));
+    expect(mockRequirePermission).toHaveBeenCalledWith("adoption:write");
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid status", async () => {
+    const result = await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "cancelled"));
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when candidate not found", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+    const result = await updateStatusAdoptionCandidate(null, makeStatusFormData("999", "rejected"));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Kandidaat niet gevonden");
+  });
+
+  it("updates status on success", async () => {
+    const result = await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "rejected"));
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "rejected" }));
+  });
+
+  it("calls logAudit after success", async () => {
+    await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "approved"));
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "update_status_adoption_candidate", "adoption_candidate", 1,
+      expect.objectContaining({ status: "screening" }),
+      expect.objectContaining({ status: "approved" }),
+    );
+  });
+
+  it("revalidates adoptie path", async () => {
+    await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "rejected"));
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/adoptie");
+  });
+
+  it("returns graceful error on DB failure", async () => {
+    mockUpdateSetWhere.mockRejectedValue(new Error("Connection refused"));
+    const result = await updateStatusAdoptionCandidate(null, makeStatusFormData("1", "rejected"));
     expect(result.success).toBe(false);
   });
 });

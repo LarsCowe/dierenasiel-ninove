@@ -13,6 +13,14 @@ export const questionnaireSchema = z.object({
   opmerkingen: z.string(),
 });
 
+export const categorySchema = z.object({
+  category: z.enum(["niet_weerhouden", "mogelijks", "goede_kandidaat"]),
+});
+
+export const updateStatusSchema = z.object({
+  status: z.enum(["screening", "approved", "rejected"]),
+});
+
 export const adoptionCandidateSchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht").max(100),
   lastName: z.string().min(1, "Achternaam is verplicht").max(100),

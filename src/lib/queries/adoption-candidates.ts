@@ -3,13 +3,19 @@ import { adoptionCandidates } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import type { AdoptionCandidate } from "@/types";
 
-export async function getAdoptionCandidates(): Promise<AdoptionCandidate[]> {
+export async function getAdoptionCandidates(category?: string): Promise<AdoptionCandidate[]> {
   try {
-    const results = await db
-      .select()
-      .from(adoptionCandidates)
-      .orderBy(desc(adoptionCandidates.createdAt))
-      .limit(50);
+    const query = db.select().from(adoptionCandidates);
+
+    const results = category
+      ? await query
+          .where(eq(adoptionCandidates.category, category))
+          .orderBy(desc(adoptionCandidates.createdAt))
+          .limit(50)
+      : await query
+          .orderBy(desc(adoptionCandidates.createdAt))
+          .limit(50);
+
     return results as AdoptionCandidate[];
   } catch (err) {
     console.error("getAdoptionCandidates query failed:", err);

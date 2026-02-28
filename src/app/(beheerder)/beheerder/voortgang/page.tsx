@@ -64,7 +64,7 @@ const EPICS: Epic[] = [
     status: "in-progress",
     stories: [
       { id: "4.1", title: "Adoptie-aanvraag Ontvangen en Screenen", status: "done" },
-      { id: "4.2", title: "Kandidaat-adoptant Categoriseren", status: "backlog" },
+      { id: "4.2", title: "Kandidaat-adoptant Categoriseren", status: "done" },
       { id: "4.3", title: "Kennismaking Organiseren", status: "backlog" },
       { id: "4.4", title: "Adoptiecontract Opmaken", status: "backlog" },
       { id: "4.5", title: "DogID/CatID Overdracht (Automatische Taak)", status: "backlog" },

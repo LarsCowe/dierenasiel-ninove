@@ -2,8 +2,15 @@ import Link from "next/link";
 import { getAdoptionCandidates } from "@/lib/queries/adoption-candidates";
 import AdoptionCandidateList from "@/components/beheerder/adoptie/AdoptionCandidateList";
 
-export default async function AdoptiePage() {
-  const candidates = await getAdoptionCandidates();
+interface Props {
+  searchParams: Promise<{ categorie?: string }>;
+}
+
+export default async function AdoptiePage({ searchParams }: Props) {
+  const { categorie } = await searchParams;
+  const validCategories = ["niet_weerhouden", "mogelijks", "goede_kandidaat"];
+  const activeCategory = categorie && validCategories.includes(categorie) ? categorie : undefined;
+  const candidates = await getAdoptionCandidates(activeCategory);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -25,7 +32,7 @@ export default async function AdoptiePage() {
       </div>
 
       <div className="mt-6">
-        <AdoptionCandidateList candidates={candidates} />
+        <AdoptionCandidateList candidates={candidates} activeCategory={activeCategory} />
       </div>
     </div>
   );
