@@ -67,7 +67,7 @@ const EPICS: Epic[] = [
       { id: "4.2", title: "Kandidaat-adoptant Categoriseren", status: "done" },
       { id: "4.3", title: "Kennismaking Organiseren", status: "done" },
       { id: "4.4", title: "Adoptiecontract Opmaken", status: "done" },
-      { id: "4.5", title: "DogID/CatID Overdracht (Automatische Taak)", status: "backlog" },
+      { id: "4.5", title: "DogID/CatID Overdracht (Automatische Taak)", status: "in-progress" },
       { id: "4.6", title: "Post-adoptie Opvolging", status: "backlog" },
     ],
   },
@@ -301,7 +301,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 1 maart 2026
+        Laatst bijgewerkt: 28 februari 2026
       </div>
     </div>
   );

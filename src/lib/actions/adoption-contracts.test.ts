@@ -47,6 +47,7 @@ vi.mock("@/lib/db/schema", () => ({
   adoptionContracts: { id: Symbol("adoptionContracts.id") },
   adoptionCandidates: { id: Symbol("adoptionCandidates.id") },
   animals: { id: Symbol("animals.id") },
+  animalTodos: { id: Symbol("animalTodos.id") },
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
@@ -55,9 +56,10 @@ vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
 vi.mock("@/lib/queries/vaccinations", () => ({ getVaccinationsByAnimalId: mockGetVaccinationsByAnimalId }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
+  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
 }));
 
-import { createAdoptionContract } from "./adoption-contracts";
+import { createAdoptionContract, markDogidCatidTransferred } from "./adoption-contracts";
 
 const validData = {
   animalId: 5,
@@ -221,9 +223,120 @@ describe("createAdoptionContract", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/adoptie");
   });
 
+  // Story 4.5 AC1: Automatische taak bij contract
+  it("creates dogid_catid_overdracht todo on successful contract", async () => {
+    const result = await createAdoptionContract(null, makeFormData(validData));
+    expect(result.success).toBe(true);
+    // insert should be called twice: once for contract, once for auto-todo
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+  });
+
   it("returns graceful error on DB failure", async () => {
     mockReturning.mockRejectedValue(new Error("Connection refused"));
     const result = await createAdoptionContract(null, makeFormData(validData));
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── markDogidCatidTransferred ───────────────────────────────────────
+
+const existingContract = {
+  id: 1,
+  animalId: 5,
+  candidateId: 1,
+  contractDate: "2026-03-15",
+  dogidCatidTransferred: false,
+  dogidCatidTransferDeadline: "2026-03-29",
+};
+
+const existingTodo = {
+  id: 10,
+  animalId: 5,
+  type: "dogid_catid_overdracht",
+  isCompleted: false,
+};
+
+function makeTransferFormData(contractId: number): FormData {
+  const fd = new FormData();
+  fd.append("contractId", String(contractId));
+  return fd;
+}
+
+describe("markDogidCatidTransferred", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockGetSession.mockResolvedValue({ userId: 3, name: "Marie Janssens" });
+    // First select: contract lookup; Second select: todo lookup
+    mockSelectLimit
+      .mockResolvedValueOnce([existingContract])
+      .mockResolvedValueOnce([existingTodo]);
+    mockUpdateSetWhere.mockResolvedValue(undefined);
+    mockReturning.mockResolvedValue([{ ...existingTodo, isCompleted: true }]);
+  });
+
+  it("requires adoption:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(mockRequirePermission).toHaveBeenCalledWith("adoption:write");
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when contractId is invalid", async () => {
+    const fd = new FormData();
+    fd.append("contractId", "abc");
+    const result = await markDogidCatidTransferred(null, fd);
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when contract not found", async () => {
+    mockSelectLimit.mockReset();
+    mockSelectLimit.mockResolvedValueOnce([]);
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(999));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Contract niet gevonden");
+  });
+
+  it("returns error when already transferred", async () => {
+    mockSelectLimit.mockReset();
+    mockSelectLimit.mockResolvedValueOnce([{ ...existingContract, dogidCatidTransferred: true }]);
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("reeds");
+  });
+
+  it("updates contract dogidCatidTransferred to true", async () => {
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
+  });
+
+  it("completes the related animal_todo", async () => {
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(result.success).toBe(true);
+    // update called for contract + todo completion
+    expect(mockUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it("calls logAudit on success", async () => {
+    await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "mark_dogid_catid_transferred", "adoption_contract", 1,
+      expect.objectContaining({ dogidCatidTransferred: false }),
+      expect.objectContaining({ dogidCatidTransferred: true }),
+    );
+  });
+
+  it("revalidates adoptie path", async () => {
+    await markDogidCatidTransferred(null, makeTransferFormData(1));
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/adoptie");
+  });
+
+  it("returns graceful error on DB failure", async () => {
+    mockSelectLimit.mockReset();
+    mockSelectLimit.mockRejectedValue(new Error("DB down"));
+    const result = await markDogidCatidTransferred(null, makeTransferFormData(1));
     expect(result.success).toBe(false);
   });
 });

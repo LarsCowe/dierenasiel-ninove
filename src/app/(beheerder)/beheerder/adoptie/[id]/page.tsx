@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAdoptionCandidateById } from "@/lib/queries/adoption-candidates";
 import { getKennismakingenByCandidateId } from "@/lib/queries/kennismakingen";
+import { getContractByCandidateId } from "@/lib/queries/adoption-contracts";
 import AdoptionCandidateView from "@/components/beheerder/adoptie/AdoptionCandidateView";
 import KennismakingList from "@/components/beheerder/adoptie/KennismakingList";
+import AdoptionContractInfo from "@/components/beheerder/adoptie/AdoptionContractInfo";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,9 +17,10 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
 
   if (isNaN(candidateId)) notFound();
 
-  const [candidate, kennismakingen] = await Promise.all([
+  const [candidate, kennismakingen, contract] = await Promise.all([
     getAdoptionCandidateById(candidateId),
     getKennismakingenByCandidateId(candidateId),
+    getContractByCandidateId(candidateId),
   ]);
   if (!candidate) notFound();
 
@@ -42,6 +45,13 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
       <div className="mt-6">
         <AdoptionCandidateView candidate={candidate} />
       </div>
+
+      {/* Contract info + DogID/CatID overdracht toggle (Story 4.5) */}
+      {contract && (
+        <div className="mt-6">
+          <AdoptionContractInfo contract={contract} />
+        </div>
+      )}
 
       {/* Kennismakingshistorie (AC3) */}
       <div className="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
