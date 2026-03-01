@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport } = vi.hoisted(() => {
+const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport } = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockGetAnimalReport = vi.fn();
   const mockGetMedicationReport = vi.fn();
-  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport };
+  const mockGetAdoptionContractsReport = vi.fn();
+  const mockGetWebsitePublicationReport = vi.fn();
+  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport };
 });
 
 vi.mock("@/lib/auth/session", () => ({
@@ -14,9 +16,11 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("@/lib/queries/reports", () => ({
   getAnimalReport: mockGetAnimalReport,
   getMedicationReport: mockGetMedicationReport,
+  getAdoptionContractsReport: mockGetAdoptionContractsReport,
+  getWebsitePublicationReport: mockGetWebsitePublicationReport,
 }));
 
-import { exportAnimalReportCsv, exportMedicationReportCsv } from "./report-export";
+import { exportAnimalReportCsv, exportMedicationReportCsv, exportAdoptionContractsCsv, exportWebsitePublicationCsv } from "./report-export";
 
 const mockAnimals = [
   {
@@ -204,6 +208,173 @@ describe("exportMedicationReportCsv", () => {
     mockGetMedicationReport.mockResolvedValue({ medications: [], total: 0 });
 
     const result = await exportMedicationReportCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(1); // header only
+    }
+  });
+});
+
+// ==================== exportAdoptionContractsCsv ====================
+
+const mockContracts = [
+  {
+    id: 1, animalName: "Rex", animalSpecies: "hond",
+    candidateFirstName: "Jan", candidateLastName: "Janssen",
+    contractDate: "2026-02-10", paymentAmount: "150.00", paymentMethod: "cash",
+    dogidCatidTransferred: false,
+  },
+  {
+    id: 2, animalName: "Mimi", animalSpecies: "kat",
+    candidateFirstName: "Els", candidateLastName: "De Smet",
+    contractDate: "2026-02-20", paymentAmount: "75.00", paymentMethod: "payconiq",
+    dogidCatidTransferred: true,
+  },
+];
+
+describe("exportAdoptionContractsCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetAdoptionContractsReport.mockResolvedValue({ contracts: mockContracts, total: 2 });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await exportAdoptionContractsCsv({});
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet ingelogd");
+  });
+
+  it("returns error when user has no report permission", async () => {
+    mockGetSession.mockResolvedValue({ userId: 1, role: "wandelaar", email: "w@test.com", name: "W" });
+
+    const result = await exportAdoptionContractsCsv({});
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rechten");
+  });
+
+  it("generates CSV with correct headers", async () => {
+    const result = await exportAdoptionContractsCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines[0]).toBe("Dier,Soort,Adoptant,Datum,Bedrag,Betaalwijze,DogID/CatID overgedragen");
+    }
+  });
+
+  it("generates CSV with correct data rows", async () => {
+    const result = await exportAdoptionContractsCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(3); // header + 2 data rows
+      expect(lines[1]).toContain("Rex");
+      expect(lines[1]).toContain("Jan Janssen");
+      expect(lines[1]).toContain("150.00");
+      expect(lines[1]).toContain("Nee"); // dogidCatidTransferred = false
+      expect(lines[2]).toContain("Mimi");
+      expect(lines[2]).toContain("Ja"); // dogidCatidTransferred = true
+    }
+  });
+
+  it("passes filters to the query without pagination", async () => {
+    await exportAdoptionContractsCsv({ dateFrom: "2026-02-01", paymentMethod: "cash" });
+
+    expect(mockGetAdoptionContractsReport).toHaveBeenCalledWith({
+      dateFrom: "2026-02-01",
+      paymentMethod: "cash",
+    });
+  });
+
+  it("handles empty result set", async () => {
+    mockGetAdoptionContractsReport.mockResolvedValue({ contracts: [], total: 0 });
+
+    const result = await exportAdoptionContractsCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(1); // header only
+    }
+  });
+});
+
+// ==================== exportWebsitePublicationCsv ====================
+
+const mockWebsiteAnimals = [
+  {
+    id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu",
+    isOnWebsite: true, shortDescription: "Lieve hond",
+    identificationNr: "981000000000001", status: "beschikbaar",
+  },
+  {
+    id: 5, name: "Bella", species: "hond", breed: "Chihuahua", gender: "teef",
+    isOnWebsite: true, shortDescription: "Klein en energiek",
+    identificationNr: null, status: "beschikbaar",
+  },
+];
+
+describe("exportWebsitePublicationCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetWebsitePublicationReport.mockResolvedValue({ animals: mockWebsiteAnimals, total: 2 });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await exportWebsitePublicationCsv();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet ingelogd");
+  });
+
+  it("returns error when user has no report permission", async () => {
+    mockGetSession.mockResolvedValue({ userId: 1, role: "wandelaar", email: "w@test.com", name: "W" });
+
+    const result = await exportWebsitePublicationCsv();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rechten");
+  });
+
+  it("generates CSV with correct headers", async () => {
+    const result = await exportWebsitePublicationCsv();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines[0]).toBe("Naam,Soort,Ras,Geslacht,Chipnr,Korte beschrijving");
+    }
+  });
+
+  it("generates CSV with correct data rows", async () => {
+    const result = await exportWebsitePublicationCsv();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(3); // header + 2 rows
+      expect(lines[1]).toContain("Rex");
+      expect(lines[1]).toContain("Hond");
+      expect(lines[1]).toContain("Labrador");
+      expect(lines[2]).toContain("Bella");
+    }
+  });
+
+  it("handles empty result set", async () => {
+    mockGetWebsitePublicationReport.mockResolvedValue({ animals: [], total: 0 });
+
+    const result = await exportWebsitePublicationCsv();
 
     expect(result.success).toBe(true);
     if (result.success) {

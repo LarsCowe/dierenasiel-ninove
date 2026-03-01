@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOffset, setMockData, mockEq, mockAnd, mockGte, mockLte, mockInnerJoin } = vi.hoisted(() => {
+const { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOffset, setMockData, mockEq, mockAnd, mockGte, mockLte, mockInnerJoin, mockIsNotNull, mockLeftJoin, mockGroupBy } = vi.hoisted(() => {
   let mockData: unknown[] = [];
   const setMockData = (data: unknown[]) => { mockData = data; };
 
@@ -8,16 +8,19 @@ const { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOff
   const mockOffset = vi.fn(async () => mockData);
   const mockLimit = vi.fn(() => ({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
   const mockOrderBy = vi.fn(() => ({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
-  const mockWhere = vi.fn(() => ({ orderBy: mockOrderBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
-  const mockInnerJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin }));
-  const mockFrom = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin }));
+  const mockGroupBy = vi.fn(() => ({ orderBy: mockOrderBy, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
+  const mockWhere = vi.fn(() => ({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
+  const mockLeftJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, groupBy: mockGroupBy, leftJoin: mockLeftJoin as ReturnType<typeof vi.fn> }));
+  const mockInnerJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin as ReturnType<typeof vi.fn> }));
+  const mockFrom = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin }));
   const mockSelect = vi.fn(() => ({ from: mockFrom }));
   const mockDb = { select: mockSelect };
   const mockEq = vi.fn((...args: unknown[]) => ({ type: "eq", args }));
   const mockAnd = vi.fn((...args: unknown[]) => ({ type: "and", args }));
   const mockGte = vi.fn((...args: unknown[]) => ({ type: "gte", args }));
   const mockLte = vi.fn((...args: unknown[]) => ({ type: "lte", args }));
-  return { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOffset, setMockData, mockEq, mockAnd, mockGte, mockLte, mockInnerJoin };
+  const mockIsNotNull = vi.fn((col: unknown) => ({ type: "isNotNull", col }));
+  return { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOffset, setMockData, mockEq, mockAnd, mockGte, mockLte, mockInnerJoin, mockIsNotNull, mockLeftJoin, mockGroupBy };
 });
 
 vi.mock("@/lib/db", () => ({ db: mockDb }));
@@ -35,11 +38,20 @@ vi.mock("@/lib/db/schema", () => ({
     intakeDate: "animals.intake_date",
     isInShelter: "animals.is_in_shelter",
     identificationNr: "animals.identification_nr",
+    isAvailableForAdoption: "animals.is_available_for_adoption",
+    isOnWebsite: "animals.is_on_website",
+    dossierNr: "animals.dossier_nr",
+    pvNr: "animals.pv_nr",
+    ibnDecisionDeadline: "animals.ibn_decision_deadline",
     createdAt: "animals.created_at",
   },
   kennels: {
     id: "kennels.id",
     code: "kennels.code",
+    zone: "kennels.zone",
+    capacity: "kennels.capacity",
+    isActive: "kennels.is_active",
+    notes: "kennels.notes",
   },
   behaviorRecords: {
     id: "behavior_records.id",
@@ -89,6 +101,30 @@ vi.mock("@/lib/db/schema", () => ({
     recommendations: "vet_inspection_reports.recommendations",
     createdAt: "vet_inspection_reports.created_at",
   },
+  adoptionContracts: {
+    id: "adoption_contracts.id",
+    animalId: "adoption_contracts.animal_id",
+    candidateId: "adoption_contracts.candidate_id",
+    contractDate: "adoption_contracts.contract_date",
+    paymentAmount: "adoption_contracts.payment_amount",
+    paymentMethod: "adoption_contracts.payment_method",
+    contractPdfUrl: "adoption_contracts.contract_pdf_url",
+    dogidCatidTransferDeadline: "adoption_contracts.dogid_catid_transfer_deadline",
+    dogidCatidTransferred: "adoption_contracts.dogid_catid_transferred",
+    notes: "adoption_contracts.notes",
+    createdAt: "adoption_contracts.created_at",
+  },
+  adoptionCandidates: {
+    id: "adoption_candidates.id",
+    firstName: "adoption_candidates.first_name",
+    lastName: "adoption_candidates.last_name",
+    email: "adoption_candidates.email",
+    phone: "adoption_candidates.phone",
+    address: "adoption_candidates.address",
+    animalId: "adoption_candidates.animal_id",
+    status: "adoption_candidates.status",
+    createdAt: "adoption_candidates.created_at",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -96,12 +132,14 @@ vi.mock("drizzle-orm", () => ({
   and: mockAnd,
   gte: mockGte,
   lte: mockLte,
+  isNotNull: mockIsNotNull,
+  count: vi.fn((col: unknown) => ({ type: "count", col })),
   asc: vi.fn((col: unknown) => ({ type: "asc", col })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
   sql: vi.fn(),
 }));
 
-import { getAnimalReport, getBehaviorReportByAnimalId, getVetVisitsReport, getMedicationReport, getVetInspectionReportsFiltered } from "./reports";
+import { getAnimalReport, getBehaviorReportByAnimalId, getVetVisitsReport, getMedicationReport, getVetInspectionReportsFiltered, getAdoptionContractsReport, getAdoptableAnimalsReport, getWebsitePublicationReport, getKennelOccupancyReport, getIBNDossiersReport } from "./reports";
 
 const mockAnimals = [
   { id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu", status: "beschikbaar", kennelId: 1, workflowPhase: "verblijf", intakeDate: "2025-12-01" },
@@ -114,10 +152,11 @@ describe("getAnimalReport", () => {
     vi.clearAllMocks();
     setMockData(mockAnimals);
     mockOffset.mockImplementation(async () => mockAnimals);
-    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockAnimals).then(res) });
-    mockWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockAnimals).then(res) });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockAnimals).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockAnimals).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockAnimals).then(res) });
-    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
@@ -212,7 +251,7 @@ describe("getBehaviorReportByAnimalId", () => {
     mockOrderBy.mockReturnValue({ then: (res: (v: unknown) => void) => Promise.resolve(mockBehaviorRecords).then(res) } as any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockWhere.mockReturnValue({ orderBy: mockOrderBy } as any);
-    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
@@ -248,10 +287,10 @@ describe("getVetVisitsReport", () => {
     mockOffset.mockImplementation(async () => mockVetVisitRows);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) } as any);
-    mockWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) });
     mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
-    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
@@ -332,10 +371,10 @@ describe("getMedicationReport", () => {
     mockOffset.mockImplementation(async () => mockMedicationRows);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) } as any);
-    mockWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) });
     mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
-    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
@@ -398,9 +437,9 @@ describe("getVetInspectionReportsFiltered", () => {
     mockOffset.mockImplementation(async () => mockInspectionReports);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockInspectionReports).then(res) } as any);
-    mockWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockInspectionReports).then(res) });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockInspectionReports).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockInspectionReports).then(res) });
-    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
@@ -454,6 +493,352 @@ describe("getVetInspectionReportsFiltered", () => {
     const result = await getVetInspectionReportsFiltered({});
 
     expect(result.reports).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R3: Adoption Contracts Report ====================
+
+const mockContractRows = [
+  { id: 1, animalName: "Rex", animalSpecies: "hond", candidateFirstName: "Jan", candidateLastName: "Janssen", contractDate: "2026-02-10", paymentAmount: "150.00", paymentMethod: "cash", dogidCatidTransferred: false },
+  { id: 2, animalName: "Mimi", animalSpecies: "kat", candidateFirstName: "Els", candidateLastName: "De Smet", contractDate: "2026-02-20", paymentAmount: "75.00", paymentMethod: "payconiq", dogidCatidTransferred: true },
+];
+
+describe("getAdoptionContractsReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockContractRows);
+    mockOffset.mockImplementation(async () => mockContractRows);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockSelect.mockReturnValue({ from: mockFrom });
+  });
+
+  it("returns all contracts with no filters", async () => {
+    const result = await getAdoptionContractsReport({});
+
+    expect(result.contracts).toEqual(mockContractRows);
+    expect(result.total).toBe(mockContractRows.length);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(mockInnerJoin).toHaveBeenCalled();
+  });
+
+  it("applies dateFrom filter on contractDate", async () => {
+    await getAdoptionContractsReport({ dateFrom: "2026-02-01" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockGte).toHaveBeenCalledWith("adoption_contracts.contract_date", "2026-02-01");
+  });
+
+  it("applies dateTo filter on contractDate", async () => {
+    await getAdoptionContractsReport({ dateTo: "2026-02-28" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockLte).toHaveBeenCalledWith("adoption_contracts.contract_date", "2026-02-28");
+  });
+
+  it("applies paymentMethod filter", async () => {
+    await getAdoptionContractsReport({ paymentMethod: "cash" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("adoption_contracts.payment_method", "cash");
+  });
+
+  it("applies multiple filters simultaneously", async () => {
+    await getAdoptionContractsReport({ dateFrom: "2026-02-01", dateTo: "2026-02-28", paymentMethod: "payconiq" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockGte).toHaveBeenCalledWith("adoption_contracts.contract_date", "2026-02-01");
+    expect(mockLte).toHaveBeenCalledWith("adoption_contracts.contract_date", "2026-02-28");
+    expect(mockEq).toHaveBeenCalledWith("adoption_contracts.payment_method", "payconiq");
+    expect(mockAnd).toHaveBeenCalled();
+  });
+
+  it("uses pagination when page and pageSize are provided", async () => {
+    await getAdoptionContractsReport({ page: 2, pageSize: 50 });
+
+    expect(mockLimit).toHaveBeenCalledWith(50);
+    expect(mockOffset).toHaveBeenCalledWith(50);
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getAdoptionContractsReport({});
+
+    expect(result.contracts).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R6: Adoptable Animals Report ====================
+
+const mockAdoptableAnimals = [
+  { id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu", isAvailableForAdoption: true },
+  { id: 4, name: "Luna", species: "kat", breed: "Siamees", gender: "poes", isAvailableForAdoption: true },
+];
+
+describe("getAdoptableAnimalsReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockAdoptableAnimals);
+    mockOffset.mockImplementation(async () => mockAdoptableAnimals);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockAdoptableAnimals).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockAdoptableAnimals).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockAdoptableAnimals).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockSelect.mockReturnValue({ from: mockFrom });
+  });
+
+  it("returns all adoptable animals with no species filter", async () => {
+    const result = await getAdoptableAnimalsReport({});
+
+    expect(result.animals).toEqual(mockAdoptableAnimals);
+    expect(result.total).toBe(mockAdoptableAnimals.length);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("animals.is_available_for_adoption", true);
+  });
+
+  it("applies species filter in addition to isAvailableForAdoption", async () => {
+    await getAdoptableAnimalsReport({ species: "hond" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("animals.is_available_for_adoption", true);
+    expect(mockEq).toHaveBeenCalledWith("animals.species", "hond");
+    expect(mockAnd).toHaveBeenCalled();
+  });
+
+  it("uses pagination when page and pageSize are provided", async () => {
+    await getAdoptableAnimalsReport({ page: 1, pageSize: 50 });
+
+    expect(mockLimit).toHaveBeenCalledWith(50);
+    expect(mockOffset).toHaveBeenCalledWith(0);
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getAdoptableAnimalsReport({});
+
+    expect(result.animals).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R7: Website Publication Report ====================
+
+const mockWebsiteAnimals = [
+  { id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu", isOnWebsite: true, shortDescription: "Lieve hond" },
+  { id: 5, name: "Bella", species: "hond", breed: "Chihuahua", gender: "teef", isOnWebsite: true, shortDescription: "Klein en energiek" },
+];
+
+describe("getWebsitePublicationReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockWebsiteAnimals);
+    mockOffset.mockImplementation(async () => mockWebsiteAnimals);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWebsiteAnimals).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockWebsiteAnimals).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWebsiteAnimals).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockSelect.mockReturnValue({ from: mockFrom });
+  });
+
+  it("returns all animals with isOnWebsite = true", async () => {
+    const result = await getWebsitePublicationReport({});
+
+    expect(result.animals).toEqual(mockWebsiteAnimals);
+    expect(result.total).toBe(mockWebsiteAnimals.length);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("animals.is_on_website", true);
+  });
+
+  it("uses pagination when page and pageSize are provided", async () => {
+    await getWebsitePublicationReport({ page: 2, pageSize: 50 });
+
+    expect(mockLimit).toHaveBeenCalledWith(50);
+    expect(mockOffset).toHaveBeenCalledWith(50);
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getWebsitePublicationReport({});
+
+    expect(result.animals).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R8: Kennel Occupancy Report ====================
+
+const mockKennelOccupancy = [
+  { kennelId: 1, code: "H1", zone: "honden", capacity: 2, count: 1 },
+  { kennelId: 2, code: "H2", zone: "honden", capacity: 2, count: 2 },
+  { kennelId: 3, code: "K1", zone: "katten", capacity: 4, count: 3 },
+];
+
+describe("getKennelOccupancyReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockKennelOccupancy);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ then: (res: (v: unknown) => void) => Promise.resolve(mockKennelOccupancy).then(res) } as any);
+    mockGroupBy.mockReturnValue({ orderBy: mockOrderBy, then: (res: (v: unknown) => void) => Promise.resolve(mockKennelOccupancy).then(res) });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockKennelOccupancy).then(res) });
+    mockLeftJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, groupBy: mockGroupBy, leftJoin: mockLeftJoin });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockSelect.mockReturnValue({ from: mockFrom });
+  });
+
+  it("returns all kennel occupancy data with no zone filter", async () => {
+    const result = await getKennelOccupancyReport({});
+
+    expect(result.kennels).toEqual(mockKennelOccupancy);
+    expect(result.total).toBe(mockKennelOccupancy.length);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(mockLeftJoin).toHaveBeenCalled();
+    expect(mockGroupBy).toHaveBeenCalled();
+  });
+
+  it("applies zone filter", async () => {
+    await getKennelOccupancyReport({ zone: "honden" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("kennels.zone", "honden");
+  });
+
+  it("always filters on isActive = true", async () => {
+    await getKennelOccupancyReport({});
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("kennels.is_active", true);
+  });
+
+  it("applies zone and isActive filters simultaneously", async () => {
+    await getKennelOccupancyReport({ zone: "katten" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockEq).toHaveBeenCalledWith("kennels.is_active", true);
+    expect(mockEq).toHaveBeenCalledWith("kennels.zone", "katten");
+    expect(mockAnd).toHaveBeenCalled();
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getKennelOccupancyReport({});
+
+    expect(result.kennels).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R12: IBN Dossiers Report ====================
+
+const mockIBNDossiers = [
+  { id: 1, name: "Max", species: "hond", dossierNr: "IBN-2026-001", pvNr: "PV-001", ibnDecisionDeadline: "2026-03-15", workflowPhase: "ibn_opvang", intakeDate: "2026-01-15" },
+  { id: 2, name: "Oscar", species: "kat", dossierNr: "IBN-2026-002", pvNr: "PV-002", ibnDecisionDeadline: "2026-02-20", workflowPhase: "ibn_opvang", intakeDate: "2026-01-20" },
+];
+
+describe("getIBNDossiersReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockIBNDossiers);
+    mockOffset.mockImplementation(async () => mockIBNDossiers);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockIBNDossiers).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockIBNDossiers).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockIBNDossiers).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockSelect.mockReturnValue({ from: mockFrom });
+  });
+
+  it("returns all IBN dossiers (dossierNr IS NOT NULL)", async () => {
+    const result = await getIBNDossiersReport({});
+
+    expect(result.dossiers).toEqual(mockIBNDossiers);
+    expect(result.total).toBe(mockIBNDossiers.length);
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+  });
+
+  it("applies deadlineFrom filter", async () => {
+    await getIBNDossiersReport({ deadlineFrom: "2026-03-01" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockGte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-01");
+  });
+
+  it("applies deadlineTo filter", async () => {
+    await getIBNDossiersReport({ deadlineTo: "2026-03-31" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockLte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-31");
+  });
+
+  it("applies multiple filters simultaneously", async () => {
+    await getIBNDossiersReport({ deadlineFrom: "2026-03-01", deadlineTo: "2026-03-31" });
+
+    expect(mockWhere).toHaveBeenCalled();
+    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockGte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-01");
+    expect(mockLte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-31");
+    expect(mockAnd).toHaveBeenCalled();
+  });
+
+  it("uses pagination when page and pageSize are provided", async () => {
+    await getIBNDossiersReport({ page: 2, pageSize: 50 });
+
+    expect(mockLimit).toHaveBeenCalledWith(50);
+    expect(mockOffset).toHaveBeenCalledWith(50);
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getIBNDossiersReport({});
+
+    expect(result.dossiers).toEqual([]);
     expect(result.total).toBe(0);
   });
 });
