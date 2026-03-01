@@ -9,6 +9,7 @@ import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
 import { getAnimalGuardContext } from "@/lib/queries/workflow";
 import { WORKFLOW_PHASES, getNextPhase } from "@/lib/workflow/phases";
 import { evaluateGuards } from "@/lib/workflow/guards";
+import { executeAutoActions } from "@/lib/workflow/auto-actions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import type { TransitionActionResult } from "@/types";
@@ -35,7 +36,7 @@ export async function transitionAnimalPhase(
 
   try {
     const animalResults = await db
-      .select({ id: animals.id, workflowPhase: animals.workflowPhase })
+      .select({ id: animals.id, workflowPhase: animals.workflowPhase, intakeReason: animals.intakeReason })
       .from(animals)
       .where(eq(animals.id, animalId))
       .limit(1);
@@ -87,6 +88,27 @@ export async function transitionAnimalPhase(
       .set({ workflowPhase: nextPhase })
       .where(eq(animals.id, animalId));
 
+    // Auto-actions: fire-and-forget, never fail the transition
+    let autoActionsTriggered: string[] | null = null;
+    if (settings.autoActionsEnabled) {
+      try {
+        const autoActionContext = {
+          animal: {
+            id: guardContext.animal.id,
+            species: guardContext.animal.species,
+            intakeReason: animal.intakeReason ?? null,
+          },
+        };
+
+        const autoResult = await executeAutoActions(animalId, nextPhase, autoActionContext, session.userId);
+        if (autoResult.count > 0) {
+          autoActionsTriggered = autoResult.descriptions;
+        }
+      } catch (autoErr) {
+        console.error("Auto-actions failed (phase was updated):", autoErr);
+      }
+    }
+
     // History insert is non-critical: neon-http driver has no transaction support,
     // so if this fails the phase update already succeeded. Log error but don't fail.
     try {
@@ -96,6 +118,7 @@ export async function transitionAnimalPhase(
         toPhase: nextPhase,
         changedBy: session.userId,
         changeReason: reason ?? null,
+        autoActionsTriggered: autoActionsTriggered,
       });
     } catch (historyErr) {
       console.error("Workflow history insert failed (phase was updated):", historyErr);
@@ -110,6 +133,9 @@ export async function transitionAnimalPhase(
     );
 
     revalidatePath(`/beheerder/dieren/${animalId}`);
+    if (autoActionsTriggered) {
+      revalidatePath("/beheerder");
+    }
 
     const guardsOverridden = warnings.length > 0 ? true : undefined;
     return { success: true, data: { fromPhase: currentPhase, toPhase: nextPhase, guardsOverridden } };

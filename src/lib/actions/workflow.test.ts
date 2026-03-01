@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockGetSession, mockHasPermission, mockGetWorkflowSettings, mockLogAudit,
-  mockRevalidatePath, mockGetAnimalGuardContext,
+  mockRevalidatePath, mockGetAnimalGuardContext, mockExecuteAutoActions,
   mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockInsertValues, mockInsert,
   mockSelectLimit, mockSelectWhere, mockSelectFrom,
@@ -13,6 +13,7 @@ const {
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
   const mockGetAnimalGuardContext = vi.fn();
+  const mockExecuteAutoActions = vi.fn();
   const mockUpdateWhere = vi.fn();
   const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
   const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
@@ -23,7 +24,7 @@ const {
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere });
   return {
     mockGetSession, mockHasPermission, mockGetWorkflowSettings, mockLogAudit,
-    mockRevalidatePath, mockGetAnimalGuardContext,
+    mockRevalidatePath, mockGetAnimalGuardContext, mockExecuteAutoActions,
     mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockInsertValues, mockInsert,
     mockSelectLimit, mockSelectWhere, mockSelectFrom,
@@ -42,6 +43,7 @@ vi.mock("@/lib/db/schema", () => ({
   animals: {
     id: Symbol("animals.id"),
     workflowPhase: Symbol("animals.workflowPhase"),
+    intakeReason: Symbol("animals.intakeReason"),
   },
   animalWorkflowHistory: {
     animalId: Symbol("animalWorkflowHistory.animalId"),
@@ -76,6 +78,10 @@ vi.mock("@/lib/queries/workflow", () => ({
   getAnimalGuardContext: mockGetAnimalGuardContext,
 }));
 
+vi.mock("@/lib/workflow/auto-actions", () => ({
+  executeAutoActions: mockExecuteAutoActions,
+}));
+
 import { transitionAnimalPhase } from "./workflow";
 
 describe("transitionAnimalPhase", () => {
@@ -84,7 +90,7 @@ describe("transitionAnimalPhase", () => {
     mockGetSession.mockResolvedValue({ userId: 1, role: "medewerker" });
     mockHasPermission.mockReturnValue(true);
     mockGetWorkflowSettings.mockResolvedValue({ workflowEnabled: true, stepbarVisible: true, autoActionsEnabled: true });
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
     mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
     mockUpdateWhere.mockResolvedValue(undefined);
@@ -95,6 +101,8 @@ describe("transitionAnimalPhase", () => {
       hasVaccinations: true,
       hasAdoptionContract: true,
     });
+    // Default auto-actions: return no actions
+    mockExecuteAutoActions.mockResolvedValue({ count: 0, descriptions: [] });
   });
 
   // --- Auth & Permission ---
@@ -133,7 +141,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("returns error when animal has no workflow phase", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: null }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: null, intakeReason: null }]);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("geen workflow-fase");
@@ -142,14 +150,14 @@ describe("transitionAnimalPhase", () => {
   // --- Phase validation ---
 
   it("returns error for invalid workflow phase value", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "ongeldig" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "ongeldig", intakeReason: null }]);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("Ongeldige");
   });
 
   it("returns error when animal is in terminal phase (afgerond)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "afgerond" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "afgerond", intakeReason: null }]);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("voltooid");
@@ -158,7 +166,7 @@ describe("transitionAnimalPhase", () => {
   // --- Success path ---
 
   it("transitions from intake to registratie successfully", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -167,7 +175,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("updates animal workflowPhase in database", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     await transitionAnimalPhase(5);
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockUpdateSet).toHaveBeenCalledWith(
@@ -176,7 +184,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("creates workflow history record", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "registratie" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "registratie", intakeReason: null }]);
     await transitionAnimalPhase(5, "Administratie afgerond");
     expect(mockInsert).toHaveBeenCalled();
     expect(mockInsertValues).toHaveBeenCalledWith(
@@ -191,7 +199,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("logs audit on success", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     await transitionAnimalPhase(5);
     expect(mockLogAudit).toHaveBeenCalledWith(
       "animal.workflow_phase_changed",
@@ -203,7 +211,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("revalidates animal detail path", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     await transitionAnimalPhase(5);
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/5");
   });
@@ -211,7 +219,7 @@ describe("transitionAnimalPhase", () => {
   // --- Error handling ---
 
   it("returns error on phase update failure", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     mockUpdateWhere.mockRejectedValue(new Error("DB error"));
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(false);
@@ -219,7 +227,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("still succeeds when history insert fails (non-critical)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     mockInsertValues.mockRejectedValue(new Error("History insert error"));
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(true);
@@ -231,7 +239,7 @@ describe("transitionAnimalPhase", () => {
   // --- Guard integration (Story 6.3) ---
 
   it("returns guard warnings when guards fail and no override (medisch → verblijf)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
       hasVaccinations: true,
@@ -247,7 +255,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("returns multiple guard warnings for cat missing all conditions (verblijf → adoptie)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "kat", identificationNr: null, isNeutered: false },
       hasVaccinations: false,
@@ -265,7 +273,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("returns error when override attempted without reason", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
       hasVaccinations: true,
@@ -277,7 +285,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("succeeds when override with reason despite guard warnings", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
       hasVaccinations: true,
@@ -295,7 +303,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("stores override reason in history record", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
       hasVaccinations: true,
@@ -310,7 +318,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("succeeds without warnings when no guards apply (intake → registratie) (AC6)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -320,7 +328,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("succeeds when all guard conditions met (AC6)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
       hasVaccinations: true,
@@ -334,7 +342,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("succeeds for dog at verblijf → adoptie (cat guards do not apply)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "verblijf", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: null, isNeutered: false },
       hasVaccinations: false,
@@ -348,7 +356,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("returns error when guard context cannot be fetched", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue(null);
     const result = await transitionAnimalPhase(5);
     expect(result.success).toBe(false);
@@ -356,7 +364,7 @@ describe("transitionAnimalPhase", () => {
   });
 
   it("returns adoption contract warning (adoptie → afgerond)", async () => {
-    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "adoptie" }]);
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "adoptie", intakeReason: null }]);
     mockGetAnimalGuardContext.mockResolvedValue({
       animal: { id: 5, species: "hond", identificationNr: "BE-123", isNeutered: true },
       hasVaccinations: true,
@@ -368,5 +376,93 @@ describe("transitionAnimalPhase", () => {
       expect(result.guardWarnings).toHaveLength(1);
       expect(result.guardWarnings![0].code).toBe("adoption_contract_missing");
     }
+  });
+
+  // --- Auto-actions integration (Story 6.4) ---
+
+  it("calls executeAutoActions after successful transition when autoActionsEnabled (AC1-4)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    mockExecuteAutoActions.mockResolvedValue({ count: 3, descriptions: ["Task A", "Task B", "Task C"] });
+    await transitionAnimalPhase(5);
+    expect(mockExecuteAutoActions).toHaveBeenCalledWith(
+      5,
+      "registratie",
+      expect.objectContaining({ animal: expect.objectContaining({ id: 5 }) }),
+      1,
+    );
+  });
+
+  it("does not call executeAutoActions when autoActionsEnabled = false (AC5)", async () => {
+    mockGetWorkflowSettings.mockResolvedValue({ workflowEnabled: true, stepbarVisible: true, autoActionsEnabled: false });
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    await transitionAnimalPhase(5);
+    expect(mockExecuteAutoActions).not.toHaveBeenCalled();
+  });
+
+  it("stores autoActionsTriggered in history when auto-actions are created (AC6)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    mockExecuteAutoActions.mockResolvedValue({ count: 3, descriptions: ["Task A", "Task B", "Task C"] });
+    await transitionAnimalPhase(5);
+    // History insert should include autoActionsTriggered
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoActionsTriggered: ["Task A", "Task B", "Task C"],
+      }),
+    );
+  });
+
+  it("does not set autoActionsTriggered when no auto-actions created", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    mockExecuteAutoActions.mockResolvedValue({ count: 0, descriptions: [] });
+    await transitionAnimalPhase(5);
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoActionsTriggered: null,
+      }),
+    );
+  });
+
+  it("still succeeds when executeAutoActions fails (fire-and-forget)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    mockExecuteAutoActions.mockRejectedValue(new Error("Auto-action error"));
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(true);
+  });
+
+  it("does not call executeAutoActions when transition fails (guard block)", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "medisch", intakeReason: null }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "hond", identificationNr: null, isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    const result = await transitionAnimalPhase(5);
+    expect(result.success).toBe(false);
+    expect(mockExecuteAutoActions).not.toHaveBeenCalled();
+  });
+
+  it("uses guard context animal data and intakeReason for auto-action context", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "registratie", intakeReason: "ibn" }]);
+    mockGetAnimalGuardContext.mockResolvedValue({
+      animal: { id: 5, species: "kat", identificationNr: "BE-123", isNeutered: true },
+      hasVaccinations: true,
+      hasAdoptionContract: true,
+    });
+    mockExecuteAutoActions.mockResolvedValue({ count: 5, descriptions: [] });
+    await transitionAnimalPhase(5);
+    expect(mockExecuteAutoActions).toHaveBeenCalledWith(
+      5,
+      "medisch",
+      expect.objectContaining({ animal: expect.objectContaining({ species: "kat", intakeReason: "ibn" }) }),
+      1,
+    );
+  });
+
+  it("revalidates todo paths after auto-actions", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 5, workflowPhase: "intake", intakeReason: null }]);
+    mockExecuteAutoActions.mockResolvedValue({ count: 3, descriptions: ["A", "B", "C"] });
+    await transitionAnimalPhase(5);
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/5");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder");
   });
 });
