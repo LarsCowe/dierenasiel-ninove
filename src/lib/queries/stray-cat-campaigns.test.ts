@@ -2,18 +2,28 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
   mockSelectWhere, mockSelectFrom, mockSelect,
-  mockSelectOrderBy,
+  mockSelectOrderBy, mockSelectOffset, mockSelectLimit,
+  mockSelectDistinctFrom, mockSelectDistinct,
 } = vi.hoisted(() => {
-  const mockSelectOrderBy = vi.fn();
+  const mockSelectOffset = vi.fn();
+  const mockSelectLimit = vi.fn().mockReturnValue({ offset: mockSelectOffset });
+  const mockSelectOrderBy = vi.fn().mockReturnValue({ limit: mockSelectLimit });
   const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy });
   const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
   const mockSelect = vi.fn().mockReturnValue({ from: mockSelectFrom });
-  return { mockSelectWhere, mockSelectFrom, mockSelect, mockSelectOrderBy };
+  const mockSelectDistinctFrom = vi.fn();
+  const mockSelectDistinct = vi.fn().mockReturnValue({ from: mockSelectDistinctFrom });
+  return {
+    mockSelectWhere, mockSelectFrom, mockSelect,
+    mockSelectOrderBy, mockSelectOffset, mockSelectLimit,
+    mockSelectDistinctFrom, mockSelectDistinct,
+  };
 });
 
 vi.mock("@/lib/db", () => ({
   db: {
     select: mockSelect,
+    selectDistinct: mockSelectDistinct,
   },
 }));
 
@@ -33,16 +43,25 @@ vi.mock("@/lib/db/schema", () => ({
   },
 }));
 
+vi.mock("@/lib/constants", () => ({
+  CAMPAIGN_STATUSES: ["open", "kooien_geplaatst", "in_behandeling", "afgerond"],
+}));
+
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
+  gte: vi.fn((...args: unknown[]) => ({ type: "gte", args })),
+  lte: vi.fn((...args: unknown[]) => ({ type: "lte", args })),
+  sql: Object.assign(vi.fn(), { raw: vi.fn() }),
 }));
 
 import {
   getCampaignById,
   getAllCampaigns,
   getCatsAvailableForLinking,
+  getCampaignsForAdmin,
+  getDistinctMunicipalities,
 } from "./stray-cat-campaigns";
 
 describe("getCampaignById", () => {
@@ -118,6 +137,155 @@ describe("getCatsAvailableForLinking", () => {
     mockSelectWhere.mockResolvedValue([]);
 
     const result = await getCatsAvailableForLinking();
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getCampaignsForAdmin", () => {
+  function setupMocks(data: unknown[] = [{ id: 1, municipality: "Ninove" }], count = 5) {
+    let callCount = 0;
+    mockSelect.mockImplementation(() => {
+      callCount++;
+      if (callCount % 2 === 1) {
+        // Data query: select → from → where → orderBy → limit → offset
+        const offset = vi.fn().mockResolvedValue(data);
+        const limit = vi.fn().mockReturnValue({ offset });
+        const orderBy = vi.fn().mockReturnValue({ limit });
+        const where = vi.fn().mockReturnValue({ orderBy });
+        const from = vi.fn().mockReturnValue({ where, orderBy });
+        return { from };
+      } else {
+        // Count query: select → from → where
+        const where = vi.fn().mockResolvedValue([{ count }]);
+        const from = vi.fn().mockReturnValue({ where });
+        return { from };
+      }
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupMocks();
+  });
+
+  it("returns campaigns and total with default pagination", async () => {
+    const result = await getCampaignsForAdmin();
+
+    expect(result.campaigns).toEqual([{ id: 1, municipality: "Ninove" }]);
+    expect(result.total).toBe(5);
+    expect(mockSelect).toHaveBeenCalledTimes(2);
+  });
+
+  it("applies municipality filter with correct value", async () => {
+    await getCampaignsForAdmin({ municipality: "Ninove" });
+
+    const { eq } = await import("drizzle-orm");
+    expect(eq).toHaveBeenCalledWith(expect.anything(), "Ninove");
+  });
+
+  it("applies status filter with correct value", async () => {
+    await getCampaignsForAdmin({ status: "open" });
+
+    const { eq } = await import("drizzle-orm");
+    expect(eq).toHaveBeenCalledWith(expect.anything(), "open");
+  });
+
+  it("ignores invalid status values", async () => {
+    await getCampaignsForAdmin({ status: "INVALID_STATUS" });
+
+    const { eq } = await import("drizzle-orm");
+    // eq should NOT be called for status (only no calls with "INVALID_STATUS")
+    const statusCalls = (eq as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (call: unknown[]) => call[1] === "INVALID_STATUS",
+    );
+    expect(statusCalls).toHaveLength(0);
+  });
+
+  it("applies dateFrom filter with correct value", async () => {
+    await getCampaignsForAdmin({ dateFrom: "2026-01-01" });
+
+    const { gte } = await import("drizzle-orm");
+    expect(gte).toHaveBeenCalledWith(expect.anything(), "2026-01-01");
+  });
+
+  it("ignores invalid dateFrom values", async () => {
+    await getCampaignsForAdmin({ dateFrom: "not-a-date" });
+
+    const { gte } = await import("drizzle-orm");
+    expect(gte).not.toHaveBeenCalled();
+  });
+
+  it("applies dateTo filter with correct value", async () => {
+    await getCampaignsForAdmin({ dateTo: "2026-12-31" });
+
+    const { lte } = await import("drizzle-orm");
+    expect(lte).toHaveBeenCalledWith(expect.anything(), "2026-12-31");
+  });
+
+  it("ignores invalid dateTo values", async () => {
+    await getCampaignsForAdmin({ dateTo: "2026-13-45" });
+
+    const { lte } = await import("drizzle-orm");
+    expect(lte).not.toHaveBeenCalled();
+  });
+
+  it("combines multiple filters", async () => {
+    await getCampaignsForAdmin({
+      municipality: "Ninove",
+      status: "open",
+      dateFrom: "2026-01-01",
+      dateTo: "2026-12-31",
+    });
+
+    const { and } = await import("drizzle-orm");
+    expect(and).toHaveBeenCalled();
+  });
+
+  it("returns empty result on error", async () => {
+    mockSelect.mockImplementation(() => {
+      throw new Error("DB error");
+    });
+
+    const result = await getCampaignsForAdmin();
+
+    expect(result).toEqual({ campaigns: [], total: 0 });
+  });
+
+  it("returns empty campaigns when no data", async () => {
+    setupMocks([], 0);
+
+    const result = await getCampaignsForAdmin();
+
+    expect(result.campaigns).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+describe("getDistinctMunicipalities", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns sorted list of unique municipalities", async () => {
+    const mockOrderBy = vi.fn().mockResolvedValue([
+      { municipality: "Geraardsbergen" },
+      { municipality: "Ninove" },
+    ]);
+    mockSelectDistinctFrom.mockReturnValue({ orderBy: mockOrderBy });
+
+    const result = await getDistinctMunicipalities();
+
+    expect(result).toEqual(["Geraardsbergen", "Ninove"]);
+    expect(mockSelectDistinct).toHaveBeenCalled();
+  });
+
+  it("returns empty array on error", async () => {
+    mockSelectDistinct.mockImplementation(() => {
+      throw new Error("DB error");
+    });
+
+    const result = await getDistinctMunicipalities();
 
     expect(result).toEqual([]);
   });

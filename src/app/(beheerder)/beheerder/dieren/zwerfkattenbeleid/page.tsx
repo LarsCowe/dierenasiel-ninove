@@ -1,9 +1,39 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { getAllCampaigns } from "@/lib/queries/stray-cat-campaigns";
+import { getCampaignsForAdmin, getDistinctMunicipalities } from "@/lib/queries/stray-cat-campaigns";
+import CampaignFilters from "@/components/beheerder/zwerfkatten/CampaignFilters";
 import CampaignTable from "@/components/beheerder/zwerfkatten/CampaignTable";
+import Pagination from "@/components/beheerder/dieren/Pagination";
 
-export default async function ZwerfkattenbeleidPage() {
-  const campaigns = await getAllCampaigns();
+interface Props {
+  searchParams: Promise<{
+    gemeente?: string;
+    status?: string;
+    van?: string;
+    tot?: string;
+    pagina?: string;
+  }>;
+}
+
+const PAGE_SIZE = 25;
+
+export default async function ZwerfkattenbeleidPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.pagina) || 1);
+
+  const [{ campaigns, total }, municipalities] = await Promise.all([
+    getCampaignsForAdmin({
+      municipality: params.gemeente,
+      status: params.status,
+      dateFrom: params.van,
+      dateTo: params.tot,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    getDistinctMunicipalities(),
+  ]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div>
@@ -13,7 +43,7 @@ export default async function ZwerfkattenbeleidPage() {
             Zwerfkattenbeleid
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {campaigns.length} campagne{campaigns.length !== 1 ? "s" : ""}
+            {total} campagne{total !== 1 ? "s" : ""}
           </p>
         </div>
         <Link
@@ -24,7 +54,21 @@ export default async function ZwerfkattenbeleidPage() {
         </Link>
       </div>
 
+      <div className="mb-4">
+        <Suspense fallback={<div className="h-10 animate-pulse rounded-lg bg-gray-100" />}>
+          <CampaignFilters municipalities={municipalities} />
+        </Suspense>
+      </div>
+
       <CampaignTable campaigns={campaigns} />
+
+      {totalPages > 1 && (
+        <div className="mt-4">
+          <Suspense fallback={<div className="h-8 animate-pulse rounded-lg bg-gray-100" />}>
+            <Pagination currentPage={page} totalPages={totalPages} />
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 }
