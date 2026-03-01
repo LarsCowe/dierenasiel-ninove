@@ -11,7 +11,7 @@ const { mockDb, mockSelect, mockFrom, mockWhere, mockOrderBy, mockLimit, mockOff
   const mockGroupBy = vi.fn(() => ({ orderBy: mockOrderBy, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
   const mockWhere = vi.fn(() => ({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockData).then(res) }));
   const mockLeftJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, groupBy: mockGroupBy, leftJoin: mockLeftJoin as ReturnType<typeof vi.fn> }));
-  const mockInnerJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin as ReturnType<typeof vi.fn> }));
+  const mockInnerJoin = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin as ReturnType<typeof vi.fn>, groupBy: mockGroupBy }));
   const mockFrom = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin }));
   const mockSelect = vi.fn(() => ({ from: mockFrom }));
   const mockDb = { select: mockSelect };
@@ -125,6 +125,33 @@ vi.mock("@/lib/db/schema", () => ({
     status: "adoption_candidates.status",
     createdAt: "adoption_candidates.created_at",
   },
+  walks: {
+    id: "walks.id",
+    walkerId: "walks.walker_id",
+    animalId: "walks.animal_id",
+    date: "walks.date",
+    startTime: "walks.start_time",
+    endTime: "walks.end_time",
+    durationMinutes: "walks.duration_minutes",
+    remarks: "walks.remarks",
+    status: "walks.status",
+    createdAt: "walks.created_at",
+  },
+  walkers: {
+    id: "walkers.id",
+    firstName: "walkers.first_name",
+    lastName: "walkers.last_name",
+    email: "walkers.email",
+    isApproved: "walkers.is_approved",
+  },
+  animalWorkflowHistory: {
+    id: "animal_workflow_history.id",
+    animalId: "animal_workflow_history.animal_id",
+    fromPhase: "animal_workflow_history.from_phase",
+    toPhase: "animal_workflow_history.to_phase",
+    changedBy: "animal_workflow_history.changed_by",
+    createdAt: "animal_workflow_history.created_at",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -139,7 +166,7 @@ vi.mock("drizzle-orm", () => ({
   sql: vi.fn(),
 }));
 
-import { getAnimalReport, getBehaviorReportByAnimalId, getVetVisitsReport, getMedicationReport, getVetInspectionReportsFiltered, getAdoptionContractsReport, getAdoptableAnimalsReport, getWebsitePublicationReport, getKennelOccupancyReport, getIBNDossiersReport } from "./reports";
+import { getAnimalReport, getBehaviorReportByAnimalId, getVetVisitsReport, getMedicationReport, getVetInspectionReportsFiltered, getAdoptionContractsReport, getAdoptableAnimalsReport, getWebsitePublicationReport, getKennelOccupancyReport, getIBNDossiersReport, getWalkActivityReport, getWalkerAnimalPairingsReport, getWorkflowOverviewReport } from "./reports";
 
 const mockAnimals = [
   { id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu", status: "beschikbaar", kennelId: 1, workflowPhase: "verblijf", intakeDate: "2025-12-01" },
@@ -289,7 +316,7 @@ describe("getVetVisitsReport", () => {
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) } as any);
     mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockVetVisitRows).then(res) });
-    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, groupBy: mockGroupBy });
     mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
@@ -373,7 +400,7 @@ describe("getMedicationReport", () => {
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) } as any);
     mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockMedicationRows).then(res) });
-    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, groupBy: mockGroupBy });
     mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
@@ -513,7 +540,7 @@ describe("getAdoptionContractsReport", () => {
     mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) } as any);
     mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) });
     mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockContractRows).then(res) });
-    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, groupBy: mockGroupBy });
     mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });
@@ -839,6 +866,261 @@ describe("getIBNDossiersReport", () => {
     const result = await getIBNDossiersReport({});
 
     expect(result.dossiers).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R9: Walk Activity Report ====================
+
+const mockWalkRows = [
+  { id: 1, date: "2026-02-20", walkerFirstName: "Jan", walkerLastName: "Peeters", animalName: "Rex", startTime: "10:00", endTime: "10:45", durationMinutes: 45, remarks: "Goed gelopen" },
+  { id: 2, date: "2026-02-21", walkerFirstName: "Els", walkerLastName: "Janssen", animalName: "Buddy", startTime: "14:00", endTime: "14:30", durationMinutes: 30, remarks: null },
+];
+
+describe("getWalkActivityReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockWalkRows);
+    mockOffset.mockImplementation(async () => mockWalkRows);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWalkRows).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockWalkRows).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWalkRows).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, groupBy: mockGroupBy });
+  });
+
+  it("returns walk activity without filters", async () => {
+    const result = await getWalkActivityReport({});
+
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(result.walks).toEqual(mockWalkRows);
+    expect(result.total).toBe(2);
+  });
+
+  it("applies date range filters", async () => {
+    await getWalkActivityReport({ dateFrom: "2026-02-01", dateTo: "2026-02-28" });
+
+    expect(mockGte).toHaveBeenCalled();
+    expect(mockLte).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("applies walkerId filter", async () => {
+    await getWalkActivityReport({ walkerId: 5 });
+
+    expect(mockEq).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("applies animalId filter", async () => {
+    await getWalkActivityReport({ animalId: 3 });
+
+    expect(mockEq).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("supports pagination", async () => {
+    setMockData([{ count: 42 }]);
+    mockWhere.mockReturnValue({
+      orderBy: mockOrderBy,
+      groupBy: mockGroupBy,
+      limit: mockLimit,
+      then: (res: (v: unknown) => void) => Promise.resolve([{ count: 42 }]).then(res),
+    });
+
+    const result = await getWalkActivityReport({ page: 2, pageSize: 10 });
+
+    expect(mockLimit).toHaveBeenCalledWith(10);
+    expect(mockOffset).toHaveBeenCalledWith(10);
+    expect(result.total).toBeDefined();
+  });
+
+  it("joins walks with walkers and animals", async () => {
+    await getWalkActivityReport({});
+
+    expect(mockInnerJoin).toHaveBeenCalledTimes(2);
+  });
+
+  it("filters only completed walks", async () => {
+    await getWalkActivityReport({});
+
+    expect(mockEq).toHaveBeenCalled();
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getWalkActivityReport({});
+
+    expect(result.walks).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R10: Walker-Animal Pairings Report ====================
+
+const mockPairingRows = [
+  { walkerId: 1, walkerFirstName: "Jan", walkerLastName: "Peeters", animalId: 1, animalName: "Rex", walkCount: 12, lastWalkDate: "2026-02-20" },
+  { walkerId: 2, walkerFirstName: "Els", walkerLastName: "Janssen", animalId: 2, animalName: "Buddy", walkCount: 5, lastWalkDate: "2026-02-18" },
+];
+
+describe("getWalkerAnimalPairingsReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockPairingRows);
+    mockOffset.mockImplementation(async () => mockPairingRows);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockPairingRows).then(res) } as any);
+    mockGroupBy.mockReturnValue({ orderBy: mockOrderBy, then: (res: (v: unknown) => void) => Promise.resolve(mockPairingRows).then(res) });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockPairingRows).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+    mockInnerJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, groupBy: mockGroupBy });
+  });
+
+  it("returns pairings without filters", async () => {
+    const result = await getWalkerAnimalPairingsReport({});
+
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(result.pairings).toEqual(mockPairingRows);
+    expect(result.total).toBe(2);
+  });
+
+  it("applies walkerId filter", async () => {
+    await getWalkerAnimalPairingsReport({ walkerId: 1 });
+
+    expect(mockEq).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("applies animalId filter", async () => {
+    await getWalkerAnimalPairingsReport({ animalId: 3 });
+
+    expect(mockEq).toHaveBeenCalled();
+  });
+
+  it("applies date range filters", async () => {
+    await getWalkerAnimalPairingsReport({ dateFrom: "2026-01-01", dateTo: "2026-02-28" });
+
+    expect(mockGte).toHaveBeenCalled();
+    expect(mockLte).toHaveBeenCalled();
+  });
+
+  it("uses GROUP BY for aggregation", async () => {
+    await getWalkerAnimalPairingsReport({});
+
+    expect(mockGroupBy).toHaveBeenCalled();
+  });
+
+  it("joins walks with walkers and animals", async () => {
+    await getWalkerAnimalPairingsReport({});
+
+    expect(mockInnerJoin).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getWalkerAnimalPairingsReport({});
+
+    expect(result.pairings).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+});
+
+// ==================== R13: Workflow Overview Report ====================
+
+const mockWorkflowRows = [
+  { id: 1, name: "Rex", species: "hond", workflowPhase: "verblijf", intakeDate: "2025-12-01", daysSinceIntake: 90 },
+  { id: 2, name: "Mimi", species: "kat", workflowPhase: "medisch", intakeDate: "2026-01-10", daysSinceIntake: 50 },
+  { id: 3, name: "Buddy", species: "hond", workflowPhase: "adoptie", intakeDate: "2025-11-15", daysSinceIntake: 106 },
+];
+
+describe("getWorkflowOverviewReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setMockData(mockWorkflowRows);
+    mockOffset.mockImplementation(async () => mockWorkflowRows);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({ limit: mockLimit, offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWorkflowRows).then(res) } as any);
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy, groupBy: mockGroupBy, limit: mockLimit, then: (res: (v: unknown) => void) => Promise.resolve(mockWorkflowRows).then(res) });
+    mockLimit.mockReturnValue({ offset: mockOffset, then: (res: (v: unknown) => void) => Promise.resolve(mockWorkflowRows).then(res) });
+    mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
+  });
+
+  it("returns workflow overview without filters", async () => {
+    const result = await getWorkflowOverviewReport({});
+
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockFrom).toHaveBeenCalled();
+    expect(result.animals).toEqual(mockWorkflowRows);
+    expect(result.total).toBe(3);
+  });
+
+  it("applies species filter", async () => {
+    await getWorkflowOverviewReport({ species: "hond" });
+
+    expect(mockEq).toHaveBeenCalled();
+    expect(mockWhere).toHaveBeenCalled();
+  });
+
+  it("applies workflowPhase filter", async () => {
+    await getWorkflowOverviewReport({ workflowPhase: "medisch" });
+
+    expect(mockEq).toHaveBeenCalled();
+  });
+
+  it("applies date range filters on intakeDate", async () => {
+    await getWorkflowOverviewReport({ dateFrom: "2025-11-01", dateTo: "2026-01-31" });
+
+    expect(mockGte).toHaveBeenCalled();
+    expect(mockLte).toHaveBeenCalled();
+  });
+
+  it("supports pagination", async () => {
+    setMockData([{ count: 100 }]);
+    mockWhere.mockReturnValue({
+      orderBy: mockOrderBy,
+      groupBy: mockGroupBy,
+      limit: mockLimit,
+      then: (res: (v: unknown) => void) => Promise.resolve([{ count: 100 }]).then(res),
+    });
+
+    const result = await getWorkflowOverviewReport({ page: 1, pageSize: 50 });
+
+    expect(mockLimit).toHaveBeenCalledWith(50);
+    expect(result.total).toBeDefined();
+  });
+
+  it("only includes animals with a workflowPhase", async () => {
+    await getWorkflowOverviewReport({});
+
+    expect(mockIsNotNull).toHaveBeenCalled();
+  });
+
+  it("returns empty array on database error", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockOrderBy.mockReturnValue({
+      limit: mockLimit,
+      offset: mockOffset,
+      then: (_res: unknown, rej: (e: Error) => void) => Promise.reject(new Error("DB error")).catch(rej),
+    } as any);
+
+    const result = await getWorkflowOverviewReport({});
+
+    expect(result.animals).toEqual([]);
     expect(result.total).toBe(0);
   });
 });

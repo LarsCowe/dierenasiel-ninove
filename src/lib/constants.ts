@@ -239,10 +239,10 @@ export const REPORT_DEFINITIONS = [
   // Publicatie
   { id: "R7", label: "Website-publicatie", description: "Dieren gepubliceerd op de website.", category: "Publicatie", exportFormats: ["CSV"] as const, route: "/beheerder/rapporten/website-publicatie", story: "7.3" },
   // Wandelaars
-  { id: "R9", label: "Wandelactiviteit", description: "Wandelstatistieken en activiteitsoverzicht.", category: "Wandelaars", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.4" },
-  { id: "R10", label: "Wandelaar-hond koppeling", description: "Overzicht van wandelaar-hond combinaties.", category: "Wandelaars", exportFormats: ["CSV"] as const, route: null, story: "7.4" },
+  { id: "R9", label: "Wandelactiviteit", description: "Wandelstatistieken en activiteitsoverzicht.", category: "Wandelaars", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/wandelactiviteit", story: "7.4" },
+  { id: "R10", label: "Wandelaar-hond koppeling", description: "Overzicht van wandelaar-hond combinaties.", category: "Wandelaars", exportFormats: ["CSV"] as const, route: "/beheerder/rapporten/wandelaar-hond-koppeling", story: "7.4" },
   // Workflow
-  { id: "R13", label: "Workflow-overzicht", description: "Overzicht van workflow-fases per dier.", category: "Workflow", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.4" },
+  { id: "R13", label: "Workflow-overzicht", description: "Overzicht van workflow-fases per dier.", category: "Workflow", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/workflow-overzicht", story: "7.4" },
 ] as const;
 
 export type ReportDefinition = (typeof REPORT_DEFINITIONS)[number];

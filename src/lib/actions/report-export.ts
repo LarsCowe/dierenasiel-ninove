@@ -2,7 +2,7 @@
 
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
-import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWebsitePublicationReport, type AnimalReportFilters, type MedicationReportFilters, type MedicationReportRow, type AdoptionContractReportFilters, type AdoptionContractReportRow } from "@/lib/queries/reports";
+import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWebsitePublicationReport, getWalkActivityReport, getWalkerAnimalPairingsReport, getWorkflowOverviewReport, type AnimalReportFilters, type MedicationReportFilters, type MedicationReportRow, type AdoptionContractReportFilters, type AdoptionContractReportRow, type WalkActivityReportFilters, type WalkActivityReportRow, type WalkerAnimalPairingsReportFilters, type WalkerAnimalPairingRow, type WorkflowOverviewReportFilters, type WorkflowOverviewReportRow } from "@/lib/queries/reports";
 import { speciesLabel, genderLabel, statusLabel, escapeCsvField } from "@/lib/utils";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { ActionResult } from "@/types";
@@ -172,6 +172,106 @@ export async function exportWebsitePublicationCsv(): Promise<ActionResult<string
 
   const header = "Naam,Soort,Ras,Geslacht,Chipnr,Korte beschrijving";
   const rows = animals.map(websiteAnimalToCsvRow);
+  const csv = [header, ...rows].join("\n");
+
+  return { success: true, data: csv };
+}
+
+// ==================== R9: Walk Activity CSV ====================
+
+function walkActivityToCsvRow(walk: WalkActivityReportRow): string {
+  return [
+    escapeCsvField(walk.date),
+    escapeCsvField(`${walk.walkerFirstName} ${walk.walkerLastName}`),
+    escapeCsvField(walk.animalName),
+    escapeCsvField(walk.startTime),
+    escapeCsvField(walk.endTime ?? ""),
+    walk.durationMinutes?.toString() ?? "",
+    escapeCsvField(walk.remarks ?? ""),
+  ].join(",");
+}
+
+export async function exportWalkActivityCsv(
+  filters: Omit<WalkActivityReportFilters, "page" | "pageSize">,
+): Promise<ActionResult<string>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "U bent niet ingelogd." };
+  }
+
+  if (!hasPermission(session.role, "report:generate")) {
+    return { success: false, error: "Onvoldoende rechten voor rapport export." };
+  }
+
+  const { walks } = await getWalkActivityReport({ ...filters });
+
+  const header = "Datum,Wandelaar,Hond,Start,Einde,Duur (min),Opmerkingen";
+  const rows = walks.map(walkActivityToCsvRow);
+  const csv = [header, ...rows].join("\n");
+
+  return { success: true, data: csv };
+}
+
+// ==================== R10: Walker-Animal Pairings CSV ====================
+
+function pairingToCsvRow(pairing: WalkerAnimalPairingRow): string {
+  return [
+    escapeCsvField(`${pairing.walkerFirstName} ${pairing.walkerLastName}`),
+    escapeCsvField(pairing.animalName),
+    pairing.walkCount.toString(),
+    escapeCsvField(pairing.lastWalkDate),
+  ].join(",");
+}
+
+export async function exportWalkerAnimalPairingsCsv(
+  filters: WalkerAnimalPairingsReportFilters,
+): Promise<ActionResult<string>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "U bent niet ingelogd." };
+  }
+
+  if (!hasPermission(session.role, "report:generate")) {
+    return { success: false, error: "Onvoldoende rechten voor rapport export." };
+  }
+
+  const { pairings } = await getWalkerAnimalPairingsReport(filters);
+
+  const header = "Wandelaar,Hond,Aantal wandelingen,Laatste wandeling";
+  const rows = pairings.map(pairingToCsvRow);
+  const csv = [header, ...rows].join("\n");
+
+  return { success: true, data: csv };
+}
+
+// ==================== R13: Workflow Overview CSV ====================
+
+function workflowRowToCsvRow(row: WorkflowOverviewReportRow): string {
+  return [
+    escapeCsvField(row.name),
+    escapeCsvField(speciesLabel(row.species)),
+    escapeCsvField(PHASE_LABELS[row.workflowPhase ?? ""] ?? row.workflowPhase ?? "-"),
+    escapeCsvField(row.intakeDate ?? ""),
+    row.daysSinceIntake?.toString() ?? "",
+  ].join(",");
+}
+
+export async function exportWorkflowOverviewCsv(
+  filters: Omit<WorkflowOverviewReportFilters, "page" | "pageSize">,
+): Promise<ActionResult<string>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "U bent niet ingelogd." };
+  }
+
+  if (!hasPermission(session.role, "report:generate")) {
+    return { success: false, error: "Onvoldoende rechten voor rapport export." };
+  }
+
+  const { animals } = await getWorkflowOverviewReport({ ...filters });
+
+  const header = "Naam,Soort,Fase,Intakedatum,Dagen in asiel";
+  const rows = animals.map(workflowRowToCsvRow);
   const csv = [header, ...rows].join("\n");
 
   return { success: true, data: csv };

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { animals, behaviorRecords, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels } from "@/lib/db/schema";
+import { animals, behaviorRecords, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory } from "@/lib/db/schema";
 import { eq, and, asc, desc, gte, lte, isNotNull, count, sql } from "drizzle-orm";
 import type { Animal, BehaviorRecord, VetInspectionReport } from "@/types";
 
@@ -678,5 +678,252 @@ export async function getIBNDossiersReport(
   } catch (err) {
     console.error("getIBNDossiersReport query failed:", err);
     return { dossiers: [], total: 0 };
+  }
+}
+
+// ==================== R9: Walk Activity Report ====================
+
+export interface WalkActivityReportFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  walkerId?: number;
+  animalId?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface WalkActivityReportRow {
+  id: number;
+  date: string;
+  walkerFirstName: string;
+  walkerLastName: string;
+  animalName: string;
+  startTime: string;
+  endTime: string | null;
+  durationMinutes: number | null;
+  remarks: string | null;
+}
+
+export interface WalkActivityReportResult {
+  walks: WalkActivityReportRow[];
+  total: number;
+}
+
+export async function getWalkActivityReport(
+  filters: WalkActivityReportFilters,
+): Promise<WalkActivityReportResult> {
+  const { dateFrom, dateTo, walkerId, animalId, page, pageSize } = filters;
+
+  const conditions = [eq(walks.status, "completed")];
+  if (dateFrom) conditions.push(gte(walks.date, dateFrom));
+  if (dateTo) conditions.push(lte(walks.date, dateTo));
+  if (walkerId) conditions.push(eq(walks.walkerId, walkerId));
+  if (animalId) conditions.push(eq(walks.animalId, animalId));
+
+  const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+  const selectFields = {
+    id: walks.id,
+    date: walks.date,
+    walkerFirstName: walkers.firstName,
+    walkerLastName: walkers.lastName,
+    animalName: animals.name,
+    startTime: walks.startTime,
+    endTime: walks.endTime,
+    durationMinutes: walks.durationMinutes,
+    remarks: walks.remarks,
+  };
+
+  try {
+    if (page && pageSize) {
+      const results = await db
+        .select(selectFields)
+        .from(walks)
+        .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+        .innerJoin(animals, eq(walks.animalId, animals.id))
+        .where(whereClause)
+        .orderBy(desc(walks.date))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize);
+
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(walks)
+        .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+        .innerJoin(animals, eq(walks.animalId, animals.id))
+        .where(whereClause);
+
+      return {
+        walks: results as WalkActivityReportRow[],
+        total: (totalResult as { count: number }[])[0]?.count ?? 0,
+      };
+    }
+
+    const results = await db
+      .select(selectFields)
+      .from(walks)
+      .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+      .innerJoin(animals, eq(walks.animalId, animals.id))
+      .where(whereClause)
+      .orderBy(desc(walks.date));
+
+    return {
+      walks: results as WalkActivityReportRow[],
+      total: results.length,
+    };
+  } catch (err) {
+    console.error("getWalkActivityReport query failed:", err);
+    return { walks: [], total: 0 };
+  }
+}
+
+// ==================== R10: Walker-Animal Pairings Report ====================
+
+export interface WalkerAnimalPairingsReportFilters {
+  walkerId?: number;
+  animalId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface WalkerAnimalPairingRow {
+  walkerId: number;
+  walkerFirstName: string;
+  walkerLastName: string;
+  animalId: number;
+  animalName: string;
+  walkCount: number;
+  lastWalkDate: string;
+}
+
+export interface WalkerAnimalPairingsReportResult {
+  pairings: WalkerAnimalPairingRow[];
+  total: number;
+}
+
+export async function getWalkerAnimalPairingsReport(
+  filters: WalkerAnimalPairingsReportFilters,
+): Promise<WalkerAnimalPairingsReportResult> {
+  const { walkerId, animalId, dateFrom, dateTo } = filters;
+
+  const conditions = [eq(walks.status, "completed")];
+  if (walkerId) conditions.push(eq(walks.walkerId, walkerId));
+  if (animalId) conditions.push(eq(walks.animalId, animalId));
+  if (dateFrom) conditions.push(gte(walks.date, dateFrom));
+  if (dateTo) conditions.push(lte(walks.date, dateTo));
+
+  const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+  const selectFields = {
+    walkerId: walks.walkerId,
+    walkerFirstName: walkers.firstName,
+    walkerLastName: walkers.lastName,
+    animalId: walks.animalId,
+    animalName: animals.name,
+    walkCount: count(walks.id),
+    lastWalkDate: sql<string>`max(${walks.date})`,
+  };
+
+  try {
+    const results = await db
+      .select(selectFields)
+      .from(walks)
+      .innerJoin(walkers, eq(walks.walkerId, walkers.id))
+      .innerJoin(animals, eq(walks.animalId, animals.id))
+      .where(whereClause)
+      .groupBy(walks.walkerId, walkers.firstName, walkers.lastName, walks.animalId, animals.name)
+      .orderBy(desc(count(walks.id)));
+
+    return {
+      pairings: results as WalkerAnimalPairingRow[],
+      total: results.length,
+    };
+  } catch (err) {
+    console.error("getWalkerAnimalPairingsReport query failed:", err);
+    return { pairings: [], total: 0 };
+  }
+}
+
+// ==================== R13: Workflow Overview Report ====================
+
+export interface WorkflowOverviewReportFilters {
+  species?: string;
+  workflowPhase?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface WorkflowOverviewReportRow {
+  id: number;
+  name: string;
+  species: string;
+  workflowPhase: string | null;
+  intakeDate: string | null;
+  daysSinceIntake: number | null;
+}
+
+export interface WorkflowOverviewReportResult {
+  animals: WorkflowOverviewReportRow[];
+  total: number;
+}
+
+export async function getWorkflowOverviewReport(
+  filters: WorkflowOverviewReportFilters,
+): Promise<WorkflowOverviewReportResult> {
+  const { species, workflowPhase, dateFrom, dateTo, page, pageSize } = filters;
+
+  const conditions = [isNotNull(animals.workflowPhase)];
+  if (species) conditions.push(eq(animals.species, species));
+  if (workflowPhase) conditions.push(eq(animals.workflowPhase, workflowPhase));
+  if (dateFrom) conditions.push(gte(animals.intakeDate, dateFrom));
+  if (dateTo) conditions.push(lte(animals.intakeDate, dateTo));
+
+  const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+  const selectFields = {
+    id: animals.id,
+    name: animals.name,
+    species: animals.species,
+    workflowPhase: animals.workflowPhase,
+    intakeDate: animals.intakeDate,
+    daysSinceIntake: sql<number>`EXTRACT(DAY FROM now() - ${animals.intakeDate}::timestamp)::int`,
+  };
+
+  try {
+    if (page && pageSize) {
+      const results = await db
+        .select(selectFields)
+        .from(animals)
+        .where(whereClause)
+        .orderBy(asc(animals.workflowPhase), asc(animals.name))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize);
+
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(animals)
+        .where(whereClause);
+
+      return {
+        animals: results as WorkflowOverviewReportRow[],
+        total: (totalResult as { count: number }[])[0]?.count ?? 0,
+      };
+    }
+
+    const results = await db
+      .select(selectFields)
+      .from(animals)
+      .where(whereClause)
+      .orderBy(asc(animals.workflowPhase), asc(animals.name));
+
+    return {
+      animals: results as WorkflowOverviewReportRow[],
+      total: results.length,
+    };
+  } catch (err) {
+    console.error("getWorkflowOverviewReport query failed:", err);
+    return { animals: [], total: 0 };
   }
 }

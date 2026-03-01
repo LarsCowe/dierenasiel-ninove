@@ -50,11 +50,6 @@ export default function RapportenOverzichtPage() {
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">{report.description}</p>
-                    {!isAvailable && (
-                      <p className="mt-2 text-xs italic text-gray-400">
-                        Beschikbaar in Story {report.story}
-                      </p>
-                    )}
                   </div>
                 );
 

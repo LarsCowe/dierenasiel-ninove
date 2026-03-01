@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport } = vi.hoisted(() => {
+const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport } = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockGetAnimalReport = vi.fn();
   const mockGetMedicationReport = vi.fn();
   const mockGetAdoptionContractsReport = vi.fn();
   const mockGetWebsitePublicationReport = vi.fn();
-  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport };
+  const mockGetWalkActivityReport = vi.fn();
+  const mockGetWalkerAnimalPairingsReport = vi.fn();
+  const mockGetWorkflowOverviewReport = vi.fn();
+  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport };
 });
 
 vi.mock("@/lib/auth/session", () => ({
@@ -18,9 +21,12 @@ vi.mock("@/lib/queries/reports", () => ({
   getMedicationReport: mockGetMedicationReport,
   getAdoptionContractsReport: mockGetAdoptionContractsReport,
   getWebsitePublicationReport: mockGetWebsitePublicationReport,
+  getWalkActivityReport: mockGetWalkActivityReport,
+  getWalkerAnimalPairingsReport: mockGetWalkerAnimalPairingsReport,
+  getWorkflowOverviewReport: mockGetWorkflowOverviewReport,
 }));
 
-import { exportAnimalReportCsv, exportMedicationReportCsv, exportAdoptionContractsCsv, exportWebsitePublicationCsv } from "./report-export";
+import { exportAnimalReportCsv, exportMedicationReportCsv, exportAdoptionContractsCsv, exportWebsitePublicationCsv, exportWalkActivityCsv, exportWalkerAnimalPairingsCsv, exportWorkflowOverviewCsv } from "./report-export";
 
 const mockAnimals = [
   {
@@ -381,5 +387,152 @@ describe("exportWebsitePublicationCsv", () => {
       const lines = result.data.split("\n");
       expect(lines).toHaveLength(1); // header only
     }
+  });
+});
+
+// ==================== R9: Walk Activity CSV ====================
+
+const mockWalkActivityRows = [
+  { id: 1, date: "2026-02-20", walkerFirstName: "Jan", walkerLastName: "Peeters", animalName: "Rex", startTime: "10:00", endTime: "10:45", durationMinutes: 45, remarks: "Goed gelopen" },
+  { id: 2, date: "2026-02-21", walkerFirstName: "Els", walkerLastName: "Janssen", animalName: "Buddy", startTime: "14:00", endTime: "14:30", durationMinutes: 30, remarks: null },
+];
+
+describe("exportWalkActivityCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetWalkActivityReport.mockResolvedValue({ walks: mockWalkActivityRows, total: 2 });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const result = await exportWalkActivityCsv({});
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error without permission", async () => {
+    mockGetSession.mockResolvedValue({ userId: 1, role: "wandelaar", email: "w@test.com", name: "W" });
+    const result = await exportWalkActivityCsv({});
+    expect(result.success).toBe(false);
+  });
+
+  it("returns CSV with correct headers", async () => {
+    const result = await exportWalkActivityCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const header = result.data.split("\n")[0];
+      expect(header).toContain("Datum");
+      expect(header).toContain("Wandelaar");
+      expect(header).toContain("Hond");
+      expect(header).toContain("Duur (min)");
+    }
+  });
+
+  it("returns correct data rows", async () => {
+    const result = await exportWalkActivityCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(3); // header + 2 rows
+      expect(lines[1]).toContain("Jan Peeters");
+      expect(lines[1]).toContain("Rex");
+    }
+  });
+
+  it("passes filters to query", async () => {
+    await exportWalkActivityCsv({ dateFrom: "2026-02-01", dateTo: "2026-02-28" });
+    expect(mockGetWalkActivityReport).toHaveBeenCalledWith(expect.objectContaining({ dateFrom: "2026-02-01", dateTo: "2026-02-28" }));
+  });
+});
+
+// ==================== R10: Walker-Animal Pairings CSV ====================
+
+const mockPairingExportRows = [
+  { walkerId: 1, walkerFirstName: "Jan", walkerLastName: "Peeters", animalId: 1, animalName: "Rex", walkCount: 12, lastWalkDate: "2026-02-20" },
+  { walkerId: 2, walkerFirstName: "Els", walkerLastName: "Janssen", animalId: 2, animalName: "Buddy", walkCount: 5, lastWalkDate: "2026-02-18" },
+];
+
+describe("exportWalkerAnimalPairingsCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetWalkerAnimalPairingsReport.mockResolvedValue({ pairings: mockPairingExportRows, total: 2 });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const result = await exportWalkerAnimalPairingsCsv({});
+    expect(result.success).toBe(false);
+  });
+
+  it("returns CSV with correct headers", async () => {
+    const result = await exportWalkerAnimalPairingsCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const header = result.data.split("\n")[0];
+      expect(header).toContain("Wandelaar");
+      expect(header).toContain("Hond");
+      expect(header).toContain("Aantal wandelingen");
+      expect(header).toContain("Laatste wandeling");
+    }
+  });
+
+  it("returns correct data rows", async () => {
+    const result = await exportWalkerAnimalPairingsCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(3);
+      expect(lines[1]).toContain("Jan Peeters");
+      expect(lines[1]).toContain("12");
+    }
+  });
+});
+
+// ==================== R13: Workflow Overview CSV ====================
+
+const mockWorkflowExportRows = [
+  { id: 1, name: "Rex", species: "hond", workflowPhase: "verblijf", intakeDate: "2025-12-01", daysSinceIntake: 90 },
+  { id: 2, name: "Mimi", species: "kat", workflowPhase: "medisch", intakeDate: "2026-01-10", daysSinceIntake: 50 },
+];
+
+describe("exportWorkflowOverviewCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetWorkflowOverviewReport.mockResolvedValue({ animals: mockWorkflowExportRows, total: 2 });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+    const result = await exportWorkflowOverviewCsv({});
+    expect(result.success).toBe(false);
+  });
+
+  it("returns CSV with correct headers", async () => {
+    const result = await exportWorkflowOverviewCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const header = result.data.split("\n")[0];
+      expect(header).toContain("Naam");
+      expect(header).toContain("Fase");
+      expect(header).toContain("Dagen in asiel");
+    }
+  });
+
+  it("returns correct data rows", async () => {
+    const result = await exportWorkflowOverviewCsv({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(3);
+      expect(lines[1]).toContain("Rex");
+      expect(lines[1]).toContain("90");
+    }
+  });
+
+  it("passes filters to query", async () => {
+    await exportWorkflowOverviewCsv({ species: "hond" });
+    expect(mockGetWorkflowOverviewReport).toHaveBeenCalledWith(expect.objectContaining({ species: "hond" }));
   });
 });
