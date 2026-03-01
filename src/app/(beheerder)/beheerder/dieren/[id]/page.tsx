@@ -30,6 +30,8 @@ import { getTodayMedicationLogsByAnimalId } from "@/lib/queries/medication-logs"
 import { getTodosByAnimalId, countOpenTodosByAnimalId } from "@/lib/queries/animal-todos";
 import { getWalkHistoryByAnimalId, computeWalkStats } from "@/lib/queries/walks";
 import WalkHistorySection from "@/components/beheerder/wandelaars/WalkHistorySection";
+import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
+import WorkflowStepbar from "@/components/beheerder/dieren/WorkflowStepbar";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -53,7 +55,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -70,12 +72,22 @@ export default async function DierDetailPage({ params }: Props) {
     getTodosByAnimalId(animalId),
     countOpenTodosByAnimalId(animalId),
     getWalkHistoryByAnimalId(animalId),
+    getWorkflowSettings(),
   ]);
 
   if (!animal) notFound();
 
   return (
     <div className="space-y-4">
+      {workflowSettings.workflowEnabled && workflowSettings.stepbarVisible && animal.workflowPhase && (
+        <WorkflowStepbar
+          currentPhase={animal.workflowPhase}
+          animalId={animalId}
+          animalName={animal.name}
+          todos={todosList}
+        />
+      )}
+
       <AnimalEditForm animal={animal} />
 
       {/* Status & Kennel */}
