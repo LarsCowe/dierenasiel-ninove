@@ -123,11 +123,11 @@ const EPICS: Epic[] = [
   {
     id: 9,
     title: "Zwerfkattenbeleid",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "9.1", title: "Zwerfkat-campagne Registreren en Opvolgen", status: "done" },
       { id: "9.2", title: "Zwerfkattenbeleid Overzicht en Filters", status: "done" },
-      { id: "9.3", title: "Zwerfkattenbeleid Rapportage", status: "backlog" },
+      { id: "9.3", title: "Zwerfkattenbeleid Rapportage", status: "done" },
     ],
   },
 ];
@@ -301,7 +301,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 3 maart 2026
+        Laatst bijgewerkt: 4 maart 2026
       </div>
     </div>
   );

@@ -243,11 +243,13 @@ export const REPORT_DEFINITIONS = [
   { id: "R10", label: "Wandelaar-hond koppeling", description: "Overzicht van wandelaar-hond combinaties.", category: "Wandelaars", exportFormats: ["CSV"] as const, route: "/beheerder/rapporten/wandelaar-hond-koppeling", story: "7.4" },
   // Workflow
   { id: "R13", label: "Workflow-overzicht", description: "Overzicht van workflow-fases per dier.", category: "Workflow", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/workflow-overzicht", story: "7.4" },
+  // Zwerfkattenbeleid
+  { id: "R14", label: "Zwerfkattenbeleid", description: "Campagne-statistieken per gemeente en periode met FIV/FeLV en uitkomstverdeling.", category: "Zwerfkattenbeleid", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/zwerfkatten", story: "9.3" },
 ] as const;
 
 export type ReportDefinition = (typeof REPORT_DEFINITIONS)[number];
 
-export const REPORT_CATEGORIES = ["Dierenbeheer", "Medisch", "Adoptie", "Publicatie", "Wandelaars", "Workflow"] as const;
+export const REPORT_CATEGORIES = ["Dierenbeheer", "Medisch", "Adoptie", "Publicatie", "Wandelaars", "Workflow", "Zwerfkattenbeleid"] as const;
 
 // Shared label maps — single source of truth for Dutch display labels
 export const SPECIES_LABELS: Record<string, string> = { hond: "Hond", kat: "Kat", konijn: "Konijn", cavia: "Cavia", ezel: "Ezel", kip: "Kip", hangbuikvarken: "Hangbuikvarken" };

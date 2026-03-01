@@ -94,6 +94,95 @@ export async function getDistinctMunicipalities(): Promise<string[]> {
   }
 }
 
+export interface CampaignReportFilters {
+  municipality?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface CampaignReportStats {
+  total: number;
+  completedCampaigns: number;
+  fivPositive: number;
+  fivTested: number;
+  fivPercentage: number;
+  felvPositive: number;
+  felvTested: number;
+  felvPercentage: number;
+  outcomes: Record<string, number>;
+}
+
+export interface CampaignReportResult {
+  campaigns: StrayCatCampaign[];
+  stats: CampaignReportStats;
+}
+
+export async function getCampaignReport(
+  filters: CampaignReportFilters = {},
+): Promise<CampaignReportResult> {
+  const { municipality, dateFrom, dateTo } = filters;
+
+  const conditions: SQL[] = [];
+  if (municipality) conditions.push(eq(strayCatCampaigns.municipality, municipality));
+  if (dateFrom && isValidDate(dateFrom)) conditions.push(gte(strayCatCampaigns.requestDate, dateFrom));
+  if (dateTo && isValidDate(dateTo)) conditions.push(lte(strayCatCampaigns.requestDate, dateTo));
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  try {
+    const campaigns = (await db
+      .select()
+      .from(strayCatCampaigns)
+      .where(whereClause)
+      .orderBy(desc(strayCatCampaigns.requestDate))) as StrayCatCampaign[];
+
+    const total = campaigns.length;
+    const completedCampaigns = campaigns.filter((c) => c.status === "afgerond").length;
+    const fivPositive = campaigns.filter((c) => c.fivStatus === "positief").length;
+    const fivTested = campaigns.filter((c) => c.fivStatus !== null).length;
+    const felvPositive = campaigns.filter((c) => c.felvStatus === "positief").length;
+    const felvTested = campaigns.filter((c) => c.felvStatus !== null).length;
+
+    const outcomes: Record<string, number> = {};
+    for (const c of campaigns) {
+      if (c.outcome) {
+        outcomes[c.outcome] = (outcomes[c.outcome] || 0) + 1;
+      }
+    }
+
+    return {
+      campaigns,
+      stats: {
+        total,
+        completedCampaigns,
+        fivPositive,
+        fivTested,
+        fivPercentage: fivTested > 0 ? Math.round((fivPositive / fivTested) * 100) : 0,
+        felvPositive,
+        felvTested,
+        felvPercentage: felvTested > 0 ? Math.round((felvPositive / felvTested) * 100) : 0,
+        outcomes,
+      },
+    };
+  } catch (err) {
+    console.error("getCampaignReport query failed:", err);
+    return {
+      campaigns: [],
+      stats: {
+        total: 0,
+        completedCampaigns: 0,
+        fivPositive: 0,
+        fivTested: 0,
+        fivPercentage: 0,
+        felvPositive: 0,
+        felvTested: 0,
+        felvPercentage: 0,
+        outcomes: {},
+      },
+    };
+  }
+}
+
 export async function getCatsAvailableForLinking() {
   return db
     .select({ id: animals.id, name: animals.name })

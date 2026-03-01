@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport } = vi.hoisted(() => {
+const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport, mockGetCampaignReport } = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockGetAnimalReport = vi.fn();
   const mockGetMedicationReport = vi.fn();
@@ -9,7 +9,8 @@ const { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdo
   const mockGetWalkActivityReport = vi.fn();
   const mockGetWalkerAnimalPairingsReport = vi.fn();
   const mockGetWorkflowOverviewReport = vi.fn();
-  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport };
+  const mockGetCampaignReport = vi.fn();
+  return { mockGetSession, mockGetAnimalReport, mockGetMedicationReport, mockGetAdoptionContractsReport, mockGetWebsitePublicationReport, mockGetWalkActivityReport, mockGetWalkerAnimalPairingsReport, mockGetWorkflowOverviewReport, mockGetCampaignReport };
 });
 
 vi.mock("@/lib/auth/session", () => ({
@@ -26,7 +27,11 @@ vi.mock("@/lib/queries/reports", () => ({
   getWorkflowOverviewReport: mockGetWorkflowOverviewReport,
 }));
 
-import { exportAnimalReportCsv, exportMedicationReportCsv, exportAdoptionContractsCsv, exportWebsitePublicationCsv, exportWalkActivityCsv, exportWalkerAnimalPairingsCsv, exportWorkflowOverviewCsv } from "./report-export";
+vi.mock("@/lib/queries/stray-cat-campaigns", () => ({
+  getCampaignReport: mockGetCampaignReport,
+}));
+
+import { exportAnimalReportCsv, exportMedicationReportCsv, exportAdoptionContractsCsv, exportWebsitePublicationCsv, exportWalkActivityCsv, exportWalkerAnimalPairingsCsv, exportWorkflowOverviewCsv, exportStrayCatCampaignsCsv } from "./report-export";
 
 const mockAnimals = [
   {
@@ -534,5 +539,84 @@ describe("exportWorkflowOverviewCsv", () => {
   it("passes filters to query", async () => {
     await exportWorkflowOverviewCsv({ species: "hond" });
     expect(mockGetWorkflowOverviewReport).toHaveBeenCalledWith(expect.objectContaining({ species: "hond" }));
+  });
+});
+
+// ==================== R14: Stray Cat Campaigns CSV ====================
+
+const mockCampaignData = [
+  {
+    id: 1, requestDate: "2026-01-15", municipality: "Ninove", address: "Kerkstraat 1",
+    status: "afgerond", cageNumbers: "K1, K2", inspectionDate: "2026-01-20",
+    catDescription: "Zwarte kat", fivStatus: "negatief", felvStatus: "negatief",
+    outcome: "gecastreerd_uitgezet", remarks: "Succesvol", cageDeploymentDate: null,
+    cageAtVet: null, vetName: null, photoUrl: null, linkedAnimalId: null, createdAt: new Date(),
+  },
+  {
+    id: 2, requestDate: "2026-02-01", municipality: "Geraardsbergen", address: "Markt 5",
+    status: "open", cageNumbers: null, inspectionDate: null,
+    catDescription: null, fivStatus: null, felvStatus: null,
+    outcome: null, remarks: null, cageDeploymentDate: null,
+    cageAtVet: null, vetName: null, photoUrl: null, linkedAnimalId: null, createdAt: new Date(),
+  },
+];
+
+describe("exportStrayCatCampaignsCsv", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ userId: 1, role: "beheerder", email: "admin@test.com", name: "Admin" });
+    mockGetCampaignReport.mockResolvedValue({
+      campaigns: mockCampaignData,
+      stats: { total: 2, totalCatsCaught: 1, fivPositive: 0, fivPercentage: 0, felvPositive: 0, felvPercentage: 0, outcomes: { gecastreerd_uitgezet: 1 } },
+    });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await exportStrayCatCampaignsCsv({});
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet ingelogd");
+  });
+
+  it("returns error without permission", async () => {
+    mockGetSession.mockResolvedValue({ userId: 1, role: "wandelaar", email: "w@test.com", name: "W" });
+
+    const result = await exportStrayCatCampaignsCsv({});
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rechten");
+  });
+
+  it("returns CSV with correct headers and data", async () => {
+    const result = await exportStrayCatCampaignsCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines[0]).toContain("Datum verzoek");
+      expect(lines[0]).toContain("Gemeente");
+      expect(lines[0]).toContain("FIV");
+      expect(lines[0]).toContain("Uitkomst");
+      expect(lines).toHaveLength(3); // header + 2 rows
+      expect(lines[1]).toContain("Ninove");
+      expect(lines[1]).toContain("Kerkstraat 1");
+    }
+  });
+
+  it("handles empty result set", async () => {
+    mockGetCampaignReport.mockResolvedValue({
+      campaigns: [],
+      stats: { total: 0, totalCatsCaught: 0, fivPositive: 0, fivPercentage: 0, felvPositive: 0, felvPercentage: 0, outcomes: {} },
+    });
+
+    const result = await exportStrayCatCampaignsCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const lines = result.data.split("\n");
+      expect(lines).toHaveLength(1); // header only
+    }
   });
 });

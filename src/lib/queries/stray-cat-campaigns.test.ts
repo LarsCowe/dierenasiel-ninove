@@ -62,6 +62,7 @@ import {
   getCatsAvailableForLinking,
   getCampaignsForAdmin,
   getDistinctMunicipalities,
+  getCampaignReport,
 } from "./stray-cat-campaigns";
 
 describe("getCampaignById", () => {
@@ -288,5 +289,128 @@ describe("getDistinctMunicipalities", () => {
     const result = await getDistinctMunicipalities();
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("getCampaignReport", () => {
+  const mockCampaigns = [
+    { id: 1, municipality: "Ninove", status: "afgerond", fivStatus: "positief", felvStatus: "negatief", outcome: "gecastreerd_uitgezet" },
+    { id: 2, municipality: "Ninove", status: "afgerond", fivStatus: "negatief", felvStatus: "positief", outcome: "gesteriliseerd_uitgezet" },
+    { id: 3, municipality: "Geraardsbergen", status: "afgerond", fivStatus: "negatief", felvStatus: "negatief", outcome: "geadopteerd" },
+    { id: 4, municipality: "Ninove", status: "open", fivStatus: null, felvStatus: null, outcome: null },
+  ];
+
+  function setupReportMock(data: unknown[] = mockCampaigns) {
+    // getCampaignReport uses select → from → where → orderBy (no limit/offset)
+    const orderBy = vi.fn().mockResolvedValue(data);
+    const where = vi.fn().mockReturnValue({ orderBy });
+    const from = vi.fn().mockReturnValue({ where, orderBy });
+    mockSelect.mockReturnValue({ from });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupReportMock();
+  });
+
+  it("returns campaigns and calculated stats", async () => {
+    const result = await getCampaignReport();
+
+    expect(result.campaigns).toHaveLength(4);
+    expect(result.stats.total).toBe(4);
+  });
+
+  it("calculates correct FIV positive percentage based on tested campaigns", async () => {
+    const result = await getCampaignReport();
+
+    // 1 positief out of 3 tested (id=4 has null fivStatus)
+    expect(result.stats.fivPositive).toBe(1);
+    expect(result.stats.fivTested).toBe(3);
+    expect(result.stats.fivPercentage).toBe(33);
+  });
+
+  it("calculates correct FeLV positive percentage based on tested campaigns", async () => {
+    const result = await getCampaignReport();
+
+    // 1 positief out of 3 tested (id=4 has null felvStatus)
+    expect(result.stats.felvPositive).toBe(1);
+    expect(result.stats.felvTested).toBe(3);
+    expect(result.stats.felvPercentage).toBe(33);
+  });
+
+  it("counts outcomes correctly", async () => {
+    const result = await getCampaignReport();
+
+    expect(result.stats.outcomes).toEqual({
+      gecastreerd_uitgezet: 1,
+      gesteriliseerd_uitgezet: 1,
+      geadopteerd: 1,
+    });
+  });
+
+  it("counts completed campaigns (afgerond status)", async () => {
+    const result = await getCampaignReport();
+
+    // 3 out of 4 campaigns have status "afgerond"
+    expect(result.stats.completedCampaigns).toBe(3);
+  });
+
+  it("returns empty stats when no campaigns", async () => {
+    setupReportMock([]);
+
+    const result = await getCampaignReport();
+
+    expect(result.campaigns).toEqual([]);
+    expect(result.stats).toEqual({
+      total: 0,
+      completedCampaigns: 0,
+      fivPositive: 0,
+      fivTested: 0,
+      fivPercentage: 0,
+      felvPositive: 0,
+      felvTested: 0,
+      felvPercentage: 0,
+      outcomes: {},
+    });
+  });
+
+  it("applies municipality filter", async () => {
+    await getCampaignReport({ municipality: "Ninove" });
+
+    const { eq } = await import("drizzle-orm");
+    expect(eq).toHaveBeenCalledWith(expect.anything(), "Ninove");
+  });
+
+  it("applies dateFrom filter", async () => {
+    await getCampaignReport({ dateFrom: "2026-01-01" });
+
+    const { gte } = await import("drizzle-orm");
+    expect(gte).toHaveBeenCalledWith(expect.anything(), "2026-01-01");
+  });
+
+  it("applies dateTo filter", async () => {
+    await getCampaignReport({ dateTo: "2026-12-31" });
+
+    const { lte } = await import("drizzle-orm");
+    expect(lte).toHaveBeenCalledWith(expect.anything(), "2026-12-31");
+  });
+
+  it("ignores invalid date filters", async () => {
+    await getCampaignReport({ dateFrom: "not-a-date", dateTo: "2026-13-45" });
+
+    const { gte, lte } = await import("drizzle-orm");
+    expect(gte).not.toHaveBeenCalled();
+    expect(lte).not.toHaveBeenCalled();
+  });
+
+  it("returns empty result on error", async () => {
+    mockSelect.mockImplementation(() => {
+      throw new Error("DB error");
+    });
+
+    const result = await getCampaignReport();
+
+    expect(result.campaigns).toEqual([]);
+    expect(result.stats.total).toBe(0);
   });
 });

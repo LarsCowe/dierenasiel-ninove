@@ -3,6 +3,8 @@
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWebsitePublicationReport, getWalkActivityReport, getWalkerAnimalPairingsReport, getWorkflowOverviewReport, type AnimalReportFilters, type MedicationReportFilters, type MedicationReportRow, type AdoptionContractReportFilters, type AdoptionContractReportRow, type WalkActivityReportFilters, type WalkActivityReportRow, type WalkerAnimalPairingsReportFilters, type WalkerAnimalPairingRow, type WorkflowOverviewReportFilters, type WorkflowOverviewReportRow } from "@/lib/queries/reports";
+import { getCampaignReport, type CampaignReportFilters } from "@/lib/queries/stray-cat-campaigns";
+import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
 import { speciesLabel, genderLabel, statusLabel, escapeCsvField } from "@/lib/utils";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { ActionResult } from "@/types";
@@ -272,6 +274,48 @@ export async function exportWorkflowOverviewCsv(
 
   const header = "Naam,Soort,Fase,Intakedatum,Dagen in asiel";
   const rows = animals.map(workflowRowToCsvRow);
+  const csv = [header, ...rows].join("\n");
+
+  return { success: true, data: csv };
+}
+
+function campaignToCsvRow(campaign: import("@/types").StrayCatCampaign): string {
+  const statusLbl = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPAIGN_STATUS_LABELS] ?? campaign.status;
+  const fivLabel = campaign.fivStatus ? (FIV_FELV_STATUS_LABELS[campaign.fivStatus as keyof typeof FIV_FELV_STATUS_LABELS] ?? campaign.fivStatus) : "";
+  const felvLabel = campaign.felvStatus ? (FIV_FELV_STATUS_LABELS[campaign.felvStatus as keyof typeof FIV_FELV_STATUS_LABELS] ?? campaign.felvStatus) : "";
+  const outcomeLabel = campaign.outcome ? (CAMPAIGN_OUTCOME_LABELS[campaign.outcome as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? campaign.outcome) : "";
+
+  return [
+    escapeCsvField(campaign.requestDate),
+    escapeCsvField(campaign.municipality),
+    escapeCsvField(campaign.address),
+    escapeCsvField(statusLbl),
+    escapeCsvField(campaign.cageNumbers ?? ""),
+    escapeCsvField(campaign.inspectionDate ?? ""),
+    escapeCsvField(campaign.catDescription ?? ""),
+    escapeCsvField(fivLabel),
+    escapeCsvField(felvLabel),
+    escapeCsvField(outcomeLabel),
+    escapeCsvField(campaign.remarks ?? ""),
+  ].join(",");
+}
+
+export async function exportStrayCatCampaignsCsv(
+  filters: CampaignReportFilters,
+): Promise<ActionResult<string>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "U bent niet ingelogd." };
+  }
+
+  if (!hasPermission(session.role, "report:generate")) {
+    return { success: false, error: "Onvoldoende rechten voor rapport export." };
+  }
+
+  const { campaigns } = await getCampaignReport(filters);
+
+  const header = "Datum verzoek,Gemeente,Adres,Status,Kooi nummers,Inspectiedatum,Kat beschrijving,FIV,FeLV,Uitkomst,Opmerkingen";
+  const rows = campaigns.map(campaignToCsvRow);
   const csv = [header, ...rows].join("\n");
 
   return { success: true, data: csv };
