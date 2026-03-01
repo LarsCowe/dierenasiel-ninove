@@ -232,6 +232,20 @@
       "when": 1772384364029,
       "tag": "0032_salty_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1772401622073,
+      "tag": "0033_clean_william_stryker",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1772402774724,
+      "tag": "0034_colossal_colonel_america",
+      "breakpoints": true
     }
   ]
 }

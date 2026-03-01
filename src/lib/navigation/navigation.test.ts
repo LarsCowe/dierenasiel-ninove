@@ -3,8 +3,8 @@ import { BEHEERDER_NAV_ITEMS, getVisibleNavItems } from "./index";
 import { isNavItemActive } from "./active";
 
 describe("BEHEERDER_NAV_ITEMS", () => {
-  it("has exactly 12 navigation items", () => {
-    expect(BEHEERDER_NAV_ITEMS).toHaveLength(12);
+  it("has exactly 13 navigation items", () => {
+    expect(BEHEERDER_NAV_ITEMS).toHaveLength(13);
   });
 
   it("each item has label, href, icon, and requiredPermission", () => {
@@ -40,14 +40,15 @@ describe("BEHEERDER_NAV_ITEMS", () => {
       "Instellingen",
       "Mailing",
       "GDPR",
+      "Zwerfkatten",
     ]);
   });
 });
 
 describe("getVisibleNavItems", () => {
-  it("shows all 12 items for beheerder", () => {
+  it("shows all 13 items for beheerder", () => {
     const items = getVisibleNavItems("beheerder");
-    expect(items).toHaveLength(12);
+    expect(items).toHaveLength(13);
   });
 
   it("shows correct items for medewerker", () => {
@@ -62,11 +63,12 @@ describe("getVisibleNavItems", () => {
     expect(labels).toContain("Kennels");
     expect(labels).toContain("Website");
     expect(labels).toContain("Mailing"); // adoption:read
-    // medewerker does NOT have: report:read, user:read, settings:read, gdpr:read
+    // medewerker does NOT have: report:read, user:read, settings:read, gdpr:read, stray_cat:read
     expect(labels).not.toContain("Rapporten");
     expect(labels).not.toContain("Gebruikers");
     expect(labels).not.toContain("Instellingen");
     expect(labels).not.toContain("GDPR");
+    expect(labels).not.toContain("Zwerfkatten");
   });
 
   it("shows correct items for dierenarts", () => {
@@ -86,6 +88,7 @@ describe("getVisibleNavItems", () => {
     expect(labels).not.toContain("Mailing");
     expect(labels).not.toContain("Rapporten");
     expect(labels).not.toContain("GDPR");
+    expect(labels).not.toContain("Zwerfkatten");
   });
 
   it("shows correct items for adoptieconsulent", () => {
@@ -104,6 +107,7 @@ describe("getVisibleNavItems", () => {
     expect(labels).not.toContain("Gebruikers");
     expect(labels).not.toContain("Instellingen");
     expect(labels).not.toContain("GDPR");
+    expect(labels).not.toContain("Zwerfkatten");
   });
 
   it("shows correct items for coördinator", () => {
@@ -122,8 +126,9 @@ describe("getVisibleNavItems", () => {
     expect(labels).toContain("Gebruikers");
     expect(labels).toContain("Instellingen");
     expect(labels).toContain("Mailing");
-    // coördinator does NOT have gdpr:read
+    // coördinator does NOT have gdpr:read, stray_cat:read
     expect(labels).not.toContain("GDPR");
+    expect(labels).not.toContain("Zwerfkatten");
   });
 
   it("returns only Dashboard for unknown role", () => {

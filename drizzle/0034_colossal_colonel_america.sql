@@ -1,0 +1,1 @@
+ALTER TABLE "stray_cat_campaigns" ADD COLUMN "photo_url" varchar(500);

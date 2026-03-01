@@ -469,6 +469,31 @@ export const mailingSendRecipients = pgTable("mailing_send_recipients", {
   index("idx_mailing_send_recipients_send_id").on(table.sendId),
 ]);
 
+export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
+  id: serial("id").primaryKey(),
+  requestDate: date("request_date").notNull(),
+  municipality: varchar("municipality", { length: 200 }).notNull(),
+  address: text("address").notNull(),
+  cageDeploymentDate: date("cage_deployment_date"),
+  cageNumbers: varchar("cage_numbers", { length: 100 }),
+  inspectionDate: date("inspection_date"),
+  catDescription: text("cat_description"),
+  remarks: text("remarks"),
+  cageAtVet: varchar("cage_at_vet", { length: 100 }),
+  vetName: varchar("vet_name", { length: 200 }),
+  fivStatus: varchar("fiv_status", { length: 20 }),
+  felvStatus: varchar("felv_status", { length: 20 }),
+  outcome: varchar("outcome", { length: 30 }),
+  status: varchar("status", { length: 20 }).default("open").notNull(),
+  photoUrl: varchar("photo_url", { length: 500 }),
+  linkedAnimalId: integer("linked_animal_id").references(() => animals.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_stray_cat_campaigns_status").on(table.status),
+  index("idx_stray_cat_campaigns_municipality").on(table.municipality),
+  index("idx_stray_cat_campaigns_request_date").on(table.requestDate),
+]);
+
 export const shelterSettings = pgTable("shelter_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).unique().notNull(),

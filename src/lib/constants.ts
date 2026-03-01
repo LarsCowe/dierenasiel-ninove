@@ -276,5 +276,46 @@ export const MAILING_TEMPLATES = [
 
 export type MailingTemplateId = (typeof MAILING_TEMPLATES)[number]["id"];
 
+// Zwerfkattenbeleid — campaign statuses
+export const CAMPAIGN_STATUSES = [
+  "open",
+  "kooien_geplaatst",
+  "in_behandeling",
+  "afgerond",
+] as const;
+
+export const CAMPAIGN_STATUS_LABELS: Record<(typeof CAMPAIGN_STATUSES)[number], string> = {
+  open: "Open",
+  kooien_geplaatst: "Kooien geplaatst",
+  in_behandeling: "In behandeling",
+  afgerond: "Afgerond",
+};
+
+// FIV/FeLV test statuses
+export const FIV_FELV_STATUSES = [
+  "positief",
+  "negatief",
+  "niet_getest",
+] as const;
+
+export const FIV_FELV_STATUS_LABELS: Record<(typeof FIV_FELV_STATUSES)[number], string> = {
+  positief: "Positief",
+  negatief: "Negatief",
+  niet_getest: "Niet getest",
+};
+
+// Campaign outcomes
+export const CAMPAIGN_OUTCOMES = [
+  "gecastreerd_uitgezet",
+  "gesteriliseerd_uitgezet",
+  "geadopteerd",
+] as const;
+
+export const CAMPAIGN_OUTCOME_LABELS: Record<(typeof CAMPAIGN_OUTCOMES)[number], string> = {
+  gecastreerd_uitgezet: "Gecastreerd & uitgezet",
+  gesteriliseerd_uitgezet: "Gesteriliseerd & uitgezet",
+  geadopteerd: "Geadopteerd",
+};
+
 export const SITE_LOGO_URL = `${WIX}/12c6b4_08c41b8c45754289bb6e258b78f15349~mv2.png/v1/crop/x_31,y_0,w_542,h_542/fill/w_311,h_311,al_c,q_85,enc_auto/logo4.png`;
 export const TROOPER_BANNER_URL = `${WIX}/12c6b4_8d3f482b7e164f8f9cd83d69f6813524~mv2.png/v1/fill/w_453,h_172,al_c,q_85,enc_auto/349181460_663508265641046_5119675185064921168_n.png`;

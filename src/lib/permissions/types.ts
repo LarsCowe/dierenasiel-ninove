@@ -26,6 +26,8 @@ export const ALL_PERMISSIONS = [
   "website:write",
   "gdpr:read",
   "gdpr:write",
+  "stray_cat:read",
+  "stray_cat:write",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
