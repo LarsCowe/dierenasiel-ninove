@@ -6,6 +6,8 @@ import {
   getWalkerDetailAction,
   anonymizeCandidateAction,
   anonymizeWalkerAction,
+  exportCandidateDataAction,
+  exportWalkerDataAction,
 } from "@/app/(beheerder)/beheerder/gdpr/actions";
 import type { GdprSearchResult } from "@/types";
 import { ANONYMIZED_VALUE } from "@/lib/constants";
@@ -20,6 +22,8 @@ export default function GdprPersonDetail({ person, onClose, onAnonymised }: Prop
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isExporting, startExportTransition] = useTransition();
+  const [exportFormat, setExportFormat] = useState<"json" | "csv">("json");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -54,6 +58,30 @@ export default function GdprPersonDetail({ person, onClose, onAnonymised }: Prop
         setTimeout(() => onAnonymised(), 1500);
       } else {
         setMessage({ type: "error", text: result.error ?? "Er ging iets mis." });
+      }
+    });
+  }
+
+  function handleExport() {
+    startExportTransition(async () => {
+      const result =
+        person.type === "candidate"
+          ? await exportCandidateDataAction(person.id, exportFormat)
+          : await exportWalkerDataAction(person.id, exportFormat);
+
+      if (result.success) {
+        const mimeType = exportFormat === "csv" ? "text/csv;charset=utf-8;" : "application/json;charset=utf-8;";
+        const blob = new Blob([result.data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const date = new Date().toISOString().split("T")[0];
+        a.download = `gdpr-export-${person.type === "candidate" ? "adoptant" : "wandelaar"}-${person.id}-${date}.${exportFormat}`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setMessage({ type: "success", text: "Export succesvol gedownload." });
+      } else {
+        setMessage({ type: "error", text: result.error ?? "Er ging iets mis bij het exporteren." });
       }
     });
   }
@@ -143,8 +171,29 @@ export default function GdprPersonDetail({ person, onClose, onAnonymised }: Prop
             </div>
           )}
 
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex items-center gap-3">
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value as "json" | "csv")}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="json">JSON</option>
+                <option value="csv">CSV</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isExporting ? "Exporteren..." : "Exporteer gegevens"}
+              </button>
+            </div>
+          </div>
+
           {!isAnonymised && (
-            <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="mt-4 border-t border-gray-200 pt-4">
               <button
                 type="button"
                 onClick={handleAnonymize}

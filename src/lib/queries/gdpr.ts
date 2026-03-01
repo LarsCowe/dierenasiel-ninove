@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { adoptionCandidates, walkers } from "@/lib/db/schema";
+import { adoptionCandidates, walkers, kennismakingen, adoptionContracts, postAdoptionFollowups, walks, animals } from "@/lib/db/schema";
 import { eq, or, ilike } from "drizzle-orm";
 
 const SEARCH_LIMIT = 50;
@@ -69,4 +69,65 @@ export async function getWalkerForGdpr(walkerId: number) {
     .limit(1);
 
   return walker ?? null;
+}
+
+// === Export query helpers ===
+
+const EXPORT_LIMIT = 1000;
+
+/**
+ * Get all kennismakingen for a candidate (GDPR export).
+ */
+export async function getKennismakingenForExport(candidateId: number) {
+  return db
+    .select()
+    .from(kennismakingen)
+    .where(eq(kennismakingen.adoptionCandidateId, candidateId))
+    .limit(EXPORT_LIMIT);
+}
+
+/**
+ * Get all adoption contracts for a candidate (GDPR export).
+ */
+export async function getContractsForExport(candidateId: number) {
+  return db
+    .select()
+    .from(adoptionContracts)
+    .where(eq(adoptionContracts.candidateId, candidateId))
+    .limit(EXPORT_LIMIT);
+}
+
+/**
+ * Get all post-adoption followups for a contract (GDPR export).
+ */
+export async function getFollowupsForExport(contractId: number) {
+  return db
+    .select()
+    .from(postAdoptionFollowups)
+    .where(eq(postAdoptionFollowups.contractId, contractId))
+    .limit(EXPORT_LIMIT);
+}
+
+/**
+ * Get all walks for a walker (GDPR export).
+ */
+export async function getWalksForExport(walkerId: number) {
+  return db
+    .select()
+    .from(walks)
+    .where(eq(walks.walkerId, walkerId))
+    .limit(EXPORT_LIMIT);
+}
+
+/**
+ * Get animal name by ID (for export data enrichment).
+ */
+export async function getAnimalNameById(animalId: number) {
+  const [animal] = await db
+    .select({ name: animals.name })
+    .from(animals)
+    .where(eq(animals.id, animalId))
+    .limit(1);
+
+  return animal?.name ?? null;
 }

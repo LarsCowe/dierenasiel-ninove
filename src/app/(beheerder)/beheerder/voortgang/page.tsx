@@ -116,7 +116,7 @@ const EPICS: Epic[] = [
     status: "in-progress",
     stories: [
       { id: "8.1", title: "Persoonsgegevens Anonimiseren", status: "done" },
-      { id: "8.2", title: "Persoonsgegevens Exporteren", status: "backlog" },
+      { id: "8.2", title: "Persoonsgegevens Exporteren", status: "done" },
       { id: "8.3", title: "Bewaartermijnen Monitoring en Data Minimalisatie", status: "backlog" },
     ],
   },

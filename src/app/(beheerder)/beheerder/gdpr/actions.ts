@@ -1,6 +1,11 @@
 "use server";
 
-import { anonymizeCandidateAction, anonymizeWalkerAction } from "@/lib/actions/gdpr";
+import {
+  anonymizeCandidateAction,
+  anonymizeWalkerAction,
+  exportCandidateDataAction,
+  exportWalkerDataAction,
+} from "@/lib/actions/gdpr";
 import {
   searchCandidatesForGdpr,
   searchWalkersForGdpr,
@@ -62,4 +67,9 @@ export async function getWalkerDetailAction(walkerId: number) {
   return getWalkerForGdpr(walkerId);
 }
 
-export { anonymizeCandidateAction, anonymizeWalkerAction };
+export {
+  anonymizeCandidateAction,
+  anonymizeWalkerAction,
+  exportCandidateDataAction,
+  exportWalkerDataAction,
+};
