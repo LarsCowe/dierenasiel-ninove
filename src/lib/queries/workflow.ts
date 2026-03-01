@@ -1,8 +1,32 @@
 import { db } from "@/lib/db";
-import { animalWorkflowHistory, animals, vaccinations, adoptionContracts } from "@/lib/db/schema";
+import { animalWorkflowHistory, animals, users, vaccinations, adoptionContracts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import type { AnimalWorkflowHistory } from "@/types";
+import type { AnimalWorkflowHistory, WorkflowHistoryEntry } from "@/types";
 import type { GuardContext } from "@/lib/workflow/guards";
+
+export async function getWorkflowHistoryWithUserByAnimalId(animalId: number): Promise<WorkflowHistoryEntry[]> {
+  try {
+    return await db
+      .select({
+        id: animalWorkflowHistory.id,
+        animalId: animalWorkflowHistory.animalId,
+        fromPhase: animalWorkflowHistory.fromPhase,
+        toPhase: animalWorkflowHistory.toPhase,
+        changedBy: animalWorkflowHistory.changedBy,
+        changeReason: animalWorkflowHistory.changeReason,
+        autoActionsTriggered: animalWorkflowHistory.autoActionsTriggered,
+        createdAt: animalWorkflowHistory.createdAt,
+        changedByName: users.name,
+      })
+      .from(animalWorkflowHistory)
+      .leftJoin(users, eq(animalWorkflowHistory.changedBy, users.id))
+      .where(eq(animalWorkflowHistory.animalId, animalId))
+      .orderBy(desc(animalWorkflowHistory.createdAt));
+  } catch (err) {
+    console.error("getWorkflowHistoryWithUserByAnimalId query failed:", err);
+    return [];
+  }
+}
 
 export async function getWorkflowHistoryByAnimalId(animalId: number): Promise<AnimalWorkflowHistory[]> {
   try {

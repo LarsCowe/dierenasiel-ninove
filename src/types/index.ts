@@ -190,6 +190,18 @@ export interface WalkStats {
 export type AnimalWorkflowHistory = typeof animalWorkflowHistory.$inferSelect;
 export type NewAnimalWorkflowHistory = typeof animalWorkflowHistory.$inferInsert;
 
+export interface WorkflowHistoryEntry {
+  id: number;
+  animalId: number;
+  fromPhase: string | null;
+  toPhase: string;
+  changedBy: number;
+  changeReason: string | null;
+  autoActionsTriggered: unknown;
+  createdAt: Date;
+  changedByName: string | null;
+}
+
 export type TransitionActionResult =
   | { success: true; data: { fromPhase: string; toPhase: string; guardsOverridden?: boolean } }
   | { success: false; error: string; guardWarnings?: GuardWarning[] };
