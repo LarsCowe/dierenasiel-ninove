@@ -2,7 +2,7 @@
 
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
-import { getAnimalReport, type AnimalReportFilters } from "@/lib/queries/reports";
+import { getAnimalReport, getMedicationReport, type AnimalReportFilters, type MedicationReportFilters, type MedicationReportRow } from "@/lib/queries/reports";
 import { speciesLabel, genderLabel, statusLabel, escapeCsvField } from "@/lib/utils";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { ActionResult } from "@/types";
@@ -51,6 +51,49 @@ export async function exportAnimalReportCsv(
 
   const header = "Naam,Soort,Ras,Geslacht,Status,Workflow-fase,Chipnr,Intake datum";
   const rows = animals.map(animalToCsvRow);
+  const csv = [header, ...rows].join("\n");
+
+  return { success: true, data: csv };
+}
+
+// ==================== R5: Medication Report CSV ====================
+
+function medicationToCsvRow(med: MedicationReportRow): string {
+  return [
+    escapeCsvField(med.animalName),
+    escapeCsvField(speciesLabel(med.animalSpecies)),
+    escapeCsvField(med.medicationName),
+    escapeCsvField(med.dosage),
+    med.startDate,
+    med.endDate ?? "",
+    med.isActive ? "Actief" : "Afgerond",
+    escapeCsvField(med.notes ?? ""),
+  ].join(",");
+}
+
+interface MedicationExportFilters {
+  isActive?: boolean;
+}
+
+export async function exportMedicationReportCsv(
+  filters: MedicationExportFilters,
+): Promise<ActionResult<string>> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Je bent niet ingelogd." };
+  }
+
+  if (!hasPermission(session.role, "report:generate")) {
+    return { success: false, error: "Onvoldoende rechten voor rapport export." };
+  }
+
+  const queryFilters: MedicationReportFilters = {};
+  if (filters.isActive !== undefined) queryFilters.isActive = filters.isActive;
+
+  const { medications } = await getMedicationReport(queryFilters);
+
+  const header = "Dier,Soort,Medicatie,Dosering,Startdatum,Einddatum,Status,Opmerkingen";
+  const rows = medications.map(medicationToCsvRow);
   const csv = [header, ...rows].join("\n");
 
   return { success: true, data: csv };

@@ -230,9 +230,9 @@ export const REPORT_DEFINITIONS = [
   { id: "R8", label: "Kennel-bezetting", description: "Overzicht van kennelbezetting per zone.", category: "Dierenbeheer", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
   { id: "R12", label: "IBN-dossiers", description: "Overzicht van alle IBN-dossiers met deadlines.", category: "Dierenbeheer", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
   // Medisch
-  { id: "R2", label: "Dierenarts-bezoeken", description: "Overzicht van alle dierenarts-bezoeken.", category: "Medisch", exportFormats: ["PDF"] as const, route: null, story: "7.2" },
-  { id: "R5", label: "Medicatie-opvolging", description: "Actieve medicaties en toedieningslogboek.", category: "Medisch", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.2" },
-  { id: "R11", label: "Bezoekrapporten contractdierenarts", description: "Maandelijkse inspectierapporten conform KB 27/04/2007.", category: "Medisch", exportFormats: ["PDF"] as const, route: null, story: "7.2" },
+  { id: "R2", label: "Dierenarts-bezoeken", description: "Overzicht van alle dierenarts-bezoeken.", category: "Medisch", exportFormats: ["PDF"] as const, route: "/beheerder/rapporten/dierenbezoeken", story: "7.2" },
+  { id: "R5", label: "Medicatie-opvolging", description: "Actieve medicaties en toedieningslogboek.", category: "Medisch", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/medicatie", story: "7.2" },
+  { id: "R11", label: "Bezoekrapporten contractdierenarts", description: "Maandelijkse inspectierapporten conform KB 27/04/2007.", category: "Medisch", exportFormats: ["PDF"] as const, route: "/beheerder/rapporten/bezoekrapporten", story: "7.2" },
   // Adoptie
   { id: "R3", label: "Adoptiecontracten", description: "Overzicht van alle adoptiecontracten.", category: "Adoptie", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.3" },
   { id: "R6", label: "Te adopteren dieren", description: "Lijst van dieren beschikbaar voor adoptie.", category: "Adoptie", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
