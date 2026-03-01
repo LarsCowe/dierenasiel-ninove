@@ -101,9 +101,9 @@ const EPICS: Epic[] = [
   {
     id: 7,
     title: "Rapportage & Mailing",
-    status: "backlog",
+    status: "in-progress",
     stories: [
-      { id: "7.1", title: "Rapportage Framework en Dierenoverzicht", status: "backlog" },
+      { id: "7.1", title: "Rapportage Framework en Dierenoverzicht", status: "done" },
       { id: "7.2", title: "Medische en Wettelijke Rapporten", status: "backlog" },
       { id: "7.3", title: "Adoptie, Kennel en Publicatierapporten", status: "backlog" },
       { id: "7.4", title: "Wandel- en Workflow Rapporten", status: "backlog" },
@@ -301,7 +301,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 1 maart 2026
+        Laatst bijgewerkt: 2 maart 2026
       </div>
     </div>
   );

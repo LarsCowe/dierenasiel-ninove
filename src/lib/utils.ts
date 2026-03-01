@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SPECIES_LABELS, GENDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,36 +40,20 @@ export function calculateAge(dateOfBirth: Date | string | null): string {
 }
 
 export function speciesLabel(species: string): string {
-  const labels: Record<string, string> = {
-    hond: "Hond",
-    kat: "Kat",
-    konijn: "Konijn",
-    cavia: "Cavia",
-    ezel: "Ezel",
-    kip: "Kip",
-    hangbuikvarken: "Hangbuikvarken",
-  };
-  return labels[species] || species;
+  return SPECIES_LABELS[species] || species;
 }
 
 export function genderLabel(gender: string): string {
-  const labels: Record<string, string> = {
-    reu: "Reu",
-    teef: "Teef",
-    mannetje: "Mannetje",
-    vrouwtje: "Vrouwtje",
-    kater: "Kater",
-    poes: "Poes",
-  };
-  return labels[gender] || gender;
+  return GENDER_LABELS[gender] || gender;
 }
 
 export function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    beschikbaar: "Beschikbaar",
-    gereserveerd: "Gereserveerd",
-    geadopteerd: "Geadopteerd",
-    in_behandeling: "In behandeling",
-  };
-  return labels[status] || status;
+  return STATUS_LABELS[status] || status;
+}
+
+export function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }

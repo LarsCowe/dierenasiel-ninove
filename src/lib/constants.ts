@@ -223,5 +223,45 @@ export const VOLUNTEERS = [
   },
 ] as const;
 
+export const REPORT_DEFINITIONS = [
+  // Dierenbeheer
+  { id: "R1", label: "Overzicht dieren in asiel", description: "Alle dieren met filters op soort, status, kennel en workflow-fase.", category: "Dierenbeheer", exportFormats: ["PDF", "CSV"] as const, route: "/beheerder/rapporten/dierenoverzicht", story: "7.1" },
+  { id: "R4", label: "Gedragsfiches per hond", description: "Gedragsfiches met checklist en opmerkingen per hond.", category: "Dierenbeheer", exportFormats: ["PDF"] as const, route: "/beheerder/rapporten/gedragsfiches", story: "7.1" },
+  { id: "R8", label: "Kennel-bezetting", description: "Overzicht van kennelbezetting per zone.", category: "Dierenbeheer", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
+  { id: "R12", label: "IBN-dossiers", description: "Overzicht van alle IBN-dossiers met deadlines.", category: "Dierenbeheer", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
+  // Medisch
+  { id: "R2", label: "Dierenarts-bezoeken", description: "Overzicht van alle dierenarts-bezoeken.", category: "Medisch", exportFormats: ["PDF"] as const, route: null, story: "7.2" },
+  { id: "R5", label: "Medicatie-opvolging", description: "Actieve medicaties en toedieningslogboek.", category: "Medisch", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.2" },
+  { id: "R11", label: "Bezoekrapporten contractdierenarts", description: "Maandelijkse inspectierapporten conform KB 27/04/2007.", category: "Medisch", exportFormats: ["PDF"] as const, route: null, story: "7.2" },
+  // Adoptie
+  { id: "R3", label: "Adoptiecontracten", description: "Overzicht van alle adoptiecontracten.", category: "Adoptie", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.3" },
+  { id: "R6", label: "Te adopteren dieren", description: "Lijst van dieren beschikbaar voor adoptie.", category: "Adoptie", exportFormats: ["PDF"] as const, route: null, story: "7.3" },
+  // Publicatie
+  { id: "R7", label: "Website-publicatie", description: "Dieren gepubliceerd op de website.", category: "Publicatie", exportFormats: ["CSV"] as const, route: null, story: "7.3" },
+  // Wandelaars
+  { id: "R9", label: "Wandelactiviteit", description: "Wandelstatistieken en activiteitsoverzicht.", category: "Wandelaars", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.4" },
+  { id: "R10", label: "Wandelaar-hond koppeling", description: "Overzicht van wandelaar-hond combinaties.", category: "Wandelaars", exportFormats: ["CSV"] as const, route: null, story: "7.4" },
+  // Workflow
+  { id: "R13", label: "Workflow-overzicht", description: "Overzicht van workflow-fases per dier.", category: "Workflow", exportFormats: ["PDF", "CSV"] as const, route: null, story: "7.4" },
+] as const;
+
+export type ReportDefinition = (typeof REPORT_DEFINITIONS)[number];
+
+export const REPORT_CATEGORIES = ["Dierenbeheer", "Medisch", "Adoptie", "Publicatie", "Wandelaars", "Workflow"] as const;
+
+// Shared label maps — single source of truth for Dutch display labels
+export const SPECIES_LABELS: Record<string, string> = { hond: "Hond", kat: "Kat", konijn: "Konijn", cavia: "Cavia", ezel: "Ezel", kip: "Kip", hangbuikvarken: "Hangbuikvarken" };
+export const GENDER_LABELS: Record<string, string> = { reu: "Reu", teef: "Teef", mannetje: "Mannetje", vrouwtje: "Vrouwtje", kater: "Kater", poes: "Poes" };
+export const STATUS_LABELS: Record<string, string> = { beschikbaar: "Beschikbaar", gereserveerd: "Gereserveerd", geadopteerd: "Geadopteerd", in_behandeling: "In behandeling" };
+export const BEHAVIOR_CHECKLIST_LABELS: Record<string, string> = {
+  benaderingHok: "Reactie bij nadering hok",
+  uitHetHok: "Gedrag bij uit hok halen",
+  wandelingLeiband: "Wandeling aan de leiband",
+  reactieAndereHonden: "Reactie op andere honden",
+  reactieMensen: "Reactie op mensen/kinderen",
+  aanrakingManipulatie: "Aanraking/manipulatie",
+  voedselgedrag: "Voedselgedrag/resource guarding",
+};
+
 export const SITE_LOGO_URL = `${WIX}/12c6b4_08c41b8c45754289bb6e258b78f15349~mv2.png/v1/crop/x_31,y_0,w_542,h_542/fill/w_311,h_311,al_c,q_85,enc_auto/logo4.png`;
 export const TROOPER_BANNER_URL = `${WIX}/12c6b4_8d3f482b7e164f8f9cd83d69f6813524~mv2.png/v1/fill/w_453,h_172,al_c,q_85,enc_auto/349181460_663508265641046_5119675185064921168_n.png`;

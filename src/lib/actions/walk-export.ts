@@ -2,19 +2,13 @@
 
 import { getSession } from "@/lib/auth/session";
 import { getWalkHistoryByWalkerId, getWalkHistoryByAnimalId } from "@/lib/queries/walks";
+import { escapeCsvField } from "@/lib/utils";
 import type { ActionResult } from "@/types";
 import type { WalkHistoryEntry } from "@/types";
 
 interface ExportFilters {
   walkerId?: number;
   animalId?: number;
-}
-
-function escapeCsvField(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 function walkToCsvRow(entry: WalkHistoryEntry): string {
