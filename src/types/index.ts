@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients } from "@/lib/db/schema";
 import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
@@ -208,3 +208,21 @@ export type TransitionActionResult =
 
 export type ShelterSetting = typeof shelterSettings.$inferSelect;
 export type NewShelterSetting = typeof shelterSettings.$inferInsert;
+
+export type MailingList = typeof mailingLists.$inferSelect;
+export type NewMailingList = typeof mailingLists.$inferInsert;
+
+export type MailingSend = typeof mailingSends.$inferSelect;
+export type NewMailingSend = typeof mailingSends.$inferInsert;
+
+export type MailingSendRecipient = typeof mailingSendRecipients.$inferSelect;
+export type NewMailingSendRecipient = typeof mailingSendRecipients.$inferInsert;
+
+export interface MailingRecipient {
+  candidateId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  animalName: string;
+  contractDate: string;
+}

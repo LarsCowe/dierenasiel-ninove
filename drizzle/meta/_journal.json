@@ -211,6 +211,13 @@
       "when": 1772311334449,
       "tag": "0029_nifty_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1772369744047,
+      "tag": "0030_spotty_punisher",
+      "breakpoints": true
     }
   ]
 }

@@ -428,6 +428,39 @@ export const animalWorkflowHistory = pgTable("animal_workflow_history", {
   index("idx_workflow_history_created_at").on(table.createdAt),
 ]);
 
+export const mailingLists = pgTable("mailing_lists", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  fromEmail: varchar("from_email", { length: 200 }).notNull().default("honden@dierenasielninove.be"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const mailingSends = pgTable("mailing_sends", {
+  id: serial("id").primaryKey(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  templateName: varchar("template_name", { length: 100 }).notNull(),
+  fromEmail: varchar("from_email", { length: 200 }).notNull(),
+  recipientCount: integer("recipient_count").notNull().default(0),
+  sentBy: integer("sent_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_mailing_sends_sent_by").on(table.sentBy),
+  index("idx_mailing_sends_created_at").on(table.createdAt),
+]);
+
+export const mailingSendRecipients = pgTable("mailing_send_recipients", {
+  id: serial("id").primaryKey(),
+  sendId: integer("send_id").notNull().references(() => mailingSends.id, { onDelete: "cascade" }),
+  email: varchar("email", { length: 200 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 200 }).notNull(),
+  animalName: varchar("animal_name", { length: 200 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+}, (table) => [
+  index("idx_mailing_send_recipients_send_id").on(table.sendId),
+]);
+
 export const shelterSettings = pgTable("shelter_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).unique().notNull(),

@@ -263,5 +263,13 @@ export const BEHAVIOR_CHECKLIST_LABELS: Record<string, string> = {
   voedselgedrag: "Voedselgedrag/resource guarding",
 };
 
+export const MAILING_TEMPLATES = [
+  { id: "follow_up_1_week", label: "Opvolging 1 week na adoptie", description: "Hoe gaat het met uw nieuwe huisdier?" },
+  { id: "follow_up_1_month", label: "Opvolging 1 maand na adoptie", description: "Update over uw geadopteerd dier." },
+  { id: "general_info", label: "Algemene informatie", description: "Nieuws en updates van het asiel." },
+] as const;
+
+export type MailingTemplateId = (typeof MAILING_TEMPLATES)[number]["id"];
+
 export const SITE_LOGO_URL = `${WIX}/12c6b4_08c41b8c45754289bb6e258b78f15349~mv2.png/v1/crop/x_31,y_0,w_542,h_542/fill/w_311,h_311,al_c,q_85,enc_auto/logo4.png`;
 export const TROOPER_BANNER_URL = `${WIX}/12c6b4_8d3f482b7e164f8f9cd83d69f6813524~mv2.png/v1/fill/w_453,h_172,al_c,q_85,enc_auto/349181460_663508265641046_5119675185064921168_n.png`;

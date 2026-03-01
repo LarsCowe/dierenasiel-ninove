@@ -101,13 +101,13 @@ const EPICS: Epic[] = [
   {
     id: 7,
     title: "Rapportage & Mailing",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "7.1", title: "Rapportage Framework en Dierenoverzicht", status: "done" },
       { id: "7.2", title: "Medische en Wettelijke Rapporten", status: "done" },
       { id: "7.3", title: "Adoptie, Kennel en Publicatierapporten", status: "done" },
       { id: "7.4", title: "Wandel- en Workflow Rapporten", status: "done" },
-      { id: "7.5", title: "Mailinglijsten en Opvolgingsmails", status: "backlog" },
+      { id: "7.5", title: "Mailinglijsten en Opvolgingsmails", status: "done" },
     ],
   },
   {
