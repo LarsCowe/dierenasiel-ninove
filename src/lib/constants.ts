@@ -263,6 +263,8 @@ export const BEHAVIOR_CHECKLIST_LABELS: Record<string, string> = {
   voedselgedrag: "Voedselgedrag/resource guarding",
 };
 
+export const ANONYMIZED_VALUE = "[verwijderd]";
+
 export const MAILING_TEMPLATES = [
   { id: "follow_up_1_week", label: "Opvolging 1 week na adoptie", description: "Hoe gaat het met uw nieuwe huisdier?" },
   { id: "follow_up_1_month", label: "Opvolging 1 maand na adoptie", description: "Update over uw geadopteerd dier." },

@@ -303,6 +303,7 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   categorySetBy: varchar("category_set_by", { length: 100 }),
   status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, screening, approved, rejected, adopted
   notes: text("notes"),
+  anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_adoption_candidates_animal_id").on(table.animalId),
@@ -389,6 +390,7 @@ export const walkers = pgTable("walkers", {
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   rejectionReason: text("rejection_reason"),
   userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_walkers_status").on(table.status),

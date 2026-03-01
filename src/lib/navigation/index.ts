@@ -20,6 +20,7 @@ export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Gebruikers", href: "/beheerder/gebruikers", icon: "👥", requiredPermission: "user:read" },
   { label: "Instellingen", href: "/beheerder/instellingen", icon: "⚙️", requiredPermission: "settings:read" },
   { label: "Mailing", href: "/beheerder/mailing", icon: "✉️", requiredPermission: "adoption:read" },
+  { label: "GDPR", href: "/beheerder/gdpr", icon: "🔒", requiredPermission: "gdpr:read" },
 ];
 
 export function getVisibleNavItems(role: string): NavItem[] {

@@ -218,6 +218,13 @@
       "when": 1772369744047,
       "tag": "0030_spotty_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1772380829118,
+      "tag": "0031_closed_stellaris",
+      "breakpoints": true
     }
   ]
 }

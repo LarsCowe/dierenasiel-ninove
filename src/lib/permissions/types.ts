@@ -24,6 +24,8 @@ export const ALL_PERMISSIONS = [
   "workflow:write",
   "website:read",
   "website:write",
+  "gdpr:read",
+  "gdpr:write",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

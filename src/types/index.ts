@@ -218,6 +218,15 @@ export type NewMailingSend = typeof mailingSends.$inferInsert;
 export type MailingSendRecipient = typeof mailingSendRecipients.$inferSelect;
 export type NewMailingSendRecipient = typeof mailingSendRecipients.$inferInsert;
 
+export interface GdprSearchResult {
+  type: "candidate" | "walker";
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  anonymisedAt: Date | null;
+}
+
 export interface MailingRecipient {
   candidateId: number;
   firstName: string;
