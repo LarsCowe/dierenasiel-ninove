@@ -113,11 +113,11 @@ const EPICS: Epic[] = [
   {
     id: 8,
     title: "GDPR & Compliance",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "8.1", title: "Persoonsgegevens Anonimiseren", status: "done" },
       { id: "8.2", title: "Persoonsgegevens Exporteren", status: "done" },
-      { id: "8.3", title: "Bewaartermijnen Monitoring en Data Minimalisatie", status: "backlog" },
+      { id: "8.3", title: "Bewaartermijnen Monitoring en Data Minimalisatie", status: "done" },
     ],
   },
   {
@@ -301,7 +301,7 @@ export default function VoortgangPage() {
 
       {/* Footer */}
       <div className="mt-8 pb-8 text-center text-xs text-gray-400">
-        Laatst bijgewerkt: 3 maart 2026
+        Laatst bijgewerkt: 1 maart 2026
       </div>
     </div>
   );

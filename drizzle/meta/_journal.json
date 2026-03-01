@@ -225,6 +225,13 @@
       "when": 1772380829118,
       "tag": "0031_closed_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1772384364029,
+      "tag": "0032_salty_lionheart",
+      "breakpoints": true
     }
   ]
 }

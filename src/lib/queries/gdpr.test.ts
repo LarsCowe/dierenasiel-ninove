@@ -39,6 +39,10 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   or: vi.fn((...args: unknown[]) => ({ type: "or", args })),
   ilike: vi.fn((...args: unknown[]) => ({ type: "ilike", args })),
+  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
+  isNull: vi.fn((...args: unknown[]) => ({ type: "isNull", args })),
+  isNotNull: vi.fn((...args: unknown[]) => ({ type: "isNotNull", args })),
+  lt: vi.fn((...args: unknown[]) => ({ type: "lt", args })),
 }));
 
 import {
@@ -51,6 +55,10 @@ import {
   getFollowupsForExport,
   getWalksForExport,
   getAnimalNameById,
+  getExpiredCandidates,
+  getExpiredWalkers,
+  getFlaggedCandidates,
+  getFlaggedWalkers,
 } from "./gdpr";
 import { ilike } from "drizzle-orm";
 
@@ -338,5 +346,99 @@ describe("getAnimalNameById", () => {
     const result = await getAnimalNameById(999);
 
     expect(result).toBeNull();
+  });
+});
+
+// === Retention query tests ===
+
+describe("getExpiredCandidates", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([mockCandidate]);
+  });
+
+  it("returns candidates past retention period", async () => {
+    const result = await getExpiredCandidates(1825);
+
+    expect(result).toEqual([mockCandidate]);
+    expect(mockSelectFrom).toHaveBeenCalled();
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("returns empty array when no expired candidates", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+
+    const result = await getExpiredCandidates(1825);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getExpiredWalkers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([mockWalker]);
+  });
+
+  it("returns walkers past retention period", async () => {
+    const result = await getExpiredWalkers(1825);
+
+    expect(result).toEqual([mockWalker]);
+    expect(mockSelectFrom).toHaveBeenCalled();
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("returns empty array when no expired walkers", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+
+    const result = await getExpiredWalkers(1825);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getFlaggedCandidates", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([{ ...mockCandidate, retentionFlaggedAt: new Date() }]);
+  });
+
+  it("returns flagged candidates", async () => {
+    const result = await getFlaggedCandidates();
+
+    expect(result).toHaveLength(1);
+    expect(mockSelectFrom).toHaveBeenCalled();
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("returns empty array when no flagged candidates", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+
+    const result = await getFlaggedCandidates();
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getFlaggedWalkers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectLimit.mockResolvedValue([{ ...mockWalker, retentionFlaggedAt: new Date() }]);
+  });
+
+  it("returns flagged walkers", async () => {
+    const result = await getFlaggedWalkers();
+
+    expect(result).toHaveLength(1);
+    expect(mockSelectFrom).toHaveBeenCalled();
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("returns empty array when no flagged walkers", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+
+    const result = await getFlaggedWalkers();
+
+    expect(result).toEqual([]);
   });
 });

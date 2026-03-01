@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { adoptionCandidates, walkers, kennismakingen, adoptionContracts, postAdoptionFollowups, walks, animals } from "@/lib/db/schema";
-import { eq, or, ilike } from "drizzle-orm";
+import { eq, or, ilike, and, isNull, isNotNull, lt } from "drizzle-orm";
 
 const SEARCH_LIMIT = 50;
 
@@ -130,4 +130,84 @@ export async function getAnimalNameById(animalId: number) {
     .limit(1);
 
   return animal?.name ?? null;
+}
+
+// === Retention query helpers ===
+
+const RETENTION_LIMIT = 500;
+
+/**
+ * Get adoption candidates past retention period that haven't been flagged or anonymised.
+ */
+export async function getExpiredCandidates(retentionDays: number) {
+  const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+  return db
+    .select()
+    .from(adoptionCandidates)
+    .where(
+      and(
+        lt(adoptionCandidates.createdAt, cutoffDate),
+        isNull(adoptionCandidates.anonymisedAt),
+        isNull(adoptionCandidates.retentionFlaggedAt),
+        or(
+          isNull(adoptionCandidates.retentionExtendedAt),
+          lt(adoptionCandidates.retentionExtendedAt, cutoffDate),
+        ),
+      ),
+    )
+    .limit(RETENTION_LIMIT);
+}
+
+/**
+ * Get walkers past retention period that haven't been flagged or anonymised.
+ */
+export async function getExpiredWalkers(retentionDays: number) {
+  const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+  return db
+    .select()
+    .from(walkers)
+    .where(
+      and(
+        lt(walkers.createdAt, cutoffDate),
+        isNull(walkers.anonymisedAt),
+        isNull(walkers.retentionFlaggedAt),
+        or(
+          isNull(walkers.retentionExtendedAt),
+          lt(walkers.retentionExtendedAt, cutoffDate),
+        ),
+      ),
+    )
+    .limit(RETENTION_LIMIT);
+}
+
+/**
+ * Get adoption candidates that have been flagged for retention review.
+ */
+export async function getFlaggedCandidates() {
+  return db
+    .select()
+    .from(adoptionCandidates)
+    .where(
+      and(
+        isNotNull(adoptionCandidates.retentionFlaggedAt),
+        isNull(adoptionCandidates.anonymisedAt),
+      ),
+    )
+    .limit(RETENTION_LIMIT);
+}
+
+/**
+ * Get walkers that have been flagged for retention review.
+ */
+export async function getFlaggedWalkers() {
+  return db
+    .select()
+    .from(walkers)
+    .where(
+      and(
+        isNotNull(walkers.retentionFlaggedAt),
+        isNull(walkers.anonymisedAt),
+      ),
+    )
+    .limit(RETENTION_LIMIT);
 }

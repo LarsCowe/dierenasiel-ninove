@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/gdpr",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

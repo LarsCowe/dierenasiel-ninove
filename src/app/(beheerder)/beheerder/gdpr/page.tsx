@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/permissions";
 import GdprPersonSearch from "@/components/beheerder/gdpr/GdprPersonSearch";
+import RetentionOverview from "@/components/beheerder/gdpr/RetentionOverview";
 
 export default async function GdprPage() {
   const permCheck = await requirePermission("gdpr:read");
@@ -24,6 +25,16 @@ export default async function GdprPage() {
         </p>
         <div className="mt-4">
           <GdprPersonSearch />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-800">Bewaartermijnen</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Records waarvan de bewaartermijn (5 jaar) is overschreden. Kies per record: anonimiseren of bewaartermijn verlengen.
+        </p>
+        <div className="mt-4">
+          <RetentionOverview />
         </div>
       </section>
 

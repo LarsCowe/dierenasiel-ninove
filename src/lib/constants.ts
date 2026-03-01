@@ -265,6 +265,9 @@ export const BEHAVIOR_CHECKLIST_LABELS: Record<string, string> = {
 
 export const ANONYMIZED_VALUE = "[verwijderd]";
 
+/** GDPR retention period in days (5 years = 1825 days, NFR-GDPR-01) */
+export const RETENTION_DAYS = 1825;
+
 export const MAILING_TEMPLATES = [
   { id: "follow_up_1_week", label: "Opvolging 1 week na adoptie", description: "Hoe gaat het met uw nieuwe huisdier?" },
   { id: "follow_up_1_month", label: "Opvolging 1 maand na adoptie", description: "Update over uw geadopteerd dier." },

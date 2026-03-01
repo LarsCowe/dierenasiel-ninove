@@ -13,6 +13,11 @@ const {
   mockFormatCandidateExportCsv,
   mockFormatWalkerExportJson,
   mockFormatWalkerExportCsv,
+  mockFlagExpiredRecords,
+  mockExtendRetention,
+  mockGetRetentionSummary,
+  mockGetFlaggedCandidates,
+  mockGetFlaggedWalkers,
 } = vi.hoisted(() => {
   return {
     mockGetSession: vi.fn(),
@@ -27,6 +32,11 @@ const {
     mockFormatCandidateExportCsv: vi.fn(),
     mockFormatWalkerExportJson: vi.fn(),
     mockFormatWalkerExportCsv: vi.fn(),
+    mockFlagExpiredRecords: vi.fn(),
+    mockExtendRetention: vi.fn(),
+    mockGetRetentionSummary: vi.fn(),
+    mockGetFlaggedCandidates: vi.fn(),
+    mockGetFlaggedWalkers: vi.fn(),
   };
 });
 
@@ -60,11 +70,29 @@ vi.mock("@/lib/gdpr/export", () => ({
   formatWalkerExportCsv: mockFormatWalkerExportCsv,
 }));
 
+vi.mock("@/lib/gdpr/retention", () => ({
+  flagExpiredRecords: mockFlagExpiredRecords,
+  extendRetention: mockExtendRetention,
+  getRetentionSummary: mockGetRetentionSummary,
+}));
+
+vi.mock("@/lib/queries/gdpr", () => ({
+  getFlaggedCandidates: mockGetFlaggedCandidates,
+  getFlaggedWalkers: mockGetFlaggedWalkers,
+}));
+
+vi.mock("@/lib/constants", () => ({
+  RETENTION_DAYS: 1825,
+}));
+
 import {
   anonymizeCandidateAction,
   anonymizeWalkerAction,
   exportCandidateDataAction,
   exportWalkerDataAction,
+  runRetentionCheckAction,
+  extendRetentionAction,
+  getRetentionOverviewAction,
 } from "./gdpr";
 
 const mockSession = { userId: 1, role: "beheerder", email: "admin@test.com" };
@@ -340,5 +368,193 @@ describe("exportWalkerDataAction", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("niet gevonden");
+  });
+});
+
+// === Retention actions ===
+
+describe("runRetentionCheckAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue(mockSession);
+    mockHasPermission.mockReturnValue(true);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockFlagExpiredRecords.mockResolvedValue({ candidates: 2, walkers: 1, candidateIds: [10, 11], walkerIds: [20] });
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await runRetentionCheckAction();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Niet ingelogd");
+  });
+
+  it("returns error when missing gdpr:write permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+
+    const result = await runRetentionCheckAction();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rechten");
+    expect(mockHasPermission).toHaveBeenCalledWith("beheerder", "gdpr:write");
+  });
+
+  it("calls flagExpiredRecords and logAudit with IDs on success", async () => {
+    const result = await runRetentionCheckAction();
+
+    expect(result.success).toBe(true);
+    expect(mockFlagExpiredRecords).toHaveBeenCalledWith(1825);
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "gdpr.retention_check",
+      "system",
+      0,
+      null,
+      expect.objectContaining({ candidates: 2, walkers: 1, candidateIds: [10, 11], walkerIds: [20] }),
+    );
+  });
+
+  it("catches errors and returns error result", async () => {
+    mockFlagExpiredRecords.mockRejectedValue(new Error("DB error"));
+
+    const result = await runRetentionCheckAction();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("iets mis");
+  });
+});
+
+describe("extendRetentionAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue(mockSession);
+    mockHasPermission.mockReturnValue(true);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockExtendRetention.mockResolvedValue(undefined);
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await extendRetentionAction("candidate", 1, "Lopend verzoek");
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Niet ingelogd");
+  });
+
+  it("returns error when missing gdpr:write permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+
+    const result = await extendRetentionAction("candidate", 1, "Lopend verzoek");
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("rechten");
+  });
+
+  it("returns error for invalid entityId", async () => {
+    const result = await extendRetentionAction("candidate", 0, "Reden");
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Ongeldig");
+  });
+
+  it("returns error for empty reason", async () => {
+    const result = await extendRetentionAction("candidate", 1, "");
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("reden");
+  });
+
+  it("calls extendRetention and logAudit on success", async () => {
+    const result = await extendRetentionAction("candidate", 1, "Lopend verzoek");
+
+    expect(result.success).toBe(true);
+    expect(mockExtendRetention).toHaveBeenCalledWith("candidate", 1, "Lopend verzoek");
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "gdpr.retention_extended",
+      "adoption_candidate",
+      1,
+      null,
+      expect.objectContaining({ reason: "Lopend verzoek" }),
+    );
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/gdpr");
+  });
+
+  it("catches errors and returns error result", async () => {
+    mockExtendRetention.mockRejectedValue(new Error("DB error"));
+
+    const result = await extendRetentionAction("candidate", 1, "Reden");
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("iets mis");
+  });
+});
+
+describe("getRetentionOverviewAction", () => {
+  const mockFlaggedCandidate = {
+    id: 1,
+    firstName: "Jan",
+    lastName: "Janssens",
+    retentionFlaggedAt: new Date(),
+    createdAt: new Date("2020-01-01"),
+  };
+
+  const mockFlaggedWalker = {
+    id: 5,
+    firstName: "Marie",
+    lastName: "Peeters",
+    retentionFlaggedAt: new Date(),
+    createdAt: new Date("2020-06-01"),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue(mockSession);
+    mockHasPermission.mockReturnValue(true);
+    mockGetFlaggedCandidates.mockResolvedValue([mockFlaggedCandidate]);
+    mockGetFlaggedWalkers.mockResolvedValue([mockFlaggedWalker]);
+  });
+
+  it("returns error when not logged in", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    const result = await getRetentionOverviewAction();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Niet ingelogd");
+  });
+
+  it("returns error when missing gdpr:read permission", async () => {
+    mockHasPermission.mockReturnValue(false);
+
+    const result = await getRetentionOverviewAction();
+
+    expect(result.success).toBe(false);
+    expect(mockHasPermission).toHaveBeenCalledWith("beheerder", "gdpr:read");
+  });
+
+  it("returns flagged records and summary on success", async () => {
+    const result = await getRetentionOverviewAction();
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.flaggedCandidates).toEqual([mockFlaggedCandidate]);
+      expect(result.data.flaggedWalkers).toEqual([mockFlaggedWalker]);
+      expect(result.data.summary).toEqual({
+        flaggedCandidates: 1,
+        flaggedWalkers: 1,
+        totalFlagged: 2,
+      });
+    }
+  });
+
+  it("catches errors and returns error result", async () => {
+    mockGetFlaggedCandidates.mockRejectedValue(new Error("DB error"));
+
+    const result = await getRetentionOverviewAction();
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("iets mis");
   });
 });

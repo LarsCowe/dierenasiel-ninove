@@ -13,6 +13,12 @@ import {
   formatWalkerExportJson,
   formatWalkerExportCsv,
 } from "@/lib/gdpr/export";
+import {
+  flagExpiredRecords,
+  extendRetention,
+} from "@/lib/gdpr/retention";
+import { getFlaggedCandidates, getFlaggedWalkers } from "@/lib/queries/gdpr";
+import { RETENTION_DAYS } from "@/lib/constants";
 import type { ActionResult } from "@/types";
 
 export async function anonymizeCandidateAction(
@@ -181,6 +187,131 @@ export async function exportWalkerDataAction(
     return {
       success: false,
       error: "Er ging iets mis bij het exporteren.",
+    };
+  }
+}
+
+// === Retention actions ===
+
+export async function runRetentionCheckAction(): Promise<
+  ActionResult<{ candidates: number; walkers: number }>
+> {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Niet ingelogd" };
+  if (!hasPermission(session.role, "gdpr:write"))
+    return { success: false, error: "Onvoldoende rechten" };
+
+  try {
+    const result = await flagExpiredRecords(RETENTION_DAYS);
+
+    await logAudit("gdpr.retention_check", "system", 0, null, {
+      candidates: result.candidates,
+      walkers: result.walkers,
+      candidateIds: result.candidateIds,
+      walkerIds: result.walkerIds,
+      checkedAt: new Date().toISOString(),
+    });
+
+    revalidatePath("/beheerder/gdpr");
+    return {
+      success: true,
+      data: result,
+      message: `Bewaartermijn controle voltooid: ${result.candidates} adoptanten en ${result.walkers} wandelaars gemarkeerd.`,
+    };
+  } catch (err) {
+    console.error("runRetentionCheckAction failed:", err);
+    return {
+      success: false,
+      error: "Er ging iets mis bij de bewaartermijn controle.",
+    };
+  }
+}
+
+export async function extendRetentionAction(
+  entityType: "candidate" | "walker",
+  entityId: number,
+  reason: string,
+): Promise<ActionResult<void>> {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Niet ingelogd" };
+  if (!hasPermission(session.role, "gdpr:write"))
+    return { success: false, error: "Onvoldoende rechten" };
+
+  if (!entityId || entityId < 1)
+    return { success: false, error: "Ongeldig ID" };
+
+  if (!reason || reason.trim().length === 0)
+    return { success: false, error: "Een reden is verplicht." };
+
+  try {
+    await extendRetention(entityType, entityId, reason.trim());
+
+    const auditEntityType =
+      entityType === "candidate" ? "adoption_candidate" : "walker";
+
+    await logAudit(
+      "gdpr.retention_extended",
+      auditEntityType,
+      entityId,
+      null,
+      { reason: reason.trim(), extendedAt: new Date().toISOString() },
+    );
+
+    revalidatePath("/beheerder/gdpr");
+    return {
+      success: true,
+      data: undefined,
+      message: "Bewaartermijn is verlengd.",
+    };
+  } catch (err) {
+    console.error("extendRetentionAction failed:", err);
+    return {
+      success: false,
+      error: "Er ging iets mis bij het verlengen van de bewaartermijn.",
+    };
+  }
+}
+
+export async function getRetentionOverviewAction(): Promise<
+  ActionResult<{
+    flaggedCandidates: Awaited<ReturnType<typeof getFlaggedCandidates>>;
+    flaggedWalkers: Awaited<ReturnType<typeof getFlaggedWalkers>>;
+    summary: {
+      flaggedCandidates: number;
+      flaggedWalkers: number;
+      totalFlagged: number;
+    };
+  }>
+> {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Niet ingelogd" };
+  if (!hasPermission(session.role, "gdpr:read"))
+    return { success: false, error: "Onvoldoende rechten" };
+
+  try {
+    const [flaggedCandidatesList, flaggedWalkersList] = await Promise.all([
+      getFlaggedCandidates(),
+      getFlaggedWalkers(),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        flaggedCandidates: flaggedCandidatesList,
+        flaggedWalkers: flaggedWalkersList,
+        summary: {
+          flaggedCandidates: flaggedCandidatesList.length,
+          flaggedWalkers: flaggedWalkersList.length,
+          totalFlagged:
+            flaggedCandidatesList.length + flaggedWalkersList.length,
+        },
+      },
+    };
+  } catch (err) {
+    console.error("getRetentionOverviewAction failed:", err);
+    return {
+      success: false,
+      error: "Er ging iets mis bij het ophalen van het retentie-overzicht.",
     };
   }
 }

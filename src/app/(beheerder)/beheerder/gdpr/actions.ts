@@ -5,6 +5,9 @@ import {
   anonymizeWalkerAction,
   exportCandidateDataAction,
   exportWalkerDataAction,
+  runRetentionCheckAction,
+  extendRetentionAction,
+  getRetentionOverviewAction,
 } from "@/lib/actions/gdpr";
 import {
   searchCandidatesForGdpr,
@@ -72,4 +75,7 @@ export {
   anonymizeWalkerAction,
   exportCandidateDataAction,
   exportWalkerDataAction,
+  runRetentionCheckAction,
+  extendRetentionAction,
+  getRetentionOverviewAction,
 };
