@@ -46,21 +46,21 @@ export default function AnimalDetailTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="grid grid-cols-4 rounded-lg bg-gray-100 p-1">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setTab(tab.key)}
-            className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-medium transition-all ${
               currentTab === tab.key
-                ? "border-b-2 border-[#1b4332] text-[#1b4332]"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-white text-[#1b4332] shadow-sm ring-1 ring-gray-200"
+                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
             }`}
           >
             {tab.label}
             {tab.key === "zorg" && openTodoCount > 0 && (
-              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
                 {openTodoCount}
               </span>
             )}
