@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LogoutButton from "@/components/layout/LogoutButton";
 import MobileSidebar from "./MobileSidebar";
 import type { NavItem } from "@/lib/navigation";
@@ -17,12 +16,6 @@ export default function Header({ userName, userRole, navItems }: HeaderProps) {
         <h2 className="font-heading text-lg font-bold text-[#1b4332]">
           Backoffice
         </h2>
-        <Link
-          href="/beheerder/voortgang"
-          className="hidden rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 transition-colors hover:bg-amber-100 md:inline-block"
-        >
-          Story 9.3 — Rapportage
-        </Link>
       </div>
       <div className="flex items-center gap-4">
         <div className="hidden items-center gap-2 sm:flex">

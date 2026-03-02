@@ -19,7 +19,6 @@ import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import OperationSection from "@/components/beheerder/dieren/OperationSection";
 import MedicationSection from "@/components/beheerder/dieren/MedicationSection";
 import TodoSection from "@/components/beheerder/dieren/TodoSection";
-import CollapsibleSection from "@/components/beheerder/shared/CollapsibleSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
 import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
@@ -35,6 +34,7 @@ import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
 import WorkflowStepbar from "@/components/beheerder/dieren/WorkflowStepbar";
 import WorkflowHistorySection from "@/components/beheerder/dieren/WorkflowHistorySection";
 import { getWorkflowHistoryWithUserByAnimalId } from "@/lib/queries/workflow";
+import AnimalDetailTabs from "@/components/beheerder/shared/AnimalDetailTabs";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -45,6 +45,17 @@ function IbnMetadata({ metadata }: { metadata: unknown }) {
       <p className="mt-1 text-sm text-gray-800">
         {meta.betrokkenInstanties || "Niet opgegeven"}
       </p>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        {title}
+      </h3>
+      {children}
     </div>
   );
 }
@@ -92,183 +103,189 @@ export default async function DierDetailPage({ params }: Props) {
         />
       )}
 
-      <AnimalEditForm animal={animal} />
+      <AnimalDetailTabs openTodoCount={openTodoCount}>
+        {{
+          overzicht: (
+            <div className="space-y-4">
+              <AnimalEditForm animal={animal} />
 
-      {/* Status, Kennel, Adoptie & Uitstroom */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-[#1b4332]">Status</h2>
-          <div className="mt-2">
-            <StatusChanger
-              animalId={animalId}
-              currentStatus={animal.status ?? "beschikbaar"}
-            />
-          </div>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
-          <div className="mt-2">
-            <KennelSelector
-              animalId={animalId}
-              currentKennelId={animal.kennelId}
-              kennels={kennelsList}
-            />
-          </div>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
-          <div className="mt-2">
-            <AdoptionToggle
-              animalId={animalId}
-              isAvailable={animal.isAvailableForAdoption ?? false}
-            />
-          </div>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
-          <div className="mt-2">
-            <OuttakeForm
-              animalId={animalId}
-              animalName={animal.name}
-              isInShelter={animal.isInShelter ?? true}
-            />
-          </div>
-        </div>
-      </div>
+              {/* Status, Kennel, Adoptie & Uitstroom */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                  <h2 className="text-sm font-bold text-[#1b4332]">Status (handmatig)</h2>
+                  <div className="mt-2">
+                    <StatusChanger
+                      animalId={animalId}
+                      currentStatus={animal.status ?? "beschikbaar"}
+                    />
+                  </div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                  <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
+                  <div className="mt-2">
+                    <KennelSelector
+                      animalId={animalId}
+                      currentKennelId={animal.kennelId}
+                      kennels={kennelsList}
+                    />
+                  </div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                  <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
+                  <div className="mt-2">
+                    <AdoptionToggle
+                      animalId={animalId}
+                      isAvailable={animal.isAvailableForAdoption ?? false}
+                    />
+                  </div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                  <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
+                  <div className="mt-2">
+                    <OuttakeForm
+                      animalId={animalId}
+                      animalName={animal.name}
+                      isInShelter={animal.isInShelter ?? true}
+                    />
+                  </div>
+                </div>
+              </div>
 
-      {/* IBN Info */}
-      {animal.intakeReason === "ibn" && (
-        <CollapsibleSection title="Inbeslagname (IBN)" defaultOpen variant="danger">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-            <div>
-              <p className="text-xs font-medium text-gray-500">Dossiernummer DWV</p>
-              <p className="mt-1 text-sm font-semibold text-gray-800">
-                {animal.dossierNr || "—"}
-              </p>
+              {/* IBN Info */}
+              {animal.intakeReason === "ibn" && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                  <h3 className="text-sm font-bold text-red-700">Inbeslagname (IBN)</h3>
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Dossiernummer DWV</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-800">
+                        {animal.dossierNr || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">PV-nummer politie</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-800">
+                        {animal.pvNr || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Intake datum</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-800">
+                        {animal.intakeDate || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Beslissingsdeadline (60d)</p>
+                      <p className={`mt-1 text-sm font-semibold ${
+                        animal.ibnDecisionDeadline &&
+                        new Date(animal.ibnDecisionDeadline) <= new Date()
+                          ? "text-red-700"
+                          : "text-gray-800"
+                      }`}>
+                        {animal.ibnDecisionDeadline || "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <IbnMetadata metadata={animal.intakeMetadata} />
+                  <NeglectReportSection animalId={animalId} report={neglectReport} />
+                </div>
+              )}
+
+              {/* Workflow-historie */}
+              {workflowSettings.workflowEnabled && (
+                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                  <h3 className="mb-3 text-sm font-bold text-[#1b4332]">Workflow-historie</h3>
+                  <WorkflowHistorySection entries={workflowHistory} />
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">PV-nummer politie</p>
-              <p className="mt-1 text-sm font-semibold text-gray-800">
-                {animal.pvNr || "—"}
-              </p>
+          ),
+
+          medisch: (
+            <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SectionCard title="Vaccinaties">
+                  <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
+                </SectionCard>
+                <SectionCard title="Ontwormingen">
+                  <DewormingSection animalId={animalId} dewormings={dewormingsList} />
+                </SectionCard>
+              </div>
+
+              <SectionCard title="Dierenarts-bezoeken">
+                <VetVisitSection animalId={animalId} visits={vetVisitsList} />
+              </SectionCard>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SectionCard title="Operaties">
+                  <OperationSection animalId={animalId} operations={operationsList} />
+                </SectionCard>
+                <SectionCard title="Medicatie">
+                  <MedicationSection animalId={animalId} medications={medicationsList} todayLogs={todayMedicationLogs} />
+                </SectionCard>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">Intake datum</p>
-              <p className="mt-1 text-sm font-semibold text-gray-800">
-                {animal.intakeDate || "—"}
-              </p>
+          ),
+
+          zorg: (
+            <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SectionCard title="Gedragsfiches">
+                  <BehaviorRecordSection
+                    animalId={animalId}
+                    species={animal.species}
+                    records={behaviorRecords}
+                    recordCount={behaviorRecordCount}
+                  />
+                </SectionCard>
+                <SectionCard title="Voedingsplan">
+                  <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
+                </SectionCard>
+              </div>
+
+              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    To-do Lijst
+                  </h3>
+                  {openTodoCount > 0 && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      {openTodoCount} open
+                    </span>
+                  )}
+                </div>
+                <TodoSection animalId={animalId} todos={todosList} />
+              </div>
+
+              {/* Wandelgeschiedenis (alleen voor honden) */}
+              {animal.species === "hond" && (
+                <SectionCard title="Wandelgeschiedenis">
+                  <WalkHistorySection
+                    entries={walkHistory}
+                    stats={computeWalkStats(walkHistory, "walkerName")}
+                    animalId={animalId}
+                    companionLabel="Meest frequente wandelaar"
+                  />
+                </SectionCard>
+              )}
             </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">Beslissingsdeadline (60d)</p>
-              <p className={`mt-1 text-sm font-semibold ${
-                animal.ibnDecisionDeadline &&
-                new Date(animal.ibnDecisionDeadline) <= new Date()
-                  ? "text-red-700"
-                  : "text-gray-800"
-              }`}>
-                {animal.ibnDecisionDeadline || "—"}
-              </p>
+          ),
+
+          bestanden: (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <FileUpload animalId={animalId} />
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <AttachmentGallery
+                  attachments={attachments}
+                  currentMainPhoto={animal.imageUrl}
+                />
+              </div>
             </div>
-          </div>
-          <IbnMetadata metadata={animal.intakeMetadata} />
-          <NeglectReportSection animalId={animalId} report={neglectReport} />
-        </CollapsibleSection>
-      )}
-
-      {/* Workflow-historie */}
-      {workflowSettings.workflowEnabled && (
-        <CollapsibleSection title="Workflow-historie">
-          <WorkflowHistorySection entries={workflowHistory} />
-        </CollapsibleSection>
-      )}
-
-      {/* Gedragsfiches */}
-      <CollapsibleSection title="Gedragsfiches">
-        <BehaviorRecordSection
-          animalId={animalId}
-          species={animal.species}
-          records={behaviorRecords}
-          recordCount={behaviorRecordCount}
-        />
-      </CollapsibleSection>
-
-      {/* Voedingsplan */}
-      <CollapsibleSection title="Voedingsplan">
-        <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
-      </CollapsibleSection>
-
-      {/* To-do Lijst */}
-      <CollapsibleSection
-        title="To-do Lijst"
-        badge={openTodoCount > 0 ? (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-            {openTodoCount} open
-          </span>
-        ) : undefined}
-      >
-        <TodoSection animalId={animalId} todos={todosList} />
-      </CollapsibleSection>
-
-      {/* Medische fiche */}
-      <CollapsibleSection title="Medische fiche">
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Vaccinaties</h3>
-          <div className="mt-2">
-            <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
-          </div>
-        </div>
-
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ontwormingen</h3>
-          <div className="mt-2">
-            <DewormingSection animalId={animalId} dewormings={dewormingsList} />
-          </div>
-        </div>
-
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Dierenarts-bezoeken</h3>
-          <div className="mt-2">
-            <VetVisitSection animalId={animalId} visits={vetVisitsList} />
-          </div>
-        </div>
-
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Operaties</h3>
-          <div className="mt-2">
-            <OperationSection animalId={animalId} operations={operationsList} />
-          </div>
-        </div>
-
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Medicatie</h3>
-          <div className="mt-2">
-            <MedicationSection animalId={animalId} medications={medicationsList} todayLogs={todayMedicationLogs} />
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Wandelgeschiedenis (alleen voor honden) */}
-      {animal.species === "hond" && (
-        <CollapsibleSection title="Wandelgeschiedenis">
-          <WalkHistorySection
-            entries={walkHistory}
-            stats={computeWalkStats(walkHistory, "walkerName")}
-            animalId={animalId}
-            companionLabel="Meest frequente wandelaar"
-          />
-        </CollapsibleSection>
-      )}
-
-      {/* Foto's & Bijlagen */}
-      <CollapsibleSection title={"Foto's & Bijlagen"}>
-        <div className="space-y-6">
-          <FileUpload animalId={animalId} />
-          <AttachmentGallery
-            attachments={attachments}
-            currentMainPhoto={animal.imageUrl}
-          />
-        </div>
-      </CollapsibleSection>
+          ),
+        }}
+      </AnimalDetailTabs>
     </div>
   );
 }
