@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 import { createNeglectReport, updateNeglectReport } from "@/lib/actions/neglect-reports";
 import type { NeglectReport } from "@/types";
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/validations/attachments";
@@ -52,26 +53,34 @@ export default function NeglectReportForm({
           continue;
         }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("animalId", String(animalId));
-        formData.append("context", "verwaarlozing");
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_{2,}/g, "_").slice(0, 200);
+        const pathname = `animals/${animalId}/${Date.now()}-${safeName}`;
 
-        const response = await fetch("/api/upload", {
+        const blob = await upload(pathname, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload/client",
+          clientPayload: JSON.stringify({ animalId, context: "verwaarlozing" }),
+        });
+
+        const response = await fetch("/api/upload/record", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blobUrl: blob.url,
+            fileName: file.name,
+            fileType: file.type,
+            animalId,
+            context: "verwaarlozing",
+          }),
         });
 
         if (!response.ok) {
           const body = await response.json();
-          setUploadError(body.error || "Upload mislukt");
+          setUploadError(body.error || "Opslaan mislukt");
           continue;
         }
 
-        const body = await response.json();
-        if (body.success && body.data?.fileUrl) {
-          setPhotos((prev) => [...prev, body.data.fileUrl]);
-        }
+        setPhotos((prev) => [...prev, blob.url]);
       }
     } catch {
       setUploadError("Er ging iets mis bij het uploaden.");

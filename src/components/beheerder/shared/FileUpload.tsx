@@ -2,16 +2,25 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/validations/attachments";
 
 const ACCEPT_STRING = ALLOWED_MIME_TYPES.join(",");
 
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/_{2,}/g, "_")
+    .slice(0, 200);
+}
+
 interface FileUploadProps {
   animalId: number;
+  context?: string;
   onUploadComplete?: () => void;
 }
 
-export default function FileUpload({ animalId, onUploadComplete }: FileUploadProps) {
+export default function FileUpload({ animalId, context = "dossier", onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -39,22 +48,41 @@ export default function FileUpload({ animalId, onUploadComplete }: FileUploadPro
           continue;
         }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("animalId", String(animalId));
+        try {
+          const timestamp = Date.now();
+          const safeName = sanitizeFileName(file.name);
+          const pathname = `animals/${animalId}/${timestamp}-${safeName}`;
 
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+          // Upload directly from browser to Vercel Blob (bypasses serverless body limit)
+          const blob = await upload(pathname, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload/client",
+            clientPayload: JSON.stringify({ animalId, context }),
+          });
 
-        if (!response.ok) {
-          const body = await response.json();
-          newErrors.push(`"${file.name}": ${body.error || "Upload mislukt"}`);
-          continue;
+          // Record the upload in the database
+          const recordRes = await fetch("/api/upload/record", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              blobUrl: blob.url,
+              fileName: file.name,
+              fileType: file.type,
+              animalId,
+              context,
+            }),
+          });
+
+          if (!recordRes.ok) {
+            const body = await recordRes.json();
+            newErrors.push(`"${file.name}": ${body.error || "Opslaan mislukt"}`);
+            continue;
+          }
+
+          hasSuccess = true;
+        } catch {
+          newErrors.push(`"${file.name}": Upload mislukt. Probeer opnieuw.`);
         }
-
-        hasSuccess = true;
       }
 
       if (newErrors.length) setErrors(newErrors);
