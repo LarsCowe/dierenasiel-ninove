@@ -46,7 +46,7 @@ export default function AnimalDetailTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="grid grid-cols-4 rounded-lg bg-gray-100 p-1">
+      <div className="grid grid-cols-4 rounded-lg bg-gray-200/80 p-1">
         {TABS.map((tab) => (
           <button
             key={tab.key}

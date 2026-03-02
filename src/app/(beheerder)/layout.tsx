@@ -20,7 +20,7 @@ export default async function BeheerderLayout({
   const navItems = getVisibleNavItems(role);
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
+    <div className="flex min-h-screen bg-[#eef2f7]">
       <Sidebar items={navItems} />
 
       <div className="flex flex-1 flex-col xl:ml-60">

@@ -51,7 +51,7 @@ function IbnMetadata({ metadata }: { metadata: unknown }) {
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
         {title}
       </h3>
@@ -111,7 +111,7 @@ export default async function DierDetailPage({ params }: Props) {
 
               {/* Status, Kennel, Adoptie & Uitstroom */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                   <h2 className="text-sm font-bold text-[#1b4332]">Status (handmatig)</h2>
                   <div className="mt-2">
                     <StatusChanger
@@ -120,7 +120,7 @@ export default async function DierDetailPage({ params }: Props) {
                     />
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                   <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
                   <div className="mt-2">
                     <KennelSelector
@@ -130,7 +130,7 @@ export default async function DierDetailPage({ params }: Props) {
                     />
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                   <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
                   <div className="mt-2">
                     <AdoptionToggle
@@ -139,7 +139,7 @@ export default async function DierDetailPage({ params }: Props) {
                     />
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                   <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
                   <div className="mt-2">
                     <OuttakeForm
@@ -193,7 +193,7 @@ export default async function DierDetailPage({ params }: Props) {
 
               {/* Workflow-historie */}
               {workflowSettings.workflowEnabled && (
-                <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                   <h3 className="mb-3 text-sm font-bold text-[#1b4332]">Workflow-historie</h3>
                   <WorkflowHistorySection entries={workflowHistory} />
                 </div>
@@ -243,7 +243,7 @@ export default async function DierDetailPage({ params }: Props) {
                 </SectionCard>
               </div>
 
-              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                 <div className="mb-3 flex items-center gap-2">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     To-do Lijst
@@ -273,10 +273,10 @@ export default async function DierDetailPage({ params }: Props) {
 
           bestanden: (
             <div className="space-y-4">
-              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                 <FileUpload animalId={animalId} />
               </div>
-              <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                 <AttachmentGallery
                   attachments={attachments}
                   currentMainPhoto={animal.imageUrl}
