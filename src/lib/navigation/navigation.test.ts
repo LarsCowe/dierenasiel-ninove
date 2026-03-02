@@ -29,18 +29,18 @@ describe("BEHEERDER_NAV_ITEMS", () => {
     const labels = BEHEERDER_NAV_ITEMS.map((item) => item.label);
     expect(labels).toEqual([
       "Dashboard",
+      "Zwerfkatten",
       "Dieren",
       "Medisch",
       "Adoptie",
-      "Wandelaars",
       "Kennels",
       "Rapporten",
       "Website",
+      "Mailing",
+      "Wandelaars",
+      "GDPR",
       "Gebruikers",
       "Instellingen",
-      "Mailing",
-      "GDPR",
-      "Zwerfkatten",
     ]);
   });
 });

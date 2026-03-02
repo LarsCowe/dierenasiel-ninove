@@ -2,6 +2,7 @@ import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
 import { getWalkingClubThreshold } from "@/lib/queries/shelter-settings";
 import WorkflowSettingsPanel from "@/components/beheerder/instellingen/WorkflowSettingsPanel";
 import ThresholdSettingPanel from "@/components/beheerder/instellingen/ThresholdSettingPanel";
+import DatabaseResetPanel from "@/components/beheerder/instellingen/DatabaseResetPanel";
 
 export default async function InstellingenPage() {
   const [workflowSettings, threshold] = await Promise.all([
@@ -26,6 +27,10 @@ export default async function InstellingenPage() {
 
       <section className="mt-6">
         <ThresholdSettingPanel threshold={threshold} />
+      </section>
+
+      <section className="mt-6">
+        <DatabaseResetPanel />
       </section>
     </div>
   );

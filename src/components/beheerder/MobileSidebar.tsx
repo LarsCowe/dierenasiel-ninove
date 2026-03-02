@@ -48,7 +48,7 @@ export default function MobileSidebar({ items }: MobileSidebarProps) {
         </button>
       </SheetTrigger>
       <SheetContent side="left" className="w-60 bg-[#1b4332] p-0">
-        <SheetHeader className="border-b border-white/10 px-5 py-5">
+        <SheetHeader className="border-b border-white/10 px-5 py-3">
           <SheetTitle className="flex items-center gap-3">
             <span className="text-2xl">🐾</span>
             <div>
@@ -62,13 +62,13 @@ export default function MobileSidebar({ items }: MobileSidebarProps) {
           </SheetTitle>
         </SheetHeader>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-0.5 px-3 py-4">
           {items.map((item) => (
             <Link
               key={item.label}
               href={item.href}
               onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 isNavItemActive(item.href, pathname, allHrefs)
                   ? "bg-white/15 font-semibold text-white"
                   : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -80,7 +80,7 @@ export default function MobileSidebar({ items }: MobileSidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-4">
+        <div className="border-t border-white/10 p-3">
           <LogoutButton variant="sidebar" />
         </div>
       </SheetContent>

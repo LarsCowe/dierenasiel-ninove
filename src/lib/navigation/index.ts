@@ -10,18 +10,18 @@ export type NavItem = {
 
 export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", href: "/beheerder", icon: "📊", requiredPermission: null },
+  { label: "Zwerfkatten", href: "/beheerder/dieren/zwerfkattenbeleid", icon: "🐈", requiredPermission: "stray_cat:read" },
   { label: "Dieren", href: "/beheerder/dieren", icon: "🐾", requiredPermission: "animal:read" },
   { label: "Medisch", href: "/beheerder/medisch", icon: "🏥", requiredPermission: "medical:read" },
   { label: "Adoptie", href: "/beheerder/adoptie", icon: "📋", requiredPermission: "adoption:read" },
-  { label: "Wandelaars", href: "/beheerder/wandelaars", icon: "🚶", requiredPermission: "walker:read" },
   { label: "Kennels", href: "/beheerder/dieren/kennel", icon: "🏠", requiredPermission: "kennel:read" },
   { label: "Rapporten", href: "/beheerder/rapporten", icon: "📈", requiredPermission: "report:read" },
   { label: "Website", href: "/beheerder/website", icon: "🌐", requiredPermission: "website:read" },
+  { label: "Mailing", href: "/beheerder/mailing", icon: "✉️", requiredPermission: "adoption:read" },
+  { label: "Wandelaars", href: "/beheerder/wandelaars", icon: "🚶", requiredPermission: "walker:read" },
+  { label: "GDPR", href: "/beheerder/gdpr", icon: "🔒", requiredPermission: "gdpr:read" },
   { label: "Gebruikers", href: "/beheerder/gebruikers", icon: "👥", requiredPermission: "user:read" },
   { label: "Instellingen", href: "/beheerder/instellingen", icon: "⚙️", requiredPermission: "settings:read" },
-  { label: "Mailing", href: "/beheerder/mailing", icon: "✉️", requiredPermission: "adoption:read" },
-  { label: "GDPR", href: "/beheerder/gdpr", icon: "🔒", requiredPermission: "gdpr:read" },
-  { label: "Zwerfkatten", href: "/beheerder/dieren/zwerfkattenbeleid", icon: "🐈", requiredPermission: "stray_cat:read" },
 ];
 
 export function getVisibleNavItems(role: string): NavItem[] {
