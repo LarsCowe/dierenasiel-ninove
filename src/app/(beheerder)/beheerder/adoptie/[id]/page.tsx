@@ -4,6 +4,7 @@ import { getAdoptionCandidateById } from "@/lib/queries/adoption-candidates";
 import { getKennismakingenByCandidateId } from "@/lib/queries/kennismakingen";
 import { getContractByCandidateId } from "@/lib/queries/adoption-contracts";
 import { getFollowupsByContractId } from "@/lib/queries/post-adoption-followups";
+import { getAnimalById } from "@/lib/queries/animals";
 import AdoptionCandidateView from "@/components/beheerder/adoptie/AdoptionCandidateView";
 import KennismakingList from "@/components/beheerder/adoptie/KennismakingList";
 import AdoptionContractInfo from "@/components/beheerder/adoptie/AdoptionContractInfo";
@@ -26,6 +27,8 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
   ]);
   if (!candidate) notFound();
 
+  const animal = candidate.animalId ? await getAnimalById(candidate.animalId) : null;
+
   const followups = contract ? await getFollowupsByContractId(contract.id) : [];
 
   return (
@@ -47,7 +50,18 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
       </p>
 
       <div className="mt-6">
-        <AdoptionCandidateView candidate={candidate} />
+        <AdoptionCandidateView
+          candidate={candidate}
+          animalName={animal?.name}
+          kennismakingenSlot={
+            <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+              <h2 className="font-heading text-sm font-bold text-[#1b4332]">Kennismakingen</h2>
+              <div className="mt-3">
+                <KennismakingList kennismakingen={kennismakingen} />
+              </div>
+            </div>
+          }
+        />
       </div>
 
       {/* Contract info + DogID/CatID overdracht toggle (Story 4.5) */}
@@ -63,14 +77,6 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
           <FollowupList followups={followups} contractId={contract.id} />
         </div>
       )}
-
-      {/* Kennismakingshistorie (AC3) */}
-      <div className="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="font-heading text-sm font-bold text-[#1b4332]">Kennismakingen</h2>
-        <div className="mt-3">
-          <KennismakingList kennismakingen={kennismakingen} />
-        </div>
-      </div>
     </div>
   );
 }

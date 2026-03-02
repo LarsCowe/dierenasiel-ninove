@@ -12,6 +12,8 @@ import type { AdoptionCandidate, QuestionnaireAnswers } from "@/types";
 
 interface Props {
   candidate: AdoptionCandidate;
+  animalName?: string;
+  kennismakingenSlot?: React.ReactNode;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -60,7 +62,7 @@ const KINDEREN_LABELS: Record<string, string> = {
   "12_plus": "12+ jaar",
 };
 
-export default function AdoptionCandidateView({ candidate }: Props) {
+export default function AdoptionCandidateView({ candidate, animalName, kennismakingenSlot }: Props) {
   const router = useRouter();
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdoptionCandidate, null);
   const [categoryState, categoryAction, categoryPending] = useActionState(setCategoryAdoptionCandidate, null);
@@ -236,10 +238,13 @@ export default function AdoptionCandidateView({ candidate }: Props) {
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Gewenst dier</h2>
         <div className="mt-3">
           <Link href={`/beheerder/dieren/${candidate.animalId}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-900">
-            Bekijk dierprofiel (ID: {candidate.animalId})
+            {animalName ? `${animalName} — Bekijk dierprofiel` : `Bekijk dierprofiel (ID: ${candidate.animalId})`}
           </Link>
         </div>
       </div>
+
+      {/* Kennismakingen (direct onder gewenst dier) */}
+      {kennismakingenSlot}
 
       {/* Vragenlijst */}
       {qa && (
