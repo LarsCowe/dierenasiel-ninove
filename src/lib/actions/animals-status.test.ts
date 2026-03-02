@@ -70,7 +70,7 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
 }));
 
-import { changeStatus, registerOuttake } from "./animals-status";
+import { changeStatus, registerOuttake, toggleAdoptionAvailability } from "./animals-status";
 
 const mockAnimal = {
   id: 1,
@@ -437,5 +437,86 @@ describe("registerOuttake", () => {
       expect(result.guardWarnings).toBeDefined();
       expect(result.guardWarnings!.some((w: { code: string }) => w.code === "cat_vaccination_missing")).toBe(true);
     }
+  });
+});
+
+describe("toggleAdoptionAvailability", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+    mockSelectLimit.mockResolvedValue([{ ...mockAnimal, isAvailableForAdoption: false }]);
+    mockUpdateReturning.mockResolvedValue([{ ...mockAnimal, isAvailableForAdoption: true }]);
+  });
+
+  it("requires animal:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({
+      success: false,
+      error: "Onvoldoende rechten",
+    });
+
+    const result = await toggleAdoptionAvailability(1, true);
+
+    expect(mockRequirePermission).toHaveBeenCalledWith("animal:write");
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Onvoldoende rechten");
+  });
+
+  it("returns error when animal not found", async () => {
+    mockSelectLimit.mockResolvedValueOnce([]);
+
+    const result = await toggleAdoptionAvailability(999, true);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet gevonden");
+  });
+
+  it("sets isAvailableForAdoption to true", async () => {
+    const result = await toggleAdoptionAvailability(1, true);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isAvailableForAdoption: true }),
+    );
+  });
+
+  it("sets isAvailableForAdoption to false", async () => {
+    mockSelectLimit.mockResolvedValue([{ ...mockAnimal, isAvailableForAdoption: true }]);
+    mockUpdateReturning.mockResolvedValue([{ ...mockAnimal, isAvailableForAdoption: false }]);
+
+    const result = await toggleAdoptionAvailability(1, false);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isAvailableForAdoption: false }),
+    );
+  });
+
+  it("logs audit with old and new values", async () => {
+    await toggleAdoptionAvailability(1, true);
+
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "toggle_adoption_availability",
+      "animal",
+      1,
+      expect.objectContaining({ isAvailableForAdoption: false }),
+      expect.objectContaining({ isAvailableForAdoption: true }),
+    );
+  });
+
+  it("revalidates paths", async () => {
+    await toggleAdoptionAvailability(1, true);
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/1");
+  });
+
+  it("returns error on database failure", async () => {
+    mockUpdateReturning.mockRejectedValueOnce(new Error("DB error"));
+
+    const result = await toggleAdoptionAvailability(1, true);
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("mis");
   });
 });

@@ -9,6 +9,7 @@ import AttachmentGallery from "@/components/beheerder/dieren/AttachmentGallery";
 import KennelSelector from "@/components/beheerder/dieren/KennelSelector";
 import StatusChanger from "@/components/beheerder/dieren/StatusChanger";
 import OuttakeForm from "@/components/beheerder/dieren/OuttakeForm";
+import AdoptionToggle from "@/components/beheerder/dieren/AdoptionToggle";
 import NeglectReportSection from "@/components/beheerder/dieren/NeglectReportSection";
 import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordSection";
 import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
@@ -93,8 +94,8 @@ export default async function DierDetailPage({ params }: Props) {
 
       <AnimalEditForm animal={animal} />
 
-      {/* Status & Kennel */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Status, Kennel, Adoptie & Uitstroom */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-bold text-[#1b4332]">Status</h2>
           <div className="mt-2">
@@ -111,6 +112,15 @@ export default async function DierDetailPage({ params }: Props) {
               animalId={animalId}
               currentKennelId={animal.kennelId}
               kennels={kennelsList}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
+          <div className="mt-2">
+            <AdoptionToggle
+              animalId={animalId}
+              isAvailable={animal.isAvailableForAdoption ?? false}
             />
           </div>
         </div>

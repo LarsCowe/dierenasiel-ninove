@@ -93,6 +93,7 @@ export async function createAnimalIntake(
         dossierNr: parsed.data.dossierNr || null,
         pvNr: parsed.data.pvNr || null,
         ibnDecisionDeadline,
+        workflowPhase: "intake",
         status: "beschikbaar",
         isInShelter: true,
       })

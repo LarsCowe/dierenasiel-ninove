@@ -79,6 +79,46 @@ export async function changeStatus(
   }
 }
 
+export async function toggleAdoptionAvailability(
+  animalId: number,
+  available: boolean,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("animal:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  try {
+    const [animal] = await db
+      .select()
+      .from(animals)
+      .where(eq(animals.id, animalId))
+      .limit(1);
+
+    if (!animal) {
+      return { success: false, error: "Dier niet gevonden" };
+    }
+
+    const [updated] = await db
+      .update(animals)
+      .set({
+        isAvailableForAdoption: available,
+        updatedAt: new Date(),
+      })
+      .where(eq(animals.id, animalId))
+      .returning();
+
+    await logAudit("toggle_adoption_availability", "animal", animalId, animal, updated);
+    revalidatePath("/beheerder/dieren");
+    revalidatePath(`/beheerder/dieren/${animalId}`);
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("toggleAdoptionAvailability failed:", err);
+    return { success: false, error: "Er ging iets mis bij het wijzigen van de adoptiebeschikbaarheid" };
+  }
+}
+
 export async function registerOuttake(
   animalId: number,
   outtakeReason: string,
