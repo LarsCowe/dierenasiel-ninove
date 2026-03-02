@@ -71,8 +71,13 @@ export default function AttachmentGallery({
               </span>
             )}
 
-            {/* Preview */}
-            <div className="flex h-32 items-center justify-center overflow-hidden rounded bg-gray-50">
+            {/* Preview — click to open in new tab */}
+            <a
+              href={att.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-32 cursor-pointer items-center justify-center overflow-hidden rounded bg-gray-50 transition-opacity hover:opacity-80"
+            >
               {isImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -91,7 +96,7 @@ export default function AttachmentGallery({
                   <p className="mt-1 text-xs text-gray-500">PDF</p>
                 </div>
               )}
-            </div>
+            </a>
 
             {/* File name */}
             <p className="mt-2 truncate text-xs text-gray-700" title={att.fileName}>
