@@ -261,10 +261,6 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
         </div>
       )}
 
-      {/* Datum */}
-      <div className="text-xs text-gray-400">
-        Aanvraag ingediend op {new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })}
-      </div>
     </div>
   );
 }

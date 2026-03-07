@@ -47,7 +47,7 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
         {candidate.firstName} {candidate.lastName}
       </h1>
       <p className="mt-1 text-sm text-gray-500">
-        Adoptie-aanvraag
+        Adoptie-aanvraag op {new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })} om {new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
       </p>
 
       <div className="mt-6">
