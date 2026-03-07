@@ -136,16 +136,6 @@ export default function LoginForm({
         </form>
       )}
 
-      {/* Surfer login - always visible below */}
-      <div className="mt-5">
-        <button
-          onClick={onGuestLogin}
-          disabled={isLoading}
-          className="w-full py-3.5 bg-accent hover:bg-accent/90 text-white font-bold rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent/25"
-        >
-          {isLoading ? "Even geduld..." : "Bezoek de website"}
-        </button>
-      </div>
     </div>
   );
 }
