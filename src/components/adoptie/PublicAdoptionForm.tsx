@@ -296,6 +296,7 @@ export default function PublicAdoptionForm({ species }: Props) {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [otherValues, setOtherValues] = useState<Record<string, string>>({});
   const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
+  const [missingFields, setMissingFields] = useState<Set<string>>(new Set());
 
   const questions = QUESTIONS[species];
 
@@ -303,6 +304,21 @@ export default function PublicAdoptionForm({ species }: Props) {
     _prev: PublicAdoptionResult | null,
     formData: FormData,
   ): Promise<PublicAdoptionResult> => {
+    // Client-side validation of required questionnaire fields
+    const missing = new Set<string>();
+    for (const q of questions) {
+      if (!q.required) continue;
+      const val = answers[q.key];
+      if (!val || (typeof val === "string" && !val.trim()) || (Array.isArray(val) && val.length === 0)) {
+        missing.add(q.key);
+      }
+    }
+    if (missing.size > 0) {
+      setMissingFields(missing);
+      return { success: false, error: "Niet alle verplichte vragen zijn beantwoord. Scroll omlaag om de ontbrekende velden in te vullen." };
+    }
+    setMissingFields(new Set());
+
     const payload = {
       species,
       requestedAnimalName: formData.get("requestedAnimalName") as string,
@@ -480,6 +496,7 @@ export default function PublicAdoptionForm({ species }: Props) {
               onOtherChange={(key, val) =>
                 setOtherValues((prev) => ({ ...prev, [key]: val }))
               }
+              hasError={missingFields.has(q.key)}
             />
           ))}
         </div>
@@ -527,6 +544,7 @@ function QuestionField({
   onChange,
   onToggleCheckbox,
   onOtherChange,
+  hasError,
 }: {
   question: Question;
   value: string | string[] | undefined;
@@ -534,10 +552,13 @@ function QuestionField({
   onChange: (key: string, value: string | string[]) => void;
   onToggleCheckbox: (key: string, option: string) => void;
   onOtherChange: (key: string, value: string) => void;
+  hasError?: boolean;
 }) {
+  const errorBorder = hasError ? "rounded-lg border border-red-300 bg-red-50/30 p-3 -m-3" : "";
+
   if (question.type === "text") {
     return (
-      <div>
+      <div className={errorBorder}>
         <label className={labelClass}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
@@ -549,13 +570,14 @@ function QuestionField({
           placeholder={question.placeholder}
           className={inputClass}
         />
+        {hasError && <p className="mt-1 text-xs text-red-600">Dit veld is verplicht</p>}
       </div>
     );
   }
 
   if (question.type === "radio") {
     return (
-      <div>
+      <div className={errorBorder}>
         <p className={labelClass}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
@@ -597,6 +619,7 @@ function QuestionField({
             </label>
           )}
         </div>
+        {hasError && <p className="mt-1 text-xs text-red-600">Selecteer een optie</p>}
       </div>
     );
   }
@@ -604,7 +627,7 @@ function QuestionField({
   if (question.type === "checkbox") {
     const selected = (value as string[]) || [];
     return (
-      <div>
+      <div className={errorBorder}>
         <p className={labelClass}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
@@ -648,6 +671,7 @@ function QuestionField({
             </label>
           )}
         </div>
+        {hasError && <p className="mt-1 text-xs text-red-600">Selecteer minstens 1 optie</p>}
       </div>
     );
   }
