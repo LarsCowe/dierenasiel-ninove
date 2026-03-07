@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { getAllAdoptionCandidatesForExport } from "@/lib/queries/adoption-candidates";
-import { computeReviewResult } from "@/lib/actions/adoption-reviews";
+import { computeReviewResult } from "@/lib/utils/review-result";
 import { NextResponse } from "next/server";
 
 const QUESTION_LABELS: Record<string, string> = {

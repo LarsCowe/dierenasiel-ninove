@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { computeReviewResult } from "@/lib/actions/adoption-reviews";
+import { computeReviewResult } from "@/lib/utils/review-result";
 import type { AdoptionCandidateWithAnimal } from "@/lib/queries/adoption-candidates";
 
 interface Props {

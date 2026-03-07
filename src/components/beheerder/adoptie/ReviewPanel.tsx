@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { submitReview, computeReviewResult } from "@/lib/actions/adoption-reviews";
+import { submitReview } from "@/lib/actions/adoption-reviews";
+import { computeReviewResult } from "@/lib/utils/review-result";
 
 interface Props {
   candidateId: number;
