@@ -8,7 +8,7 @@ import {
   setCategoryAdoptionCandidate,
   updateStatusAdoptionCandidate,
 } from "@/lib/actions/adoption-candidates";
-import type { AdoptionCandidate, QuestionnaireAnswers } from "@/types";
+import type { AdoptionCandidate } from "@/types";
 
 interface Props {
   candidate: AdoptionCandidate;
@@ -42,32 +42,12 @@ const CATEGORY_CONFIG: Record<string, { label: string; className: string; select
   },
 };
 
-const WOONSITUATIE_LABELS: Record<string, string> = {
-  huis_met_tuin: "Huis met tuin",
-  appartement: "Appartement",
-  boerderij: "Boerderij",
-  andere: "Andere",
-};
-
-const WERKSITUATIE_LABELS: Record<string, string> = {
-  voltijds_thuis: "Voltijds thuis",
-  deeltijds: "Deeltijds",
-  voltijds_buitenshuis: "Voltijds buitenshuis",
-};
-
-const KINDEREN_LABELS: Record<string, string> = {
-  geen: "Geen kinderen",
-  "0_5": "0-5 jaar",
-  "6_12": "6-12 jaar",
-  "12_plus": "12+ jaar",
-};
-
 export default function AdoptionCandidateView({ candidate, animalName, kennismakingenSlot }: Props) {
   const router = useRouter();
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdoptionCandidate, null);
   const [categoryState, categoryAction, categoryPending] = useActionState(setCategoryAdoptionCandidate, null);
   const [statusState, statusAction, statusPending] = useActionState(updateStatusAdoptionCandidate, null);
-  const qa = candidate.questionnaireAnswers as QuestionnaireAnswers | null;
+  const qa = candidate.questionnaireAnswers as Record<string, unknown> | null;
   const canDelete = candidate.status === "pending" || candidate.status === "screening";
 
   useEffect(() => {
@@ -250,9 +230,13 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Gewenst dier</h2>
         <div className="mt-3">
-          <Link href={`/beheerder/dieren/${candidate.animalId}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-900">
-            {animalName ? `${animalName} — Bekijk dierprofiel` : `Bekijk dierprofiel (ID: ${candidate.animalId})`}
-          </Link>
+          {candidate.animalId ? (
+            <Link href={`/beheerder/dieren/${candidate.animalId}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-900">
+              {animalName ? `${animalName} — Bekijk dierprofiel` : `Bekijk dierprofiel (ID: ${candidate.animalId})`}
+            </Link>
+          ) : (
+            <DierInfo candidate={candidate} />
+          )}
         </div>
       </div>
 
@@ -262,54 +246,9 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
       {/* Vragenlijst */}
       {qa && (
         <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h2 className="font-heading text-sm font-bold text-[#1b4332]">Vragenlijst (Bijlage IX)</h2>
+          <h2 className="font-heading text-sm font-bold text-[#1b4332]">Vragenlijst</h2>
           <div className="mt-3 space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-gray-500">Woonsituatie</p>
-                <p className="text-sm text-gray-800">{WOONSITUATIE_LABELS[qa.woonsituatie] ?? qa.woonsituatie}</p>
-              </div>
-              {qa.tuinOmheind !== null && qa.tuinOmheind !== undefined && (
-                <div>
-                  <p className="text-xs font-medium text-gray-500">Tuin omheind</p>
-                  <p className="text-sm text-gray-800">{qa.tuinOmheind ? "Ja" : "Nee"}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs font-medium text-gray-500">Eerder huisdieren</p>
-                <p className="text-sm text-gray-800">{qa.eerderHuisdieren ? "Ja" : "Nee"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500">Huidige huisdieren</p>
-                <p className="text-sm text-gray-800">{qa.huidigeHuisdieren || "-"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500">Kinderen in huis</p>
-                <p className="text-sm text-gray-800">{KINDEREN_LABELS[qa.kinderenInHuis] ?? qa.kinderenInHuis}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500">Werksituatie</p>
-                <p className="text-sm text-gray-800">{WERKSITUATIE_LABELS[qa.werkSituatie] ?? qa.werkSituatie}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500">Uren alleen per dag</p>
-                <p className="text-sm text-gray-800">{qa.uurAlleen || "-"}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">Ervaring met dieren</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{qa.ervaring || "-"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">Motivatie</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{qa.motivatie || "-"}</p>
-            </div>
-            {qa.opmerkingen && (
-              <div>
-                <p className="text-xs font-medium text-gray-500">Opmerkingen</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{qa.opmerkingen}</p>
-              </div>
-            )}
+            <QuestionnaireDisplay data={qa as Record<string, unknown>} />
           </div>
         </div>
       )}
@@ -326,6 +265,130 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
       <div className="text-xs text-gray-400">
         Aanvraag ingediend op {new Date(candidate.createdAt).toLocaleDateString("nl-BE")}
       </div>
+    </div>
+  );
+}
+
+// --- Dynamic questionnaire display ---
+
+const QUESTION_LABELS: Record<string, string> = {
+  // Shared
+  woonsituatie: "Woonsituatie",
+  tuinOmheind: "Tuin omheind",
+  eerderHuisdieren: "Eerder huisdieren gehad",
+  huidigeHuisdieren: "Huidige huisdieren",
+  kinderenInHuis: "Kinderen in huis",
+  werkSituatie: "Werksituatie",
+  uurAlleen: "Uren alleen per dag",
+  ervaring: "Ervaring met dieren",
+  motivatie: "Motivatie",
+  opmerkingen: "Opmerkingen",
+  // Cat form
+  andereHuisdieren: "Andere huisdieren aanwezig",
+  binnenBuiten: "Binnenkat / buiten",
+  voorkeurLeeftijd: "Voorkeur leeftijd",
+  woningType: "Type woning",
+  eigenaarHuurder: "Eigenaar of huurder",
+  huurderDierenToegestaan: "Huurder: dieren toegestaan",
+  kinderen: "Kinderen/huisgenoten in het gezin",
+  beschikbareDagen: "Beschikbare dagen",
+  adoptieVoorzien: "Adoptie voorzien voor",
+  // Dog form
+  tuinAanwezig: "Tuin aanwezig",
+  tuinGrootte: "Grootte tuin",
+  omheiningMateriaal: "Materiaal omheining",
+  omheiningHoogte: "Hoogte omheining",
+  beseftVerantwoordelijkheid: "Beseft verantwoordelijkheid (10+ jaar)",
+  ervaringDieren: "Ervaring met dieren",
+  ervaringBeschrijving: "Ervaring beschrijving",
+  huidigeDieren: "Huidige dieren op verblijfplaats",
+  urenAlleen: "Uren per dag alleen",
+  verblijfplaats: "Verblijfplaats hond",
+  bewegingsbehoefte: "Bewegingsbehoefte",
+  vakanties: "Oplossing tijdens vakanties",
+  bereidOpleiding: "Bereid opleiding te volgen",
+  welkeOpleiding: "Welke opleiding",
+  adviesProbleemgedrag: "Advies bij probleemgedrag",
+  verzekering: "Familiale verzekering",
+  extraInfo: "Extra info",
+  // Meta
+  geboortedatum: "Geboortedatum adoptant",
+  bron: "Bron",
+};
+
+const VALUE_LABELS: Record<string, Record<string, string>> = {
+  woonsituatie: { huis_met_tuin: "Huis met tuin", appartement: "Appartement", boerderij: "Boerderij", andere: "Andere" },
+  werkSituatie: { voltijds_thuis: "Voltijds thuis", deeltijds: "Deeltijds", voltijds_buitenshuis: "Voltijds buitenshuis" },
+  kinderenInHuis: { geen: "Geen kinderen", "0_5": "0-5 jaar", "6_12": "6-12 jaar", "12_plus": "12+ jaar" },
+  bron: { publiek_formulier: "Publiek formulier (website)" },
+};
+
+const HIDDEN_KEYS = new Set(["fotoUrls"]);
+
+function formatValue(key: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Ja" : "Nee";
+  if (Array.isArray(value)) return value.join(", ");
+  const str = String(value);
+  return VALUE_LABELS[key]?.[str] ?? str;
+}
+
+function QuestionnaireDisplay({ data }: { data: Record<string, unknown> }) {
+  const entries = Object.entries(data).filter(([key]) => !HIDDEN_KEYS.has(key));
+  const fotoUrls = data.fotoUrls as string[] | undefined;
+
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {entries.map(([key, value]) => (
+          <div key={key} className={Array.isArray(value) || (typeof value === "string" && value.length > 80) ? "sm:col-span-2" : ""}>
+            <p className="text-xs font-medium text-gray-500">
+              {QUESTION_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-800">
+              {formatValue(key, value)}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {fotoUrls && fotoUrls.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-medium text-gray-500">Foto&apos;s / video&apos;s verblijfplaats</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {fotoUrls.map((url) => (
+              <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg border border-gray-200 hover:ring-2 hover:ring-emerald-400">
+                {url.match(/\.(mp4|mov|webm)/i) ? (
+                  <video src={url} className="h-32 w-full object-cover" controls />
+                ) : (
+                  <img src={url} alt="Verblijfplaats" className="h-32 w-full object-cover" />
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function DierInfo({ candidate }: { candidate: AdoptionCandidate }) {
+  const c = candidate as unknown as Record<string, unknown>;
+  const requestedName = c.requestedAnimalName as string | undefined;
+  const species = c.species as string | undefined;
+
+  return (
+    <div className="space-y-1">
+      {requestedName ? (
+        <p className="text-sm font-semibold text-gray-800">{requestedName}</p>
+      ) : (
+        <p className="text-sm text-gray-500">Geen dier opgegeven</p>
+      )}
+      {species && (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          {species === "hond" ? "Hond" : "Kat"}
+        </span>
+      )}
     </div>
   );
 }
