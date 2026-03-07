@@ -30,7 +30,7 @@ export async function createAdoptionCandidate(
 
   const parsed = adoptionCandidateSchema.safeParse(raw);
   if (!parsed.success) {
-    return { success: false, fieldErrors: parsed.error.flatten().fieldErrors };
+    return { success: false, error: "Niet alle verplichte velden zijn correct ingevuld.", fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
   const animal = await getAnimalById(parsed.data.animalId);

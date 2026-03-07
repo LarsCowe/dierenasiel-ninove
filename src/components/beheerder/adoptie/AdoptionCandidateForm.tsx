@@ -55,6 +55,9 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   const [state, formAction, isPending] = useActionState(submitAction, null);
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
+  const hasFieldErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
+  const questionnaireErrors = fieldErrors?.questionnaireAnswers as string[] | undefined;
+  const animalIdErrors = fieldErrors?.animalId as string[] | undefined;
 
   const updateQ = <K extends keyof typeof questionnaire>(key: K, value: (typeof questionnaire)[K]) => {
     setQuestionnaire((prev) => ({ ...prev, [key]: value }));
@@ -65,6 +68,13 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
       {globalError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm font-medium text-red-800">{globalError}</p>
+        </div>
+      )}
+      {!globalError && hasFieldErrors && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-sm font-medium text-red-800">
+            Niet alle verplichte velden zijn correct ingevuld. Controleer het formulier.
+          </p>
         </div>
       )}
 
@@ -114,6 +124,7 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
             selectedAnimalId={animalId || undefined}
             onSelect={setAnimalId}
           />
+          <FieldError errors={animalIdErrors} />
         </div>
       </div>
 
@@ -121,6 +132,9 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Vragenlijst (Bijlage IX)</h2>
         <p className="mt-1 text-xs text-gray-500">Verplichte screening volgens KB 27/04/2007.</p>
+        {questionnaireErrors && (
+          <p className="mt-2 text-sm text-red-600">Vul alle verplichte vragenlijst-velden in (woonsituatie, werksituatie, motivatie).</p>
+        )}
         <div className="mt-3 space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-600">
