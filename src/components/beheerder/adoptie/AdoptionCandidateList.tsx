@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { computeReviewResult } from "@/lib/actions/adoption-reviews";
 import type { AdoptionCandidateWithAnimal } from "@/lib/queries/adoption-candidates";
@@ -18,12 +18,6 @@ const STATUS_BADGES: Record<string, { label: string; className: string }> = {
   adopted: { label: "Geadopteerd", className: "bg-purple-100 text-purple-800" },
 };
 
-const CATEGORY_BADGES: Record<string, { label: string; className: string }> = {
-  niet_weerhouden: { label: "Niet weerhouden", className: "bg-red-100 text-red-800" },
-  mogelijks: { label: "Mogelijks", className: "bg-amber-100 text-amber-800" },
-  goede_kandidaat: { label: "Goede kandidaat", className: "bg-emerald-100 text-emerald-800" },
-};
-
 const RESULT_BADGES: Record<string, { label: string; className: string }> = {
   geschikt: { label: "Geschikt", className: "bg-emerald-100 text-emerald-800" },
   niet_weerhouden: { label: "Niet weerhouden", className: "bg-red-100 text-red-800" },
@@ -37,8 +31,16 @@ const CATEGORY_FILTERS = [
   { value: "niet_weerhouden", label: "Niet weerhouden" },
 ];
 
+type SortKey = "naam" | "dier" | "status" | "beoordeling" | "datum";
+type SortDir = "asc" | "desc";
+
+const STATUS_ORDER: Record<string, number> = { pending: 0, screening: 1, approved: 2, adopted: 3, rejected: 4 };
+const RESULT_ORDER: Record<string, number> = { geschikt: 0, misschien: 1, niet_weerhouden: 2 };
+
 export default function AdoptionCandidateList({ candidates, activeCategory }: Props) {
   const [animalFilter, setAnimalFilter] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("datum");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const uniqueAnimals = Array.from(
     new Set(candidates.map((c) => c.animalName).filter(Boolean) as string[]),
@@ -47,6 +49,56 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
   const filtered = animalFilter
     ? candidates.filter((c) => c.animalName === animalFilter)
     : candidates;
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "naam": {
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+          return dir * nameA.localeCompare(nameB, "nl");
+        }
+        case "dier": {
+          const anA = (a.animalName || "").toLowerCase();
+          const anB = (b.animalName || "").toLowerCase();
+          return dir * anA.localeCompare(anB, "nl");
+        }
+        case "status": {
+          return dir * ((STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
+        }
+        case "beoordeling": {
+          const rA = computeReviewResult(a.reviewMartine, a.reviewNathalie, a.reviewSven);
+          const rB = computeReviewResult(b.reviewMartine, b.reviewNathalie, b.reviewSven);
+          const oA = rA ? (RESULT_ORDER[rA] ?? 99) : 100;
+          const oB = rB ? (RESULT_ORDER[rB] ?? 99) : 100;
+          return dir * (oA - oB);
+        }
+        case "datum": {
+          return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        }
+        default:
+          return 0;
+      }
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "datum" ? "desc" : "asc");
+    }
+  };
+
+  const SortIcon = ({ column }: { column: SortKey }) => {
+    if (sortKey !== column) return <span className="ml-1 text-gray-300">&#8597;</span>;
+    return <span className="ml-1">{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>;
+  };
 
   return (
     <div className="space-y-4">
@@ -95,7 +147,7 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
         </a>
       </div>
 
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
           <p className="text-sm text-gray-500">
             {activeCategory || animalFilter
@@ -108,16 +160,26 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
-                <th className="px-3 py-3">Naam</th>
-                <th className="px-3 py-3">Dier</th>
-                <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3">Beoordeling</th>
-                <th className="px-3 py-3">Datum</th>
+                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("naam")}>
+                  Naam<SortIcon column="naam" />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("dier")}>
+                  Dier<SortIcon column="dier" />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("status")}>
+                  Status<SortIcon column="status" />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("beoordeling")}>
+                  Beoordeling<SortIcon column="beoordeling" />
+                </th>
+                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("datum")}>
+                  Datum<SortIcon column="datum" />
+                </th>
                 <th className="px-3 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((candidate) => {
+              {sorted.map((candidate) => {
                 const statusBadge = STATUS_BADGES[candidate.status] ?? STATUS_BADGES.pending;
                 const reviewResult = computeReviewResult(
                   candidate.reviewMartine,

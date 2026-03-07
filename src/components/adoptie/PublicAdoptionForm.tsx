@@ -360,12 +360,23 @@ export default function PublicAdoptionForm({ species }: Props) {
           </svg>
         </div>
         <h2 className="font-heading text-2xl font-bold text-emerald-800">
-          Bedankt voor je aanvraag!
+          Bedankt voor je reactie.
         </h2>
-        <p className="mt-3 text-sm text-emerald-700">
-          We hebben je adoptie-aanvraag goed ontvangen. Een medewerker van het dierenasiel
-          zal je aanvraag bekijken en zo snel mogelijk contact met je opnemen.
-        </p>
+        <div className="mt-4 space-y-3 text-left text-sm text-emerald-700">
+          <p>
+            We verwerken alle antwoorden zo snel mogelijk, maar dit kan soms even duren
+            omdat we veel mails krijgen. Bedankt voor je geduld!
+          </p>
+          <p>
+            We antwoorden altijd, of je er nu bij bent of niet. Voor sommige honden krijgen we
+            veel aanvragen, maar helaas kunnen we maar &eacute;&eacute;n persoon blij maken.
+          </p>
+          <p>
+            Dank je voor je begrip.<br />
+            Tot snel!<br />
+            <strong>Team Honden Dierenasiel Ninove</strong>
+          </p>
+        </div>
         <a
           href="/adoptie-aanvraag"
           className="mt-6 inline-block rounded-lg bg-[#1b4332] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#2d6a4f]"
