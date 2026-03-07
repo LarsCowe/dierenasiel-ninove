@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { submitPublicAdoptionRequest } from "@/lib/actions/public-adoption";
 import type { PublicAdoptionResult } from "@/lib/actions/public-adoption";
+import AdoptionPhotoUpload from "./AdoptionPhotoUpload";
 
 type Species = "hond" | "kat";
 
@@ -294,6 +295,7 @@ const labelClass = "block text-sm font-medium text-gray-700";
 export default function PublicAdoptionForm({ species }: Props) {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [otherValues, setOtherValues] = useState<Record<string, string>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
 
   const questions = QUESTIONS[species];
 
@@ -311,7 +313,7 @@ export default function PublicAdoptionForm({ species }: Props) {
       postalCode: formData.get("postalCode") as string,
       phone: formData.get("phone") as string,
       email: (formData.get("email") as string) || "",
-      questionnaireAnswers: { ...answers },
+      questionnaireAnswers: { ...answers } as Record<string, unknown>,
     };
 
     // Replace "Anders" radio values with typed other text
@@ -319,6 +321,11 @@ export default function PublicAdoptionForm({ species }: Props) {
       if (val === "__other__" && otherValues[key]) {
         payload.questionnaireAnswers[key] = otherValues[key];
       }
+    }
+
+    // Add photo URLs if any
+    if (uploadedFiles.length > 0) {
+      payload.questionnaireAnswers.fotoUrls = uploadedFiles.map((f) => f.url);
     }
 
     const fd = new FormData();
@@ -477,6 +484,22 @@ export default function PublicAdoptionForm({ species }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Foto upload - alleen honden */}
+      {species === "hond" && (
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-medium text-gray-700">
+            Voeg een paar foto&apos;s of filmpje toe waar de hond zou komen te verblijven.{" "}
+            <span className="font-bold">Zowel binnen als buiten!</span>
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload maximaal 5 bestanden: afbeelding of video. Maximaal 10 MB per bestand.
+          </p>
+          <div className="mt-3">
+            <AdoptionPhotoUpload files={uploadedFiles} onChange={setUploadedFiles} />
+          </div>
+        </div>
+      )}
 
       {/* Submit */}
       <div className="flex gap-3">
