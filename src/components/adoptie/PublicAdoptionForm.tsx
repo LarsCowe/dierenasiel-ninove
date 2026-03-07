@@ -34,6 +34,7 @@ interface CheckboxQuestion {
   key: string;
   label: string;
   options: string[];
+  allowOther?: boolean;
   required?: boolean;
 }
 
@@ -109,30 +110,25 @@ const CAT_QUESTIONS: Question[] = [
 ];
 
 const DOG_QUESTIONS: Question[] = [
+  // --- Info Adoptant ---
   {
     type: "text",
-    key: "andereHuisdieren",
-    label: "Heb je al honden of andere huisdieren? Zo ja, welke?",
+    key: "kinderen",
+    label: "Zijn er kinderen/huisgenoten aanwezig in het gezin? Indien wel geef hun leeftijd(en)",
     required: true,
   },
   {
     type: "radio",
     key: "woningType",
     label: "Welke woning heb je?",
-    options: ["Huis met tuin", "Huis zonder tuin", "Appartement"],
+    options: ["Huis", "Appartement"],
     allowOther: true,
     required: true,
   },
   {
     type: "radio",
-    key: "tuinOmheind",
-    label: "Is je tuin volledig omheind?",
-    options: ["JA", "NEEN", "Niet van toepassing"],
-  },
-  {
-    type: "radio",
     key: "eigenaarHuurder",
-    label: "Eigenaar of huurder?",
+    label: "Ben u eigenaar of huurder?",
     options: ["Eigenaar", "Huurder"],
     required: true,
   },
@@ -140,44 +136,143 @@ const DOG_QUESTIONS: Question[] = [
     type: "radio",
     key: "huurderDierenToegestaan",
     label: "Als je huurder bent, mag je van de verhuurder dieren houden?",
-    options: ["JA", "NEEN"],
+    options: ["Ja", "Neen", "Niet van toepassing"],
+    required: true,
+  },
+  // --- Tuin ---
+  {
+    type: "radio",
+    key: "tuinAanwezig",
+    label: "Is er een tuin aanwezig?",
+    options: ["Ja", "Neen"],
+    required: true,
   },
   {
-    type: "text",
-    key: "kinderen",
-    label: "Zijn er kinderen aanwezig in het gezin? Indien wel geef hun leeftijd(en)",
+    type: "radio",
+    key: "tuinOmheind",
+    label: "Is de tuin ontsnappingsvrij omheind?",
+    options: ["Ja", "Neen", "Niet van toepassing"],
     required: true,
   },
   {
     type: "text",
-    key: "wieLatUit",
-    label: "Wie gaat de hond uitlaten?",
-    required: true,
-  },
-  {
-    type: "text",
-    key: "urenAlleen",
-    label: "Hoeveel uur per dag zou de hond alleen zijn?",
-    required: true,
-  },
-  {
-    type: "text",
-    key: "ervaringHonden",
-    label: "Heb je ervaring met honden? Zo ja, beschrijf kort.",
+    key: "tuinGrootte",
+    label: "Hoe groot is de tuin?",
     required: true,
   },
   {
     type: "checkbox",
-    key: "beschikbareDagen",
-    label: "Op welke dagen kan je langskomen? Dit kan op maandag, woensdag, donderdag, vrijdag en zaterdag",
+    key: "omheiningMateriaal",
+    label: "Met welke materialen is de tuin omheind?",
+    options: ["Geen omheining", "Draad", "Beplanting", "Schermen /muur"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "text",
+    key: "omheiningHoogte",
+    label: "Welke hoogte heeft de omheining?",
+    required: true,
+  },
+  // --- Info ivm adoptie ---
+  {
+    type: "radio",
+    key: "beseftVerantwoordelijkheid",
+    label: "Beseft u door een hond te adopteren dat dit een grote verantwoordelijkheid is dat u opneemt en dat dit niet voor even is maar doorgaans voor 10 jaar of langer zal zijn?",
+    options: ["Ja", "Neen"],
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "ervaringDieren",
+    label: "Hebt u ervaring met dieren?",
+    options: ["Ja", "Neen"],
+    required: true,
+  },
+  {
+    type: "text",
+    key: "ervaringBeschrijving",
+    label: "Indien JA: Welke dieren en beschrijf zo goed mogelijk",
+    required: true,
+  },
+  {
+    type: "text",
+    key: "huidigeDieren",
+    label: "Zijn er momenteel dieren aanwezig waar de hond zal komen te verblijven? Beschrijf zo nauwkeurig mogelijk (diersoort, ras, leeftijd, geslacht, steriel)?",
+  },
+  {
+    type: "text",
+    key: "urenAlleen",
+    label: "Hoeveel uren per dag zal de hond max alleen zijn?",
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "verblijfplaats",
+    label: "Waar zal de hond verblijven?",
+    options: ["Vrij binnen", "Vrij buiten", "Vrij binnen en buiten"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "checkbox",
+    key: "bewegingsbehoefte",
+    label: "Hoe denk je te kunnen voldoen aan de bewegingsbehoefte van de hond?",
     options: [
-      "Maandag (10u30 tot 15u30)",
-      "Woensdag (10u30 tot 15u30)",
-      "Donderdag (13 tot 16u)",
-      "Vrijdag (10u30 tot 15u30)",
-      "Zaterdag (10u30 tot 15u30)",
+      "Door hem vrij te laten in de tuin",
+      "Door met hem dagelijks te wandelen",
+      "Door met hem wekelijks te gaan wandelen",
+    ],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "checkbox",
+    key: "vakanties",
+    label: "Aan welke oplossing denk je voor de hond tijdens vakanties?",
+    options: [
+      "Meenemen!",
+      "Door hem te plaatsen bij een familielid",
+      "Door hem te plaatsen in een hondenpension",
+      "'Dog Sitter' komt bij ons thuis",
+    ],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "bereidOpleiding",
+    label: "Het leven met een hond kan belangrijke inspanningen vereisen. Ben je bereid een opleiding te volgen indien dit nodig zou zijn?",
+    options: ["Ja", "Neen", "Misschien"],
+    required: true,
+  },
+  {
+    type: "text",
+    key: "welkeOpleiding",
+    label: "Zo JA! Welke opleiding?",
+    required: true,
+  },
+  {
+    type: "text",
+    key: "adviesProbleemgedrag",
+    label: "Aan wie zou je advies vragen indien de hond probleemgedrag zou vertonen?",
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "verzekering",
+    label: "Ben je van plan om een familiale ongevallenverzekering af te sluiten die kan tussenkomen indien de hond een ongeval zou veroorzaken?",
+    options: [
+      "Ja heb ik al",
+      "Ja ik ga er 1 afsluiten",
+      "Neen ik ben niet van plan om me extra te laten verzekeren",
     ],
     required: true,
+  },
+  {
+    type: "text",
+    key: "extraInfo",
+    label: "Is er nog belangrijker info die u wenst mee te geven die in u voordeel kan spreken om de adoptie aan u toe te kennen?",
   },
   {
     type: "text",
@@ -503,6 +598,32 @@ function QuestionField({
               {option}
             </label>
           ))}
+          {question.allowOther && (
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={selected.includes(`Anders: ${otherValue}`)}
+                onChange={() => {
+                  if (otherValue) onToggleCheckbox(question.key, `Anders: ${otherValue}`);
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-[#52796f] focus:ring-[#52796f]"
+              />
+              Anders:
+              <input
+                type="text"
+                value={otherValue}
+                onChange={(e) => {
+                  const oldVal = `Anders: ${otherValue}`;
+                  const newVal = `Anders: ${e.target.value}`;
+                  onOtherChange(question.key, e.target.value);
+                  if (selected.includes(oldVal)) {
+                    onChange(question.key, selected.map((s) => s === oldVal ? newVal : s));
+                  }
+                }}
+                className="ml-1 flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none"
+              />
+            </label>
+          )}
         </div>
       </div>
     );
