@@ -267,8 +267,8 @@ describe("getAnimalReport", () => {
 });
 
 const mockBehaviorRecords = [
-  { id: 1, animalId: 1, date: "2026-01-15", checklist: { benaderingHok: 4 }, notes: "Rustige hond", createdAt: new Date() },
-  { id: 2, animalId: 1, date: "2026-02-01", checklist: { benaderingHok: 5 }, notes: null, createdAt: new Date() },
+  { id: 1, animalId: 1, date: "2026-01-15", checklist: { verzorgers_algemeenAgressief: false }, notes: "Rustige hond", createdAt: new Date() },
+  { id: 2, animalId: 1, date: "2026-02-01", checklist: { verzorgers_algemeenAgressief: true }, notes: null, createdAt: new Date() },
 ];
 
 describe("getBehaviorReportByAnimalId", () => {

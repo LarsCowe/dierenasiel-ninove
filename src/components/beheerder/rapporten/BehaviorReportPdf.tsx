@@ -1,33 +1,37 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { BEHAVIOR_CHECKLIST_LABELS } from "@/lib/constants";
+import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
 import type { BehaviorRecord, BehaviorChecklist, Animal } from "@/types";
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
   header: { marginBottom: 20, textAlign: "center" },
   title: { fontSize: 16, fontFamily: "Helvetica-Bold", marginBottom: 4 },
+  subtitle: { fontSize: 10, fontStyle: "italic", color: "#666", marginBottom: 2 },
   org: { fontSize: 9, color: "#666", marginBottom: 2 },
   meta: { marginBottom: 12, paddingBottom: 8, borderBottom: "1 solid #ccc" },
   metaText: { fontSize: 10 },
   metaLabel: { fontFamily: "Helvetica-Bold", color: "#555" },
-  section: { marginBottom: 14 },
-  sectionTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 6, color: "#1b4332", borderBottom: "0.5 solid #1b4332", paddingBottom: 3 },
+  recordSection: { marginBottom: 14 },
+  recordTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 6, color: "#1b4332", borderBottom: "0.5 solid #1b4332", paddingBottom: 3 },
+  sectionLabel: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#1b4332", marginBottom: 3, marginTop: 6 },
   table: { marginBottom: 4 },
   tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", borderBottom: "0.5 solid #ccc", paddingVertical: 4, paddingHorizontal: 6 },
   tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 3, paddingHorizontal: 6 },
   headerText: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#374151" },
   cellText: { fontSize: 8 },
-  colItem: { width: "40%" },
-  colScore: { width: "15%" },
-  colDate: { width: "20%" },
-  colNotes: { width: "45%" },
+  colItem: { width: "60%" },
+  colValue: { width: "40%" },
   notesBlock: { marginTop: 6, padding: 6, backgroundColor: "#f9fafb", borderRadius: 2 },
   notesText: { fontSize: 9, lineHeight: 1.4 },
   empty: { fontSize: 9, color: "#999", fontStyle: "italic", paddingVertical: 8, textAlign: "center" },
   footer: { position: "absolute", bottom: 30, left: 40, right: 40, textAlign: "center", fontSize: 8, color: "#999" },
 });
 
-const CHECKLIST_LABELS = BEHAVIOR_CHECKLIST_LABELS;
+function formatBool(val: unknown): string {
+  if (val === true) return "Ja";
+  if (val === false) return "Nee";
+  return "—";
+}
 
 interface Props {
   animal: Pick<Animal, "id" | "name" | "species" | "breed">;
@@ -42,7 +46,8 @@ export default function BehaviorReportPdf({ animal, records, generatedAt }: Prop
         <View style={styles.header}>
           <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
           <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
-          <Text style={styles.title}>Gedragsfiches</Text>
+          <Text style={styles.title}>Evaluatiefiche van het gedrag in het asiel</Text>
+          <Text style={styles.subtitle}>Bijlage VIII B bij het koninklijk besluit van 27 april 2007</Text>
         </View>
 
         <View style={styles.meta}>
@@ -64,39 +69,62 @@ export default function BehaviorReportPdf({ animal, records, generatedAt }: Prop
           <Text style={styles.empty}>Geen gedragsfiches gevonden voor dit dier.</Text>
         ) : (
           records.map((record, idx) => {
-            const checklist = record.checklist as BehaviorChecklist;
+            const checklist = record.checklist as Record<string, unknown>;
             return (
-              <View key={record.id} style={styles.section}>
-                <Text style={styles.sectionTitle}>
+              <View key={record.id} style={styles.recordSection}>
+                <Text style={styles.recordTitle}>
                   Gedragsfiche {idx + 1} — {record.date}
                 </Text>
+
+                {/* Sectie 1: Verzorgers */}
+                <Text style={styles.sectionLabel}>1. Gedrag tegenover de verzorgers</Text>
                 <View style={styles.table}>
                   <View style={styles.tableHeader}>
                     <Text style={[styles.colItem, styles.headerText]}>Criterium</Text>
-                    <Text style={[styles.colScore, styles.headerText]}>Score (1-5)</Text>
+                    <Text style={[styles.colValue, styles.headerText]}>Ja / Nee</Text>
                   </View>
-                  {Object.entries(CHECKLIST_LABELS).map(([key, label]) => (
-                    <View key={key} style={styles.tableRow}>
-                      <Text style={[styles.colItem, styles.cellText]}>{label}</Text>
-                      <Text style={[styles.colScore, styles.cellText]}>
-                        {checklist[key as keyof typeof checklist]?.toString() ?? "-"}
+                  {BEHAVIOR_VERZORGERS_ITEMS.map((item) => (
+                    <View key={item.key} style={styles.tableRow}>
+                      <Text style={[styles.colItem, styles.cellText]}>{item.label}</Text>
+                      <Text style={[styles.colValue, styles.cellText]}>
+                        {formatBool(checklist[item.key])}
                       </Text>
                     </View>
                   ))}
-                  <View style={styles.tableRow}>
-                    <Text style={[styles.colItem, styles.cellText]}>Zindelijk</Text>
-                    <Text style={[styles.colScore, styles.cellText]}>
-                      {checklist.zindelijk === true ? "Ja" : checklist.zindelijk === false ? "Nee" : "Onbekend"}
-                    </Text>
-                  </View>
+                  {typeof checklist.verzorgers_andere === "string" && checklist.verzorgers_andere && (
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.colItem, styles.cellText]}>Andere</Text>
+                      <Text style={[styles.colValue, styles.cellText]}>
+                        {checklist.verzorgers_andere}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
-                {checklist.aandachtspunten && checklist.aandachtspunten.length > 0 && (
-                  <View style={styles.notesBlock}>
-                    <Text style={[styles.notesText, { fontFamily: "Helvetica-Bold" }]}>Aandachtspunten:</Text>
-                    <Text style={styles.notesText}>{checklist.aandachtspunten.join(", ")}</Text>
+                {/* Sectie 2: Andere honden */}
+                <Text style={styles.sectionLabel}>2. Gedrag tegenover andere honden</Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.colItem, styles.headerText]}>Criterium</Text>
+                    <Text style={[styles.colValue, styles.headerText]}>Ja / Nee</Text>
                   </View>
-                )}
+                  {BEHAVIOR_HONDEN_ITEMS.map((item) => (
+                    <View key={item.key} style={styles.tableRow}>
+                      <Text style={[styles.colItem, styles.cellText]}>{item.label}</Text>
+                      <Text style={[styles.colValue, styles.cellText]}>
+                        {formatBool(checklist[item.key])}
+                      </Text>
+                    </View>
+                  ))}
+                  {typeof checklist.honden_andere === "string" && checklist.honden_andere && (
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.colItem, styles.cellText]}>Andere</Text>
+                      <Text style={[styles.colValue, styles.cellText]}>
+                        {checklist.honden_andere}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 {record.notes && (
                   <View style={styles.notesBlock}>
@@ -110,7 +138,7 @@ export default function BehaviorReportPdf({ animal, records, generatedAt }: Prop
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R4: Gedragsfiches
+          Dierenasiel Ninove VZW — Evaluatiefiche gedrag (Bijlage VIII B)
         </Text>
       </Page>
     </Document>

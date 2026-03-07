@@ -64,15 +64,21 @@ export interface MedicalAlert {
 }
 
 export interface BehaviorChecklist {
-  benaderingHok: number;       // 1-5: Reactie bij nadering hok
-  uitHetHok: number;           // 1-5: Gedrag bij uit hok halen
-  wandelingLeiband: number;    // 1-5: Wandeling aan de leiband
-  reactieAndereHonden: number; // 1-5: Reactie op andere honden
-  reactieMensen: number;       // 1-5: Reactie op mensen/kinderen
-  aanrakingManipulatie: number; // 1-5: Aanraking/manipulatie
-  voedselgedrag: number;       // 1-5: Voedselgedrag/resource guarding
-  zindelijk: boolean | null;   // Zindelijk ja/nee/onbekend
-  aandachtspunten: string[];   // Multi-select aandachtspunten
+  // Sectie 1: Gedrag tegenover de verzorgers (ja/nee/null)
+  verzorgers_algemeenAgressief: boolean | null;
+  verzorgers_agressiefSpeelgoed: boolean | null;
+  verzorgers_agressiefVoederkom: boolean | null;
+  verzorgers_agressiefMand: boolean | null;
+  verzorgers_gemakkelijkWandeling: boolean | null;
+  verzorgers_speeltGraag: boolean | null;
+  verzorgers_andere: string | null;
+  // Sectie 2: Gedrag tegenover andere honden (ja/nee/null)
+  honden_algemeenAgressief: boolean | null;
+  honden_agressiefSpeelgoed: boolean | null;
+  honden_agressiefVoederkom: boolean | null;
+  honden_agressiefMand: boolean | null;
+  honden_speeltGraag: boolean | null;
+  honden_andere: string | null;
 }
 
 export type Kennel = typeof kennels.$inferSelect;

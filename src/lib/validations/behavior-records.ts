@@ -1,17 +1,23 @@
 import { z } from "zod";
 
-const score = z.number().int("Score moet een geheel getal zijn").min(1, "Score moet minstens 1 zijn").max(5, "Score mag maximaal 5 zijn");
+const jaNee = z.boolean().nullable();
 
 export const behaviorChecklistSchema = z.object({
-  benaderingHok: score,
-  uitHetHok: score,
-  wandelingLeiband: score,
-  reactieAndereHonden: score,
-  reactieMensen: score,
-  aanrakingManipulatie: score,
-  voedselgedrag: score,
-  zindelijk: z.boolean().nullable(),
-  aandachtspunten: z.array(z.string()),
+  // Sectie 1: Gedrag tegenover de verzorgers
+  verzorgers_algemeenAgressief: jaNee,
+  verzorgers_agressiefSpeelgoed: jaNee,
+  verzorgers_agressiefVoederkom: jaNee,
+  verzorgers_agressiefMand: jaNee,
+  verzorgers_gemakkelijkWandeling: jaNee,
+  verzorgers_speeltGraag: jaNee,
+  verzorgers_andere: z.string().nullable(),
+  // Sectie 2: Gedrag tegenover andere honden
+  honden_algemeenAgressief: jaNee,
+  honden_agressiefSpeelgoed: jaNee,
+  honden_agressiefVoederkom: jaNee,
+  honden_agressiefMand: jaNee,
+  honden_speeltGraag: jaNee,
+  honden_andere: z.string().nullable(),
 });
 
 export const behaviorRecordSchema = z.object({

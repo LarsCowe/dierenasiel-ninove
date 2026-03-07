@@ -2,36 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { createBehaviorRecord, updateBehaviorRecord } from "@/lib/actions/behavior-records";
+import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
 import type { BehaviorRecord } from "@/types";
 
-const SCORE_LABELS: Record<number, string> = {
-  1: "Zeer goed",
-  2: "Goed",
-  3: "Neutraal",
-  4: "Matig",
-  5: "Problematisch",
-};
-
-const SCORE_CATEGORIES = [
-  { key: "benaderingHok", label: "Reactie bij nadering hok" },
-  { key: "uitHetHok", label: "Gedrag bij uit hok halen" },
-  { key: "wandelingLeiband", label: "Wandeling aan de leiband" },
-  { key: "reactieAndereHonden", label: "Reactie op andere honden" },
-  { key: "reactieMensen", label: "Reactie op mensen/kinderen" },
-  { key: "aanrakingManipulatie", label: "Aanraking/manipulatie" },
-  { key: "voedselgedrag", label: "Voedselgedrag/resource guarding" },
-] as const;
-
-const AANDACHTSPUNTEN_OPTIONS = [
-  { value: "angst", label: "Angst" },
-  { value: "agressie", label: "Agressie" },
-  { value: "separatieangst", label: "Separatieangst" },
-  { value: "voedselagressie", label: "Voedselagressie" },
-  { value: "leiband_reactief", label: "Leiband-reactief" },
-  { value: "niet_zindelijk", label: "Niet zindelijk" },
-  { value: "overmatig_blaffen", label: "Overmatig blaffen" },
-  { value: "anders", label: "Anders" },
-];
+type JaNee = "ja" | "nee" | "";
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -55,40 +29,122 @@ export default function BehaviorRecordForm({
 
   const existingChecklist = existingRecord?.checklist as Record<string, unknown> | null;
 
-  const [scores, setScores] = useState<Record<string, number>>(() => {
-    const defaults: Record<string, number> = {};
-    for (const cat of SCORE_CATEGORIES) {
-      defaults[cat.key] = (existingChecklist?.[cat.key] as number) || 3;
+  function boolToJaNee(val: unknown): JaNee {
+    if (val === true) return "ja";
+    if (val === false) return "nee";
+    return "";
+  }
+
+  const [verzorgersValues, setVerzorgersValues] = useState<Record<string, JaNee>>(() => {
+    const defaults: Record<string, JaNee> = {};
+    for (const item of BEHAVIOR_VERZORGERS_ITEMS) {
+      defaults[item.key] = boolToJaNee(existingChecklist?.[item.key]);
     }
     return defaults;
   });
 
-  const [zindelijk, setZindelijk] = useState<string>(() => {
-    if (existingChecklist?.zindelijk === true) return "true";
-    if (existingChecklist?.zindelijk === false) return "false";
-    return "null";
+  const [hondenValues, setHondenValues] = useState<Record<string, JaNee>>(() => {
+    const defaults: Record<string, JaNee> = {};
+    for (const item of BEHAVIOR_HONDEN_ITEMS) {
+      defaults[item.key] = boolToJaNee(existingChecklist?.[item.key]);
+    }
+    return defaults;
   });
 
-  const [aandachtspunten, setAandachtspunten] = useState<string[]>(
-    () => (existingChecklist?.aandachtspunten as string[]) ?? [],
+  const [verzorgersAndere, setVerzorgersAndere] = useState(
+    () => (existingChecklist?.verzorgers_andere as string) ?? "",
+  );
+  const [hondenAndere, setHondenAndere] = useState(
+    () => (existingChecklist?.honden_andere as string) ?? "",
   );
 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
 
-  function buildChecklist(): string {
-    return JSON.stringify({
-      ...scores,
-      zindelijk: zindelijk === "null" ? null : zindelijk === "true",
-      aandachtspunten,
-    });
+  function jaNeeToBoolean(val: JaNee): boolean | null {
+    if (val === "ja") return true;
+    if (val === "nee") return false;
+    return null;
   }
 
-  function toggleAandachtspunt(value: string) {
-    setAandachtspunten((prev) =>
-      prev.includes(value)
-        ? prev.filter((v) => v !== value)
-        : [...prev, value],
+  function buildChecklist(): string {
+    const checklist: Record<string, boolean | string | null> = {};
+    for (const item of BEHAVIOR_VERZORGERS_ITEMS) {
+      checklist[item.key] = jaNeeToBoolean(verzorgersValues[item.key]);
+    }
+    checklist.verzorgers_andere = verzorgersAndere.trim() || null;
+    for (const item of BEHAVIOR_HONDEN_ITEMS) {
+      checklist[item.key] = jaNeeToBoolean(hondenValues[item.key]);
+    }
+    checklist.honden_andere = hondenAndere.trim() || null;
+    return JSON.stringify(checklist);
+  }
+
+  const radioClass = "h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500";
+  const labelTextClass = "text-sm text-gray-700";
+
+  function renderSection(
+    title: string,
+    items: readonly { key: string; label: string }[],
+    values: Record<string, JaNee>,
+    setValues: React.Dispatch<React.SetStateAction<Record<string, JaNee>>>,
+    andereValue: string,
+    setAndereValue: (v: string) => void,
+  ) {
+    return (
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-[#1b4332] uppercase tracking-wide">
+          {title}
+        </h3>
+        <div className="rounded-lg border border-gray-200 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 w-1/2"></th>
+                <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 w-1/4">Ja</th>
+                <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 w-1/4">Nee</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item) => (
+                <tr key={item.key} className="hover:bg-gray-50">
+                  <td className="px-4 py-2.5 text-sm text-gray-700">{item.label}</td>
+                  <td className="px-4 py-2.5 text-center">
+                    <input
+                      type="radio"
+                      name={item.key}
+                      checked={values[item.key] === "ja"}
+                      onChange={() => setValues((prev) => ({ ...prev, [item.key]: "ja" }))}
+                      className={radioClass}
+                    />
+                  </td>
+                  <td className="px-4 py-2.5 text-center">
+                    <input
+                      type="radio"
+                      name={item.key}
+                      checked={values[item.key] === "nee"}
+                      onChange={() => setValues((prev) => ({ ...prev, [item.key]: "nee" }))}
+                      className={radioClass}
+                    />
+                  </td>
+                </tr>
+              ))}
+              <tr className="hover:bg-gray-50">
+                <td className="px-4 py-2.5 text-sm text-gray-700">Andere:</td>
+                <td colSpan={2} className="px-4 py-2.5">
+                  <input
+                    type="text"
+                    value={andereValue}
+                    onChange={(e) => setAndereValue(e.target.value)}
+                    placeholder="Vrije opmerking..."
+                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   }
 
@@ -128,85 +184,31 @@ export default function BehaviorRecordForm({
         <FieldError errors={fieldErrors?.date} />
       </div>
 
-      {/* Score categories */}
-      <div>
-        <p className="mb-3 text-sm font-medium text-gray-700">
-          Gedragsevaluatie <span className="text-red-500">*</span>
-        </p>
-        <div className="space-y-3">
-          {SCORE_CATEGORIES.map((cat) => (
-            <div key={cat.key} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
-              <label
-                htmlFor={`br-${cat.key}`}
-                className="min-w-[200px] text-sm text-gray-700"
-              >
-                {cat.label}
-              </label>
-              <select
-                id={`br-${cat.key}`}
-                value={scores[cat.key]}
-                onChange={(e) =>
-                  setScores((prev) => ({ ...prev, [cat.key]: Number(e.target.value) }))
-                }
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n} — {SCORE_LABELS[n]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-        </div>
-        <FieldError errors={fieldErrors?.checklist} />
-      </div>
+      {/* Sectie 1: Gedrag tegenover de verzorgers */}
+      {renderSection(
+        "1. Gedrag tegenover de verzorgers",
+        BEHAVIOR_VERZORGERS_ITEMS,
+        verzorgersValues,
+        setVerzorgersValues,
+        verzorgersAndere,
+        setVerzorgersAndere,
+      )}
 
-      {/* Zindelijk */}
-      <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Zindelijk</p>
-        <div className="flex gap-4">
-          {[
-            { value: "true", label: "Ja" },
-            { value: "false", label: "Nee" },
-            { value: "null", label: "Onbekend" },
-          ].map((opt) => (
-            <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="zindelijkRadio"
-                value={opt.value}
-                checked={zindelijk === opt.value}
-                onChange={() => setZindelijk(opt.value)}
-                className="text-emerald-600 focus:ring-emerald-500"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* Sectie 2: Gedrag tegenover andere honden */}
+      {renderSection(
+        "2. Gedrag tegenover andere honden",
+        BEHAVIOR_HONDEN_ITEMS,
+        hondenValues,
+        setHondenValues,
+        hondenAndere,
+        setHondenAndere,
+      )}
 
-      {/* Aandachtspunten */}
-      <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Aandachtspunten</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {AANDACHTSPUNTEN_OPTIONS.map((opt) => (
-            <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={aandachtspunten.includes(opt.value)}
-                onChange={() => toggleAandachtspunt(opt.value)}
-                className="rounded text-emerald-600 focus:ring-emerald-500"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </div>
+      <FieldError errors={fieldErrors?.checklist} />
 
       {/* Notes */}
       <div>
-        <label htmlFor="br-notes" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="br-notes" className={`block text-sm font-medium ${labelTextClass}`}>
           Opmerkingen
         </label>
         <textarea

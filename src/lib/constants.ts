@@ -255,15 +255,22 @@ export const REPORT_CATEGORIES = ["Dierenbeheer", "Medisch", "Adoptie", "Publica
 export const SPECIES_LABELS: Record<string, string> = { hond: "Hond", kat: "Kat", konijn: "Konijn", cavia: "Cavia", ezel: "Ezel", kip: "Kip", hangbuikvarken: "Hangbuikvarken" };
 export const GENDER_LABELS: Record<string, string> = { reu: "Reu", teef: "Teef", mannetje: "Mannetje", vrouwtje: "Vrouwtje", kater: "Kater", poes: "Poes" };
 export const STATUS_LABELS: Record<string, string> = { beschikbaar: "Beschikbaar", gereserveerd: "Gereserveerd", geadopteerd: "Geadopteerd", in_behandeling: "In behandeling" };
-export const BEHAVIOR_CHECKLIST_LABELS: Record<string, string> = {
-  benaderingHok: "Reactie bij nadering hok",
-  uitHetHok: "Gedrag bij uit hok halen",
-  wandelingLeiband: "Wandeling aan de leiband",
-  reactieAndereHonden: "Reactie op andere honden",
-  reactieMensen: "Reactie op mensen/kinderen",
-  aanrakingManipulatie: "Aanraking/manipulatie",
-  voedselgedrag: "Voedselgedrag/resource guarding",
-};
+export const BEHAVIOR_VERZORGERS_ITEMS = [
+  { key: "verzorgers_algemeenAgressief", label: "Algemeen agressief" },
+  { key: "verzorgers_agressiefSpeelgoed", label: "Agressief rond speelgoed" },
+  { key: "verzorgers_agressiefVoederkom", label: "Agressief rond voederkom" },
+  { key: "verzorgers_agressiefMand", label: "Agressief rond mand" },
+  { key: "verzorgers_gemakkelijkWandeling", label: "Gemakkelijk tijdens wandeling" },
+  { key: "verzorgers_speeltGraag", label: "Speelt graag" },
+] as const;
+
+export const BEHAVIOR_HONDEN_ITEMS = [
+  { key: "honden_algemeenAgressief", label: "Algemeen agressief" },
+  { key: "honden_agressiefSpeelgoed", label: "Agressief rond speelgoed" },
+  { key: "honden_agressiefVoederkom", label: "Agressief rond voederkom" },
+  { key: "honden_agressiefMand", label: "Agressief rond mand" },
+  { key: "honden_speeltGraag", label: "Speelt graag" },
+] as const;
 
 export const ANONYMIZED_VALUE = "[verwijderd]";
 

@@ -94,15 +94,19 @@ function makeFormData(data: Record<string, string>): FormData {
 }
 
 const validChecklist = {
-  benaderingHok: 2,
-  uitHetHok: 3,
-  wandelingLeiband: 1,
-  reactieAndereHonden: 4,
-  reactieMensen: 2,
-  aanrakingManipulatie: 3,
-  voedselgedrag: 1,
-  zindelijk: true,
-  aandachtspunten: ["angst"],
+  verzorgers_algemeenAgressief: false,
+  verzorgers_agressiefSpeelgoed: false,
+  verzorgers_agressiefVoederkom: null,
+  verzorgers_agressiefMand: false,
+  verzorgers_gemakkelijkWandeling: true,
+  verzorgers_speeltGraag: true,
+  verzorgers_andere: null,
+  honden_algemeenAgressief: true,
+  honden_agressiefSpeelgoed: false,
+  honden_agressiefVoederkom: null,
+  honden_agressiefMand: false,
+  honden_speeltGraag: false,
+  honden_andere: null,
 };
 
 const validFormData = {
@@ -145,11 +149,24 @@ describe("createBehaviorRecord", () => {
     }
   });
 
+  it("returns error when checklist JSON is invalid", async () => {
+    const result = await createBehaviorRecord(null, makeFormData({
+      animalId: "1",
+      date: "2026-02-26",
+      checklist: "invalid-json",
+    }));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBeDefined();
+    }
+  });
+
   it("returns fieldErrors when validation fails", async () => {
     const result = await createBehaviorRecord(null, makeFormData({
       animalId: "1",
       date: "",
-      checklist: JSON.stringify({ ...validChecklist, benaderingHok: 0 }),
+      checklist: JSON.stringify(validChecklist),
     }));
 
     expect(result.success).toBe(false);

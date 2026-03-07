@@ -2,11 +2,36 @@ import Link from "next/link";
 import { getAnimalReport } from "@/lib/queries/reports";
 import { getBehaviorReportByAnimalId } from "@/lib/queries/reports";
 import { getAnimalById } from "@/lib/queries/animals";
-import { BEHAVIOR_CHECKLIST_LABELS } from "@/lib/constants";
+import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
 import AnimalSelect from "@/components/beheerder/rapporten/AnimalSelect";
-import type { BehaviorChecklist } from "@/types";
 
-const CHECKLIST_LABELS = BEHAVIOR_CHECKLIST_LABELS;
+function formatBool(val: unknown): string {
+  if (val === true) return "Ja";
+  if (val === false) return "Nee";
+  return "—";
+}
+
+function BoolCell({ val, positive }: { val: unknown; positive?: boolean }) {
+  if (val === true) {
+    const cls = positive
+      ? "text-emerald-700 bg-emerald-50"
+      : "text-red-700 bg-red-50";
+    return <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${cls}`}>Ja</span>;
+  }
+  if (val === false) {
+    const cls = positive
+      ? "text-red-700 bg-red-50"
+      : "text-emerald-700 bg-emerald-50";
+    return <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${cls}`}>Nee</span>;
+  }
+  return <span className="text-xs text-gray-400">—</span>;
+}
+
+const POSITIVE_KEYS = new Set([
+  "verzorgers_gemakkelijkWandeling",
+  "verzorgers_speeltGraag",
+  "honden_speeltGraag",
+]);
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -17,10 +42,8 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
   const animalIdStr = typeof params.dier === "string" ? params.dier : undefined;
   const animalId = animalIdStr ? parseInt(animalIdStr, 10) : undefined;
 
-  // Fetch all dogs for the selector
   const { animals: dogs } = await getAnimalReport({ species: "hond" });
 
-  // Fetch behavior records if a dog is selected
   const selectedAnimal = animalId ? await getAnimalById(animalId) : null;
   const records = animalId ? await getBehaviorReportByAnimalId(animalId) : [];
 
@@ -53,13 +76,11 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
         )}
       </div>
 
-      {/* Hond selectie */}
       <AnimalSelect
         animals={dogs.map((d) => ({ id: d.id, name: d.name, breed: d.breed }))}
         selectedId={animalIdStr}
       />
 
-      {/* Resultaten */}
       {selectedAnimal && (
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -78,7 +99,7 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
             </div>
           ) : (
             records.map((record, idx) => {
-              const checklist = record.checklist as BehaviorChecklist;
+              const checklist = record.checklist as Record<string, unknown>;
               return (
                 <div key={record.id} className="rounded-lg border border-gray-200 bg-white">
                   <div className="border-b border-gray-100 px-4 py-3">
@@ -86,39 +107,54 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
                       Gedragsfiche {idx + 1} — {record.date}
                     </h3>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Criterium</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Score (1-5)</th>
-                        </tr>
-                      </thead>
+
+                  {/* Sectie 1 */}
+                  <div className="px-4 pt-3 pb-1">
+                    <p className="text-xs font-semibold text-[#1b4332] uppercase tracking-wide mb-2">
+                      1. Gedrag tegenover de verzorgers
+                    </p>
+                    <table className="w-full">
                       <tbody className="divide-y divide-gray-100">
-                        {Object.entries(CHECKLIST_LABELS).map(([key, label]) => (
-                          <tr key={key}>
-                            <td className="px-4 py-2 text-sm text-gray-700">{label}</td>
-                            <td className="px-4 py-2 text-sm text-gray-900 font-medium">
-                              {checklist[key as keyof BehaviorChecklist]?.toString() ?? "-"}
+                        {BEHAVIOR_VERZORGERS_ITEMS.map((item) => (
+                          <tr key={item.key}>
+                            <td className="py-1.5 text-sm text-gray-700">{item.label}</td>
+                            <td className="py-1.5 text-right">
+                              <BoolCell val={checklist[item.key]} positive={POSITIVE_KEYS.has(item.key)} />
                             </td>
                           </tr>
                         ))}
-                        <tr>
-                          <td className="px-4 py-2 text-sm text-gray-700">Zindelijk</td>
-                          <td className="px-4 py-2 text-sm text-gray-900 font-medium">
-                            {checklist.zindelijk === true ? "Ja" : checklist.zindelijk === false ? "Nee" : "Onbekend"}
-                          </td>
-                        </tr>
                       </tbody>
                     </table>
+                    {typeof checklist.verzorgers_andere === "string" && checklist.verzorgers_andere && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Andere: <span className="text-gray-700">{String(checklist.verzorgers_andere)}</span>
+                      </p>
+                    )}
                   </div>
 
-                  {checklist.aandachtspunten && checklist.aandachtspunten.length > 0 && (
-                    <div className="border-t border-gray-100 px-4 py-3">
-                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">Aandachtspunten</p>
-                      <p className="text-sm text-gray-700">{checklist.aandachtspunten.join(", ")}</p>
-                    </div>
-                  )}
+                  {/* Sectie 2 */}
+                  <div className="px-4 pt-3 pb-3 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-[#1b4332] uppercase tracking-wide mb-2">
+                      2. Gedrag tegenover andere honden
+                    </p>
+                    <table className="w-full">
+                      <tbody className="divide-y divide-gray-100">
+                        {BEHAVIOR_HONDEN_ITEMS.map((item) => (
+                          <tr key={item.key}>
+                            <td className="py-1.5 text-sm text-gray-700">{item.label}</td>
+                            <td className="py-1.5 text-right">
+                              <BoolCell val={checklist[item.key]} positive={POSITIVE_KEYS.has(item.key)} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {typeof checklist.honden_andere === "string" && checklist.honden_andere && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Andere: <span className="text-gray-700">{String(checklist.honden_andere)}</span>
+                      </p>
+                    )}
+                  </div>
 
                   {record.notes && (
                     <div className="border-t border-gray-100 px-4 py-3">
