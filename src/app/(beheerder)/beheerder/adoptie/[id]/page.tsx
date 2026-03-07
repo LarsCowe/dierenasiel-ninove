@@ -9,6 +9,7 @@ import AdoptionCandidateView from "@/components/beheerder/adoptie/AdoptionCandid
 import KennismakingList from "@/components/beheerder/adoptie/KennismakingList";
 import AdoptionContractInfo from "@/components/beheerder/adoptie/AdoptionContractInfo";
 import FollowupList from "@/components/beheerder/adoptie/FollowupList";
+import ReviewPanel from "@/components/beheerder/adoptie/ReviewPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -48,6 +49,15 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
       <p className="mt-1 text-sm text-gray-500">
         Adoptie-aanvraag
       </p>
+
+      <div className="mt-6">
+        <ReviewPanel
+          candidateId={candidate.id}
+          reviewMartine={candidate.reviewMartine}
+          reviewNathalie={candidate.reviewNathalie}
+          reviewSven={candidate.reviewSven}
+        />
+      </div>
 
       <div className="mt-6">
         <AdoptionCandidateView

@@ -310,6 +310,9 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   categorySetBy: varchar("category_set_by", { length: 100 }),
   status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, screening, approved, rejected, adopted
   notes: text("notes"),
+  reviewMartine: varchar("review_martine", { length: 20 }),
+  reviewNathalie: varchar("review_nathalie", { length: 20 }),
+  reviewSven: varchar("review_sven", { length: 20 }),
   blacklistMatch: boolean("blacklist_match").default(false).notNull(),
   blacklistMatchEntryId: integer("blacklist_match_entry_id").references(() => blacklistEntries.id, { onDelete: "set null" }),
   anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),

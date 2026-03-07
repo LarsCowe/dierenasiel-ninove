@@ -263,7 +263,7 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
 
       {/* Datum */}
       <div className="text-xs text-gray-400">
-        Aanvraag ingediend op {new Date(candidate.createdAt).toLocaleDateString("nl-BE")}
+        Aanvraag ingediend op {new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })}
       </div>
     </div>
   );
@@ -341,11 +341,11 @@ function QuestionnaireDisplay({ data }: { data: Record<string, unknown> }) {
     <>
       <div className="grid gap-3 sm:grid-cols-2">
         {entries.map(([key, value]) => (
-          <div key={key} className={Array.isArray(value) || (typeof value === "string" && value.length > 80) ? "sm:col-span-2" : ""}>
-            <p className="text-xs font-medium text-gray-500">
+          <div key={key} className={`rounded-lg border border-gray-100 bg-gray-50/50 px-3 py-2 ${Array.isArray(value) || (typeof value === "string" && value.length > 80) ? "sm:col-span-2" : ""}`}>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#1b4332]">
               {QUESTION_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
             </p>
-            <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-800">
+            <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
               {formatValue(key, value)}
             </p>
           </div>

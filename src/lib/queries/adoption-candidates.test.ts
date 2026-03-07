@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const {
-  mockSelectLimit, mockSelectWhere, mockSelectOrderBy, mockSelectFrom,
+  mockSelectLimit, mockSelectWhere, mockSelectOrderBy, mockSelectFrom, mockLeftJoin,
 } = vi.hoisted(() => {
   const mockSelectLimit = vi.fn();
   const mockSelectOrderBy = vi.fn().mockReturnValue({ limit: mockSelectLimit });
   const mockSelectWhere = vi.fn().mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
-  const mockSelectFrom = vi.fn().mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
-  return { mockSelectLimit, mockSelectOrderBy, mockSelectWhere, mockSelectFrom };
+  const mockLeftJoin = vi.fn().mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+  const mockSelectFrom = vi.fn().mockReturnValue({ leftJoin: mockLeftJoin, where: mockSelectWhere, orderBy: mockSelectOrderBy });
+  return { mockSelectLimit, mockSelectOrderBy, mockSelectWhere, mockSelectFrom, mockLeftJoin };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -22,12 +23,18 @@ vi.mock("@/lib/db/schema", () => ({
     status: Symbol("adoptionCandidates.status"),
     category: Symbol("adoptionCandidates.category"),
     createdAt: Symbol("adoptionCandidates.createdAt"),
+    animalId: Symbol("adoptionCandidates.animalId"),
+  },
+  animals: {
+    id: Symbol("animals.id"),
+    name: Symbol("animals.name"),
   },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
+  sql: vi.fn(),
 }));
 
 import { getAdoptionCandidates, getAdoptionCandidateById } from "./adoption-candidates";
@@ -40,6 +47,7 @@ const mockCandidate = {
   phone: "0471234567",
   address: "Kerkstraat 1",
   animalId: 5,
+  requestedAnimalName: null,
   questionnaireAnswers: {},
   category: null,
   categorySetBy: null,
@@ -51,22 +59,28 @@ const mockCandidate = {
 describe("getAdoptionCandidates", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelectLimit.mockResolvedValue([mockCandidate]);
+    // The query now returns { candidate, animalName } objects
+    mockSelectLimit.mockResolvedValue([{ candidate: mockCandidate, animalName: "Rex" }]);
+    mockLeftJoin.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+    mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
+    mockSelectFrom.mockReturnValue({ leftJoin: mockLeftJoin });
   });
 
-  it("returns candidates list", async () => {
+  it("returns candidates with animal name", async () => {
     const result = await getAdoptionCandidates();
-    expect(result).toEqual([mockCandidate]);
+    expect(result[0].animalName).toBe("Rex");
+    expect(result[0].firstName).toBe("Jan");
   });
 
-  it("orders by createdAt desc", async () => {
+  it("uses leftJoin with animals table", async () => {
     await getAdoptionCandidates();
-    expect(mockSelectOrderBy).toHaveBeenCalled();
+    expect(mockLeftJoin).toHaveBeenCalled();
   });
 
-  it("limits to 50 results", async () => {
+  it("limits to 100 results", async () => {
     await getAdoptionCandidates();
-    expect(mockSelectLimit).toHaveBeenCalledWith(50);
+    expect(mockSelectLimit).toHaveBeenCalledWith(100);
   });
 
   it("returns empty array on error", async () => {
@@ -74,14 +88,23 @@ describe("getAdoptionCandidates", () => {
     const result = await getAdoptionCandidates();
     expect(result).toEqual([]);
   });
+
+  it("falls back to requestedAnimalName when no join match", async () => {
+    mockSelectLimit.mockResolvedValue([{
+      candidate: { ...mockCandidate, animalId: null, requestedAnimalName: "Bella" },
+      animalName: null,
+    }]);
+    const result = await getAdoptionCandidates();
+    expect(result[0].animalName).toBe("Bella");
+  });
 });
 
 describe("getAdoptionCandidateById", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSelectLimit.mockResolvedValue([mockCandidate]);
-    // For getById, the chain is: from → where → limit
     mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectFrom.mockReturnValue({ leftJoin: mockLeftJoin, where: mockSelectWhere });
   });
 
   it("returns candidate when found", async () => {
@@ -105,22 +128,22 @@ describe("getAdoptionCandidateById", () => {
 describe("getAdoptionCandidates with category filter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelectLimit.mockResolvedValue([mockCandidate]);
-    // Reset chain: from → where → orderBy → limit
+    mockSelectLimit.mockResolvedValue([{ candidate: mockCandidate, animalName: "Rex" }]);
     mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
     mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy, limit: mockSelectLimit });
-    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+    mockLeftJoin.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+    mockSelectFrom.mockReturnValue({ leftJoin: mockLeftJoin });
   });
 
   it("filters by category when provided", async () => {
     const result = await getAdoptionCandidates("goede_kandidaat");
-    expect(result).toEqual([mockCandidate]);
+    expect(result.length).toBe(1);
     expect(mockSelectWhere).toHaveBeenCalled();
   });
 
   it("returns all candidates when no filter", async () => {
     const result = await getAdoptionCandidates();
-    expect(result).toEqual([mockCandidate]);
+    expect(result.length).toBe(1);
   });
 
   it("returns empty array on error with filter", async () => {

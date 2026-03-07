@@ -1,24 +1,56 @@
 import { db } from "@/lib/db";
-import { adoptionCandidates } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { adoptionCandidates, animals } from "@/lib/db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import type { AdoptionCandidate } from "@/types";
 
-export async function getAdoptionCandidates(category?: string): Promise<AdoptionCandidate[]> {
+export type AdoptionCandidateWithAnimal = AdoptionCandidate & { animalName: string | null };
+
+export async function getAdoptionCandidates(category?: string): Promise<AdoptionCandidateWithAnimal[]> {
   try {
-    const query = db.select().from(adoptionCandidates);
+    const query = db
+      .select({
+        candidate: adoptionCandidates,
+        animalName: animals.name,
+      })
+      .from(adoptionCandidates)
+      .leftJoin(animals, eq(adoptionCandidates.animalId, animals.id));
 
     const results = category
       ? await query
           .where(eq(adoptionCandidates.category, category))
           .orderBy(desc(adoptionCandidates.createdAt))
-          .limit(50)
+          .limit(100)
       : await query
           .orderBy(desc(adoptionCandidates.createdAt))
-          .limit(50);
+          .limit(100);
 
-    return results as AdoptionCandidate[];
+    return results.map((r) => ({
+      ...r.candidate,
+      animalName: r.animalName ?? r.candidate.requestedAnimalName ?? null,
+    }));
   } catch (err) {
     console.error("getAdoptionCandidates query failed:", err);
+    return [];
+  }
+}
+
+export async function getAllAdoptionCandidatesForExport(): Promise<AdoptionCandidateWithAnimal[]> {
+  try {
+    const results = await db
+      .select({
+        candidate: adoptionCandidates,
+        animalName: animals.name,
+      })
+      .from(adoptionCandidates)
+      .leftJoin(animals, eq(adoptionCandidates.animalId, animals.id))
+      .orderBy(desc(adoptionCandidates.createdAt));
+
+    return results.map((r) => ({
+      ...r.candidate,
+      animalName: r.animalName ?? r.candidate.requestedAnimalName ?? null,
+    }));
+  } catch (err) {
+    console.error("getAllAdoptionCandidatesForExport query failed:", err);
     return [];
   }
 }
