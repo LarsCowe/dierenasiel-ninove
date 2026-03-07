@@ -9,6 +9,7 @@ type Species = "hond" | "kat";
 
 interface Props {
   species: Species;
+  adoptableAnimals?: string[];
 }
 
 // --- Question configs per species ---
@@ -305,11 +306,13 @@ const inputClass =
   "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none";
 const labelClass = "block text-sm font-medium text-gray-700";
 
-export default function PublicAdoptionForm({ species }: Props) {
+export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: Props) {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [otherValues, setOtherValues] = useState<Record<string, string>>({});
   const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
   const [missingFields, setMissingFields] = useState<Set<string>>(new Set());
+  const [selectedAnimal, setSelectedAnimal] = useState("");
+  const [customAnimalName, setCustomAnimalName] = useState("");
 
   const questions = QUESTIONS[species];
 
@@ -445,13 +448,46 @@ export default function PublicAdoptionForm({ species }: Props) {
         <label htmlFor="requestedAnimalName" className={labelClass}>
           Welke {speciesLabel} wens je te adopteren? <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          id="requestedAnimalName"
-          name="requestedAnimalName"
-          required
-          className={inputClass}
-        />
+        {adoptableAnimals.length > 0 ? (
+          <>
+            <select
+              id="requestedAnimalSelect"
+              value={selectedAnimal}
+              onChange={(e) => setSelectedAnimal(e.target.value)}
+              className={inputClass}
+              required={selectedAnimal !== "__other__"}
+            >
+              <option value="">-- Maak een keuze --</option>
+              {adoptableAnimals.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+              <option value="__other__">Andere</option>
+            </select>
+            {selectedAnimal === "__other__" && (
+              <input
+                type="text"
+                value={customAnimalName}
+                onChange={(e) => setCustomAnimalName(e.target.value)}
+                placeholder="Naam van het dier"
+                required
+                className={`${inputClass} mt-2`}
+              />
+            )}
+            <input
+              type="hidden"
+              name="requestedAnimalName"
+              value={selectedAnimal === "__other__" ? customAnimalName : selectedAnimal}
+            />
+          </>
+        ) : (
+          <input
+            type="text"
+            id="requestedAnimalName"
+            name="requestedAnimalName"
+            required
+            className={inputClass}
+          />
+        )}
       </div>
 
       {/* Persoonlijke gegevens */}
