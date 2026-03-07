@@ -204,7 +204,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
 
         <h2 className="mt-4 border-t border-gray-100 pt-3 text-sm font-bold text-[#1b4332]">Identificatie</h2>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="identificationNr" className="block text-xs font-medium text-gray-600">
               Chipnummer
@@ -216,6 +216,18 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               defaultValue={animal.identificationNr ?? ""}
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             />
+            <div className="mt-1.5 flex items-center gap-2">
+              <input type="hidden" name="isNewChip" value="false" />
+              <input
+                type="checkbox"
+                id="isNewChip"
+                name="isNewChip"
+                value="true"
+                defaultChecked={animal.isNewChip ?? false}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <label htmlFor="isNewChip" className="text-xs text-gray-600">Nieuwe chip</label>
+            </div>
           </div>
 
           <div>
@@ -229,9 +241,24 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               defaultValue={animal.passportNr ?? ""}
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             />
+            <div className="mt-1.5 flex items-center gap-2">
+              <input type="hidden" name="isNewPassport" value="false" />
+              <input
+                type="checkbox"
+                id="isNewPassport"
+                name="isNewPassport"
+                value="true"
+                defaultChecked={animal.isNewPassport ?? false}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <label htmlFor="isNewPassport" className="text-xs text-gray-600">Nieuw paspoort</label>
+            </div>
           </div>
+        </div>
 
-          <div>
+        {/* Barcode — alleen voor honden */}
+        {animal.species === "hond" && (
+          <div className="mt-3">
             <label htmlFor="barcode" className="block text-xs font-medium text-gray-600">
               Barcode
             </label>
@@ -240,10 +267,12 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               id="barcode"
               name="barcode"
               defaultValue={animal.barcode ?? ""}
-              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              readOnly
+              className="mt-0.5 block w-full rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-gray-600"
             />
+            <p className="mt-0.5 text-xs text-gray-400">Automatisch gegenereerd bij intake</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Beschrijving + Website */}

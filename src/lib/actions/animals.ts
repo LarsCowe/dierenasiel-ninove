@@ -99,10 +99,22 @@ export async function createAnimalIntake(
       })
       .returning();
 
-    await logAudit("create_animal", "animal", animal.id, null, animal);
+    // Auto-generate barcode for dogs: DOG-{id}
+    let finalAnimal = animal;
+    if (parsed.data.species === "hond") {
+      const barcode = `DOG-${animal.id}`;
+      const [updated] = await db
+        .update(animals)
+        .set({ barcode })
+        .where(eq(animals.id, animal.id))
+        .returning();
+      finalAnimal = updated;
+    }
+
+    await logAudit("create_animal", "animal", finalAnimal.id, null, finalAnimal);
     revalidatePath("/beheerder/dieren");
 
-    return { success: true, data: animal };
+    return { success: true, data: finalAnimal };
   } catch (err: unknown) {
     const pgError = err as { code?: string };
     if (pgError.code === "23505") {
@@ -142,7 +154,9 @@ export async function updateAnimal(
     description: (formData.get("description") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
     identificationNr: (formData.get("identificationNr") as string) || undefined,
+    isNewChip: formData.get("isNewChip") === "true",
     passportNr: (formData.get("passportNr") as string) || undefined,
+    isNewPassport: formData.get("isNewPassport") === "true",
     barcode: (formData.get("barcode") as string) || undefined,
     isOnWebsite: formData.get("isOnWebsite") === "true",
     isFeatured: formData.get("isFeatured") === "true",
@@ -179,7 +193,9 @@ export async function updateAnimal(
         description: parsed.data.description || sql`null`,
         shortDescription: parsed.data.shortDescription || sql`null`,
         identificationNr: parsed.data.identificationNr || sql`null`,
+        isNewChip: parsed.data.isNewChip,
         passportNr: parsed.data.passportNr || sql`null`,
+        isNewPassport: parsed.data.isNewPassport,
         barcode: parsed.data.barcode || sql`null`,
         isOnWebsite: parsed.data.isOnWebsite,
         isFeatured: parsed.data.isFeatured,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import WalkerList from "@/components/beheerder/wandelaars/WalkerList";
 import ActiveWalksPanel from "@/components/beheerder/wandelaars/ActiveWalksPanel";
 import WandelclubPanel from "@/components/beheerder/wandelaars/WandelclubPanel";
+import WalkerCreateButton from "@/components/beheerder/wandelaars/WalkerCreateButton";
 
 interface Props {
   searchParams: Promise<{ status?: string }>;
@@ -37,13 +38,16 @@ export default async function WandelaarsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
-          Wandelaars
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Overzicht van alle geregistreerde wandelaars en hun status.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
+            Wandelaars
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Overzicht van alle geregistreerde wandelaars en hun status.
+          </p>
+        </div>
+        <WalkerCreateButton />
       </div>
 
       {/* Active walks panel (Story 5.4 AC5, Story 5.7 AC1) */}

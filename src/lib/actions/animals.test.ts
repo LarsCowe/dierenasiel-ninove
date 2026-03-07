@@ -90,6 +90,17 @@ describe("createAnimalIntake", () => {
       status: "beschikbaar",
       isInShelter: true,
     }]);
+    // Auto-barcode update for dogs
+    mockUpdateReturning.mockResolvedValue([{
+      id: 1,
+      name: "Rex",
+      slug: "rex",
+      species: "hond",
+      gender: "reu",
+      status: "beschikbaar",
+      isInShelter: true,
+      barcode: "DOG-1",
+    }]);
   });
 
   it("requires animal:write permission", async () => {

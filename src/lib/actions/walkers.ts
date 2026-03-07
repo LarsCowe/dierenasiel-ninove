@@ -206,3 +206,113 @@ export async function updateWalkerStatus(
     };
   }
 }
+
+export async function createWalkerManual(
+  _prevState: ActionResult<Walker> | null,
+  formData: FormData,
+): Promise<ActionResult<Walker>> {
+  const permResult = await requirePermission("walker:write");
+  if (permResult && !permResult.success) {
+    return { success: false, error: permResult.error };
+  }
+
+  const firstName = (formData.get("firstName") as string)?.trim();
+  const lastName = (formData.get("lastName") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const phone = (formData.get("phone") as string)?.trim();
+  const dateOfBirth = (formData.get("dateOfBirth") as string)?.trim();
+  const address = (formData.get("address") as string)?.trim();
+  const autoApprove = formData.get("autoApprove") === "true";
+
+  if (!firstName || !lastName) {
+    return { success: false, error: "Voornaam en achternaam zijn verplicht." };
+  }
+  if (!email) {
+    return { success: false, error: "E-mail is verplicht." };
+  }
+  if (!phone) {
+    return { success: false, error: "Telefoonnummer is verplicht." };
+  }
+  if (!dateOfBirth) {
+    return { success: false, error: "Geboortedatum is verplicht." };
+  }
+  if (!address) {
+    return { success: false, error: "Adres is verplicht." };
+  }
+
+  try {
+    const existing = await db
+      .select({ id: walkers.id })
+      .from(walkers)
+      .where(eq(walkers.email, email))
+      .limit(1);
+
+    if (existing.length > 0) {
+      return { success: false, error: "Er bestaat al een wandelaar met dit e-mailadres." };
+    }
+
+    const status = autoApprove ? "approved" : "pending";
+
+    const [walker] = await db
+      .insert(walkers)
+      .values({
+        firstName,
+        lastName,
+        email,
+        phone,
+        dateOfBirth,
+        address,
+        regulationsRead: true,
+        status,
+        isApproved: autoApprove,
+      })
+      .returning();
+
+    // Generate barcode
+    const barcode = `WLK-${walker.id}`;
+    await db.update(walkers).set({ barcode }).where(eq(walkers.id, walker.id));
+
+    // Auto-create user account when approved
+    if (autoApprove) {
+      const existingUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      let userId: number;
+      if (existingUsers.length > 0) {
+        userId = existingUsers[0].id;
+        await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+      } else {
+        const passwordHash = await hashPassword(barcode);
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            email,
+            passwordHash,
+            name: `${firstName} ${lastName}`,
+            role: "wandelaar",
+          })
+          .returning();
+        userId = newUser.id;
+      }
+
+      await db.update(walkers).set({ userId }).where(eq(walkers.id, walker.id));
+    }
+
+    await logAudit("walker.create_manual", "walker", walker.id, null, { firstName, lastName, email, status });
+    revalidatePath("/beheerder/wandelaars");
+
+    return {
+      success: true,
+      data: { ...walker, barcode },
+      message: `Wandelaar ${firstName} ${lastName} aangemaakt${autoApprove ? " en goedgekeurd" : ""}.`,
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis bij het aanmaken. Probeer het later opnieuw.",
+    };
+  }
+}
