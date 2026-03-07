@@ -7,7 +7,7 @@ import { createKennismaking } from "@/lib/actions/kennismakingen";
 interface Props {
   candidateId: number;
   candidateName: string;
-  animalId: number;
+  animalId: number | null;
 }
 
 export default function KennismakingForm({ candidateId, candidateName, animalId }: Props) {
@@ -36,8 +36,8 @@ export default function KennismakingForm({ candidateId, candidateName, animalId 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {state && !state.success && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-800">{state.error}</p>
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-800">{state.error || "Er ging iets mis. Controleer de gegevens."}</p>
         </div>
       )}
 

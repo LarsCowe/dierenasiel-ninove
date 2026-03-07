@@ -328,7 +328,7 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
 export const kennismakingen = pgTable("kennismakingen", {
   id: serial("id").primaryKey(),
   adoptionCandidateId: integer("adoption_candidate_id").notNull().references(() => adoptionCandidates.id),
-  animalId: integer("animal_id").notNull().references(() => animals.id),
+  animalId: integer("animal_id").references(() => animals.id),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
   location: varchar("location", { length: 200 }),
   status: varchar("status", { length: 20 }).notNull().default("scheduled"), // scheduled, completed, cancelled

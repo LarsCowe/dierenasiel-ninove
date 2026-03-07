@@ -39,9 +39,6 @@ export async function createKennismaking(
       .where(eq(adoptionCandidates.id, parsed.data.adoptionCandidateId))
       .limit(1);
     if (!candidate) return { success: false, error: "Kandidaat niet gevonden" };
-    if (candidate.category !== "goede_kandidaat") {
-      return { success: false, error: "Alleen een goede kandidaat kan een kennismaking krijgen" };
-    }
   } catch {
     return { success: false, error: "Fout bij ophalen kandidaat" };
   }
@@ -53,7 +50,7 @@ export async function createKennismaking(
       .insert(kennismakingen)
       .values({
         adoptionCandidateId: parsed.data.adoptionCandidateId,
-        animalId: parsed.data.animalId,
+        animalId: parsed.data.animalId ?? null,
         scheduledAt: new Date(parsed.data.scheduledAt),
         location: parsed.data.location || null,
         status: "scheduled",
