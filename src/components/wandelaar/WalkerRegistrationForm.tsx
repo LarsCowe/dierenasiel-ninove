@@ -20,6 +20,15 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
   const dark = variant === "dark";
   const inputClass = dark ? INPUT_DARK : INPUT_LIGHT;
   const [state, formAction, pending] = useActionState(submitWalkerRegistration, initialState);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [childrenWalkAlong, setChildrenWalkAlong] = useState(false);
+  const [regulationsRead, setRegulationsRead] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -102,12 +111,12 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="firstName" className={labelClass}>Voornaam *</label>
-          <input type="text" id="firstName" name="firstName" required placeholder="Je voornaam" className={inputClass} />
+          <input type="text" id="firstName" name="firstName" required placeholder="Je voornaam" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass} />
           {fieldErrors?.firstName && <p className={errorClass}>{fieldErrors.firstName[0]}</p>}
         </div>
         <div>
           <label htmlFor="lastName" className={labelClass}>Achternaam *</label>
-          <input type="text" id="lastName" name="lastName" required placeholder="Je achternaam" className={inputClass} />
+          <input type="text" id="lastName" name="lastName" required placeholder="Je achternaam" value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass} />
           {fieldErrors?.lastName && <p className={errorClass}>{fieldErrors.lastName[0]}</p>}
         </div>
       </div>
@@ -116,12 +125,12 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="dateOfBirth" className={labelClass}>Geboortedatum *</label>
-          <input type="date" id="dateOfBirth" name="dateOfBirth" required className={inputClass} />
+          <input type="date" id="dateOfBirth" name="dateOfBirth" required value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} className={inputClass} />
           {fieldErrors?.dateOfBirth && <p className={errorClass}>{fieldErrors.dateOfBirth[0]}</p>}
         </div>
         <div>
           <label htmlFor="phone" className={labelClass}>GSM-nummer *</label>
-          <input type="tel" id="phone" name="phone" required placeholder="0471 23 45 67" className={inputClass} />
+          <input type="tel" id="phone" name="phone" required placeholder="0471 23 45 67" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
           {fieldErrors?.phone && <p className={errorClass}>{fieldErrors.phone[0]}</p>}
         </div>
       </div>
@@ -129,27 +138,27 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
       {/* Email */}
       <div>
         <label htmlFor="email" className={labelClass}>E-mail *</label>
-        <input type="email" id="email" name="email" required placeholder="je@email.com" className={inputClass} />
+        <input type="email" id="email" name="email" required placeholder="je@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
         {fieldErrors?.email && <p className={errorClass}>{fieldErrors.email[0]}</p>}
       </div>
 
       {/* Adres */}
       <div>
         <label htmlFor="address" className={labelClass}>Adres *</label>
-        <input type="text" id="address" name="address" required placeholder="Straat, huisnummer, postcode, gemeente" className={inputClass} />
+        <input type="text" id="address" name="address" required placeholder="Straat, huisnummer, postcode, gemeente" value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} />
         {fieldErrors?.address && <p className={errorClass}>{fieldErrors.address[0]}</p>}
       </div>
 
       {/* Allergieën */}
       <div>
         <label htmlFor="allergies" className={labelClass}>Allergieën</label>
-        <textarea id="allergies" name="allergies" rows={2} placeholder="Vermeld eventuele allergieën (optioneel)" className={`${inputClass} resize-y`} />
+        <textarea id="allergies" name="allergies" rows={2} placeholder="Vermeld eventuele allergieën (optioneel)" value={allergies} onChange={(e) => setAllergies(e.target.value)} className={`${inputClass} resize-y`} />
       </div>
 
       {/* Kinderen checkbox */}
       <div>
         <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" name="childrenWalkAlong" value="true" className={checkboxClass} />
+          <input type="checkbox" name="childrenWalkAlong" value="true" checked={childrenWalkAlong} onChange={(e) => setChildrenWalkAlong(e.target.checked)} className={checkboxClass} />
           <span className={textClass}>Mijn kinderen zullen mee wandelen (onder mijn begeleiding)</span>
         </label>
       </div>
@@ -168,7 +177,7 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
       {/* Reglement checkbox */}
       <div>
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" name="regulationsRead" value="true" required className={`${checkboxClass} mt-0.5`} />
+          <input type="checkbox" name="regulationsRead" value="true" required checked={regulationsRead} onChange={(e) => setRegulationsRead(e.target.checked)} className={`${checkboxClass} mt-0.5`} />
           <span className={textClass}>
             Ik heb het{" "}
             <a href="/wandelreglement" target="_blank" className={`font-semibold underline ${dark ? "text-white hover:text-white/80" : "text-primary hover:text-accent"} transition-colors`}>
