@@ -6,8 +6,8 @@ import { eq, sql } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import { assignKennelSchema } from "@/lib/validations/kennels";
-import type { ActionResult } from "@/types";
+import { assignKennelSchema, kennelCrudSchema } from "@/lib/validations/kennels";
+import type { ActionResult, Kennel } from "@/types";
 
 export async function assignKennel(
   animalId: number,
@@ -83,5 +83,95 @@ export async function assignKennel(
   } catch (err) {
     console.error("assignKennel failed:", err);
     return { success: false, error: "Er ging iets mis bij het toewijzen van de kennel" };
+  }
+}
+
+export async function createKennel(
+  _prev: ActionResult<Kennel> | null,
+  formData: FormData,
+): Promise<ActionResult<Kennel>> {
+  const permCheck = await requirePermission("kennel:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  const raw = {
+    code: (formData.get("code") as string) || "",
+    zone: (formData.get("zone") as string) || "",
+    capacity: formData.get("capacity"),
+    notes: (formData.get("notes") as string)?.trim() || undefined,
+  };
+
+  const parsed = kennelCrudSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false, fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+
+  try {
+    const [kennel] = await db
+      .insert(kennels)
+      .values({
+        code: parsed.data.code,
+        zone: parsed.data.zone,
+        capacity: parsed.data.capacity,
+        notes: parsed.data.notes || null,
+      })
+      .returning();
+
+    await logAudit("create_kennel", "kennel", kennel.id, null, kennel);
+    revalidatePath("/beheerder/dieren/kennel");
+
+    return { success: true, data: kennel, message: `Kennel ${kennel.code} aangemaakt.` };
+  } catch (err: unknown) {
+    const pgError = err as { code?: string };
+    if (pgError.code === "23505") {
+      return { success: false, error: "Er bestaat al een kennel met deze code." };
+    }
+    return { success: false, error: "Er ging iets mis bij het aanmaken." };
+  }
+}
+
+export async function deleteKennel(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("kennel:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  const id = Number(formData.get("id"));
+  if (!id || isNaN(id)) {
+    return { success: false, error: "Ongeldig kennel-ID" };
+  }
+
+  try {
+    // Check if kennel has animals
+    const [occupancy] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(animals)
+      .where(sql`${animals.kennelId} = ${id} AND ${animals.isInShelter} = true`);
+
+    if (occupancy && occupancy.count > 0) {
+      return { success: false, error: `Kennel bevat nog ${occupancy.count} dier(en). Verplaats deze eerst.` };
+    }
+
+    const [existing] = await db
+      .select()
+      .from(kennels)
+      .where(eq(kennels.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return { success: false, error: "Kennel niet gevonden." };
+    }
+
+    await db.delete(kennels).where(eq(kennels.id, id));
+    await logAudit("delete_kennel", "kennel", id, existing, null);
+    revalidatePath("/beheerder/dieren/kennel");
+
+    return { success: true, data: undefined, message: `Kennel ${existing.code} verwijderd.` };
+  } catch {
+    return { success: false, error: "Er ging iets mis bij het verwijderen." };
   }
 }

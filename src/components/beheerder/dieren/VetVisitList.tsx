@@ -53,6 +53,11 @@ function VetVisitRow({ visit }: { visit: VetVisit }) {
               <span className="text-xs font-semibold text-amber-700">Openstaand</span>
             )}
           </div>
+          {visit.diagnosis && (
+            <p className="text-xs text-gray-700">
+              <span className="font-semibold">Diagnose:</span> {visit.diagnosis}
+            </p>
+          )}
           {visit.complaints && (
             <p className="text-xs text-gray-600">
               <span className="font-semibold">Klachten:</span> {visit.complaints}

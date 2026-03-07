@@ -204,6 +204,7 @@ export const vetVisits = pgTable("vet_visits", {
   animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
   date: date("date").notNull(),
   location: varchar("location", { length: 50 }).notNull(),
+  diagnosis: varchar("diagnosis", { length: 200 }),
   complaints: text("complaints"),
   todo: text("todo"),
   isCompleted: boolean("is_completed").default(false).notNull(),

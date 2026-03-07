@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { useState } from "react";
 import { createVetVisit } from "@/lib/actions/vet-visits";
-import { VET_VISIT_LOCATIONS } from "@/lib/validations/vet-visits";
+import { VET_VISIT_LOCATIONS, COMMON_DIAGNOSES } from "@/lib/validations/vet-visits";
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -23,6 +24,7 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
   const [state, formAction, isPending] = useActionState(createVetVisit, null);
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
+  const [diagnosisMode, setDiagnosisMode] = useState<"select" | "custom">("select");
 
   return (
     <form action={formAction} className="space-y-3">
@@ -73,6 +75,44 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
           </select>
           <FieldError errors={fieldErrors?.location} />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <label htmlFor="vv-diagnosis" className="block text-xs font-medium text-gray-600">
+            Diagnose
+          </label>
+          <button
+            type="button"
+            onClick={() => setDiagnosisMode(diagnosisMode === "select" ? "custom" : "select")}
+            className="text-xs text-emerald-600 hover:text-emerald-800"
+          >
+            {diagnosisMode === "select" ? "Eigen diagnose invoeren" : "Uit lijst kiezen"}
+          </button>
+        </div>
+        {diagnosisMode === "select" ? (
+          <select
+            id="vv-diagnosis"
+            name="diagnosis"
+            defaultValue=""
+            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          >
+            <option value="">Geen diagnose geselecteerd</option>
+            {COMMON_DIAGNOSES.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            id="vv-diagnosis"
+            name="diagnosis"
+            maxLength={200}
+            placeholder="Typ een diagnose..."
+            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          />
+        )}
+        <FieldError errors={fieldErrors?.diagnosis} />
       </div>
 
       <div>
