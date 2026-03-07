@@ -101,7 +101,8 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {new Date(candidate.createdAt).toLocaleDateString("nl-BE")}
+                      <div>{new Date(candidate.createdAt).toLocaleDateString("nl-BE")}</div>
+                      <div className="text-xs text-gray-400">{new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
