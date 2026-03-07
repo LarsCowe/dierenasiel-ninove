@@ -52,6 +52,9 @@ async function clearAllTables() {
   await db.delete(schema.walks);
   await db.delete(schema.walkers);
 
+  // Blacklist (after adoption chain — FK from adoptionCandidates)
+  await db.delete(schema.blacklistEntries);
+
   // Stray cats
   await db.delete(schema.strayCatCampaigns);
   await db.delete(schema.vetInspectionReports);

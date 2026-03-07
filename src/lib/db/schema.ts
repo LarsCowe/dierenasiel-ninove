@@ -303,6 +303,8 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   categorySetBy: varchar("category_set_by", { length: 100 }),
   status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, screening, approved, rejected, adopted
   notes: text("notes"),
+  blacklistMatch: boolean("blacklist_match").default(false).notNull(),
+  blacklistMatchEntryId: integer("blacklist_match_entry_id").references(() => blacklistEntries.id, { onDelete: "set null" }),
   anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),
   retentionFlaggedAt: timestamp("retention_flagged_at", { withTimezone: true }),
   retentionExtendedAt: timestamp("retention_extended_at", { withTimezone: true }),
@@ -493,6 +495,17 @@ export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   index("idx_stray_cat_campaigns_municipality").on(table.municipality),
   index("idx_stray_cat_campaigns_request_date").on(table.requestDate),
 ]);
+
+export const blacklistEntries = pgTable("blacklist_entries", {
+  id: serial("id").primaryKey(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  address: text("address"),
+  reason: text("reason").notNull(),
+  addedBy: varchar("added_by", { length: 100 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const shelterSettings = pgTable("shelter_settings", {
   id: serial("id").primaryKey(),

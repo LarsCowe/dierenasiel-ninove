@@ -25,6 +25,12 @@ export default async function AdoptiePage({ searchParams }: Props) {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/beheerder/adoptie/zwarte-lijst"
+            className="rounded-md border border-red-600 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            Zwarte lijst
+          </Link>
+          <Link
             href="/beheerder/adoptie/opvolging"
             className="rounded-md border border-emerald-700 px-5 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
           >

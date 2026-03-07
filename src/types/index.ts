@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, blacklistEntries } from "@/lib/db/schema";
 import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
@@ -238,3 +238,6 @@ export interface MailingRecipient {
 
 export type StrayCatCampaign = typeof strayCatCampaigns.$inferSelect;
 export type NewStrayCatCampaign = typeof strayCatCampaigns.$inferInsert;
+
+export type BlacklistEntry = typeof blacklistEntries.$inferSelect;
+export type NewBlacklistEntry = typeof blacklistEntries.$inferInsert;

@@ -121,6 +121,19 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
         )}
       </div>
 
+      {candidate.blacklistMatch && (
+        <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">&#9873;</span>
+            <h2 className="font-heading text-sm font-bold text-red-800">Zwarte lijst — overeenkomst gevonden</h2>
+          </div>
+          <p className="mt-1 text-sm text-red-700">
+            Deze kandidaat komt overeen met een item op de zwarte lijst. Controleer de gegevens
+            voordat u verdergaat met het adoptieproces.
+          </p>
+        </div>
+      )}
+
       {deleteState && !deleteState.success && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm text-red-800">{deleteState.error}</p>

@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { adoptionCandidateSchema, categorySchema, updateStatusSchema } from "@/lib/validations/adoption-candidates";
 import { getAnimalById } from "@/lib/queries/animals";
+import { checkBlacklistMatch } from "@/lib/queries/blacklist";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, AdoptionCandidate } from "@/types";
@@ -56,10 +57,25 @@ export async function createAdoptionCandidate(
       })
       .returning();
 
-    await logAudit("create_adoption_candidate", "adoption_candidate", record.id, null, record);
+    const blacklistMatch = await checkBlacklistMatch(
+      parsed.data.firstName,
+      parsed.data.lastName,
+      parsed.data.address || null,
+    );
+
+    let finalRecord = record;
+    if (blacklistMatch) {
+      await db
+        .update(adoptionCandidates)
+        .set({ blacklistMatch: true, blacklistMatchEntryId: blacklistMatch.id })
+        .where(eq(adoptionCandidates.id, record.id));
+      finalRecord = { ...record, blacklistMatch: true, blacklistMatchEntryId: blacklistMatch.id };
+    }
+
+    await logAudit("create_adoption_candidate", "adoption_candidate", finalRecord.id, null, finalRecord);
     revalidatePath("/beheerder/adoptie");
 
-    return { success: true, data: record as AdoptionCandidate };
+    return { success: true, data: finalRecord as AdoptionCandidate };
   } catch {
     return {
       success: false,

@@ -7,6 +7,7 @@ const {
   mockUpdateSetWhere, mockUpdateSet, mockUpdate,
   mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
   mockGetAnimalById,
+  mockCheckBlacklistMatch,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockInsert = vi.fn();
@@ -23,6 +24,7 @@ const {
   const mockRevalidatePath = vi.fn();
   const mockGetSession = vi.fn();
   const mockGetAnimalById = vi.fn();
+  const mockCheckBlacklistMatch = vi.fn();
   return {
     mockReturning, mockInsert,
     mockDeleteWhere, mockDelete,
@@ -30,6 +32,7 @@ const {
     mockUpdateSetWhere, mockUpdateSet, mockUpdate,
     mockRequirePermission, mockLogAudit, mockRevalidatePath, mockGetSession,
     mockGetAnimalById,
+    mockCheckBlacklistMatch,
   };
 });
 
@@ -55,6 +58,7 @@ vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
+vi.mock("@/lib/queries/blacklist", () => ({ checkBlacklistMatch: mockCheckBlacklistMatch }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
@@ -117,6 +121,7 @@ describe("createAdoptionCandidate", () => {
     mockLogAudit.mockResolvedValue(undefined);
     mockGetSession.mockResolvedValue({ userId: 3, role: "adoptieconsulent" });
     mockGetAnimalById.mockResolvedValue({ id: 1, name: "Buddy", isAvailableForAdoption: true, isInShelter: true });
+    mockCheckBlacklistMatch.mockResolvedValue(null);
     mockReturning.mockResolvedValue([createdRecord]);
   });
 
@@ -192,6 +197,31 @@ describe("createAdoptionCandidate", () => {
     const result = await createAdoptionCandidate(null, makeFormData(validData));
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toBeDefined();
+  });
+
+  it("checks blacklist after creating candidate", async () => {
+    mockCheckBlacklistMatch.mockResolvedValue(null);
+    await createAdoptionCandidate(null, makeFormData(validData));
+    expect(mockCheckBlacklistMatch).toHaveBeenCalledWith("Jan", "Peeters", "Kerkstraat 1, 9400 Ninove");
+  });
+
+  it("sets blacklistMatch on candidate when match found", async () => {
+    const blacklistEntry = { id: 5, firstName: "Jan", lastName: "Peeters", isActive: true };
+    mockCheckBlacklistMatch.mockResolvedValue(blacklistEntry);
+    const result = await createAdoptionCandidate(null, makeFormData(validData));
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ blacklistMatch: true, blacklistMatchEntryId: 5 }),
+    );
+  });
+
+  it("does not update blacklist fields when no match", async () => {
+    mockCheckBlacklistMatch.mockResolvedValue(null);
+    await createAdoptionCandidate(null, makeFormData(validData));
+    expect(mockUpdateSet).not.toHaveBeenCalledWith(
+      expect.objectContaining({ blacklistMatch: true }),
+    );
   });
 });
 

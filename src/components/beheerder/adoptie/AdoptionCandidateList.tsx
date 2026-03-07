@@ -78,7 +78,12 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                 return (
                   <tr key={candidate.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">
-                      {candidate.firstName} {candidate.lastName}
+                      <span className="flex items-center gap-1.5">
+                        {candidate.blacklistMatch && (
+                          <span className="text-red-600" title="Zwarte lijst overeenkomst">&#9873;</span>
+                        )}
+                        {candidate.firstName} {candidate.lastName}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{candidate.email}</td>
                     <td className="px-4 py-3">
