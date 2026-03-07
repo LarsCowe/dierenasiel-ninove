@@ -231,6 +231,7 @@ describe("animalIntakeSchema", () => {
 const validUpdate = {
   id: 1,
   name: "Rex",
+  gender: "mannelijk",
 };
 
 describe("animalUpdateSchema", () => {
@@ -238,6 +239,7 @@ describe("animalUpdateSchema", () => {
     const result = animalUpdateSchema.safeParse({
       id: 1,
       name: "Rex",
+      gender: "mannelijk",
       aliasName: "Buddy",
       breed: "Mechelse Herder",
       color: "bruin",
@@ -277,7 +279,7 @@ describe("animalUpdateSchema", () => {
   });
 
   it("coerces string id to number", () => {
-    const result = animalUpdateSchema.safeParse({ id: "5", name: "Rex" });
+    const result = animalUpdateSchema.safeParse({ id: "5", name: "Rex", gender: "mannelijk" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(5);

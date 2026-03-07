@@ -51,9 +51,17 @@ export const animalUpdateSchema = z.object({
   id: z.coerce.number().positive("Ongeldig dier-ID"),
   name: z.string().min(1, "Naam is verplicht"),
   aliasName: z.string().optional(),
+  gender: z.string().min(1, "Geslacht is verplicht"),
   breed: z.string().optional(),
   color: z.string().optional(),
   dateOfBirth: z.string().optional(),
+  intakeDate: z.string().optional(),
+  intakeReason: z
+    .enum(["afstand", "zwerfhond", "ibn", "vondeling", "overig"])
+    .optional()
+    .or(z.literal("")),
+  dossierNr: z.string().optional(),
+  isNeutered: z.boolean().optional().default(false),
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   identificationNr: z.string().optional(),

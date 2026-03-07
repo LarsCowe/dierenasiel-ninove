@@ -11,6 +11,20 @@ const TYPE_LABELS: Record<string, string> = {
   gezwel_weghalen: "Gezwel weghalen",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  gepland: "Gepland",
+  uitgevoerd: "Uitgevoerd",
+  uitgesteld: "Uitgesteld",
+  on_hold: "On hold",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  gepland: "bg-blue-100 text-blue-700",
+  uitgevoerd: "bg-emerald-100 text-emerald-700",
+  uitgesteld: "bg-amber-100 text-amber-700",
+  on_hold: "bg-gray-100 text-gray-700",
+};
+
 interface OperationListProps {
   operations: Operation[];
 }
@@ -39,6 +53,9 @@ function OperationRow({ operation }: { operation: Operation }) {
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
               {TYPE_LABELS[operation.type] ?? operation.type}
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[operation.status] ?? "bg-gray-100 text-gray-700"}`}>
+              {STATUS_LABELS[operation.status] ?? operation.status}
             </span>
             <span className="text-sm font-medium text-gray-800">{operation.date}</span>
           </div>

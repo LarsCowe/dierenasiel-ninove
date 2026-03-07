@@ -39,6 +39,11 @@ function VaccinationRow({ vaccination }: { vaccination: Vaccination }) {
             {TYPE_LABELS[vaccination.type] ?? vaccination.type}
           </span>
           <span className="text-sm font-medium text-gray-800">{vaccination.date}</span>
+          {!vaccination.givenByShelter && (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+              Extern
+            </span>
+          )}
         </div>
         {vaccination.nextDueDate && (
           <p className="text-xs text-amber-700">

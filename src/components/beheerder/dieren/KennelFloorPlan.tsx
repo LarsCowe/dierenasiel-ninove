@@ -63,8 +63,11 @@ export default function KennelFloorPlan({
         </div>
       </div>
 
+      {/* Floor plan + detail panel side by side on desktop */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+
       {/* Floor plan with overlay */}
-      <div className="relative mx-auto max-w-2xl">
+      <div className="relative mx-auto w-full max-w-2xl lg:flex-1">
         {/* Background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -109,9 +112,9 @@ export default function KennelFloorPlan({
         })}
       </div>
 
-      {/* Detail panel */}
+      {/* Detail panel (beside on desktop, below on mobile) */}
       {selectedKennel && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:w-80 lg:flex-shrink-0">
           <div className="flex items-center justify-between">
             <h3 className="font-heading text-lg font-bold text-[#1b4332]">
               Kennel {selectedKennel.code}
@@ -174,6 +177,8 @@ export default function KennelFloorPlan({
           )}
         </div>
       )}
+
+      </div>{/* end flex row */}
     </div>
   );
 }

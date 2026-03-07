@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { createOperation } from "@/lib/actions/operations";
-import { OPERATION_TYPES } from "@/lib/validations/operations";
+import { OPERATION_TYPES, OPERATION_STATUSES } from "@/lib/validations/operations";
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -14,6 +14,13 @@ const TYPE_LABELS: Record<string, string> = {
   castreren: "Castreren",
   tanden_opkuisen: "Tanden opkuisen",
   gezwel_weghalen: "Gezwel weghalen",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  gepland: "Gepland",
+  uitgevoerd: "Uitgevoerd",
+  uitgesteld: "Uitgesteld",
+  on_hold: "On hold",
 };
 
 interface OperationFormProps {
@@ -41,7 +48,7 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
 
       <input type="hidden" name="animalId" value={animalId} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div>
           <label htmlFor="op-date" className="block text-xs font-medium text-gray-600">
             Datum <span className="text-red-500">*</span>
@@ -74,6 +81,23 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
             ))}
           </select>
           <FieldError errors={fieldErrors?.type} />
+        </div>
+
+        <div>
+          <label htmlFor="op-status" className="block text-xs font-medium text-gray-600">
+            Status
+          </label>
+          <select
+            id="op-status"
+            name="status"
+            defaultValue="gepland"
+            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          >
+            {OPERATION_STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+          <FieldError errors={fieldErrors?.status} />
         </div>
       </div>
 

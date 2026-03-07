@@ -82,6 +82,21 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
         </div>
       </div>
 
+      <div className="flex items-center gap-2">
+        <input type="hidden" name="givenByShelter" value="false" />
+        <input
+          type="checkbox"
+          id="vac-givenByShelter"
+          name="givenByShelter"
+          value="true"
+          defaultChecked={true}
+          className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <label htmlFor="vac-givenByShelter" className="text-sm text-gray-700">
+          Gezet door dierenasiel
+        </label>
+      </div>
+
       <div>
         <label htmlFor="vac-notes" className="block text-sm font-medium text-gray-700">
           Opmerkingen

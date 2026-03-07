@@ -25,6 +25,7 @@ export async function createVaccination(
     type: (formData.get("type") as string) || "",
     date: (formData.get("date") as string) || "",
     nextDueDate: (formData.get("nextDueDate") as string) || undefined,
+    givenByShelter: formData.get("givenByShelter") === "true",
     notes: (formData.get("notes") as string) || undefined,
   };
 
@@ -48,6 +49,7 @@ export async function createVaccination(
         type: parsed.data.type,
         date: parsed.data.date,
         nextDueDate: parsed.data.nextDueDate || null,
+        givenByShelter: parsed.data.givenByShelter,
         administeredBy: session?.userId ?? null,
         notes: parsed.data.notes || null,
       })

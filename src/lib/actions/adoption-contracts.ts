@@ -111,6 +111,7 @@ export async function createAdoptionContract(
       .set({
         status: "geadopteerd",
         isInShelter: false,
+        adoptedDate: parsed.data.contractDate,
         outtakeDate: parsed.data.contractDate,
         outtakeReason: "adoptie",
       })

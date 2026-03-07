@@ -103,6 +103,8 @@ export default async function DierDetailPage({ params }: Props) {
         />
       )}
 
+      <h1 className="font-heading text-2xl font-bold text-[#1b4332]">{animal.name}</h1>
+
       <AnimalDetailTabs openTodoCount={openTodoCount}>
         {{
           overzicht: (

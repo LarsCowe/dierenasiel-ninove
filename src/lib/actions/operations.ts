@@ -24,6 +24,7 @@ export async function createOperation(
     animalId: formData.get("animalId"),
     type: (formData.get("type") as string) || "",
     date: (formData.get("date") as string) || "",
+    status: (formData.get("status") as string) || "gepland",
     notes: (formData.get("notes") as string)?.trim() || undefined,
   };
 
@@ -46,6 +47,7 @@ export async function createOperation(
         animalId: parsed.data.animalId,
         type: parsed.data.type,
         date: parsed.data.date,
+        status: parsed.data.status,
         recordedBy: session?.userId ?? null,
         notes: parsed.data.notes || null,
       })

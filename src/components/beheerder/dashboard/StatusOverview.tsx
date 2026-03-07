@@ -9,6 +9,10 @@ const STATUS_LABELS: Record<string, string> = {
   geadopteerd: "Geadopteerd",
   in_quarantaine: "In quarantaine",
   overleden: "Overleden",
+  terug_eigenaar: "Terug naar eigenaar",
+  geeuthanaseerd: "Geëuthanaseerd",
+  ontsnapt: "Ontsnapt",
+  niet_ter_adoptie: "Niet ter adoptie",
 };
 
 export default function StatusOverview({ statuses }: StatusOverviewProps) {

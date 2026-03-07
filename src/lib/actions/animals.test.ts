@@ -317,6 +317,7 @@ const existingAnimal = {
 const updateFormData = {
   id: "1",
   name: "Rex Updated",
+  gender: "mannelijk",
   breed: "Border Collie",
   color: "zwart-wit",
   isOnWebsite: "true",
