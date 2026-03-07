@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   deleteAdoptionCandidate,
-  setCategoryAdoptionCandidate,
   updateStatusAdoptionCandidate,
 } from "@/lib/actions/adoption-candidates";
 import type { AdoptionCandidate } from "@/types";
@@ -24,28 +23,9 @@ const STATUS_LABELS: Record<string, string> = {
   adopted: "Geadopteerd",
 };
 
-const CATEGORY_CONFIG: Record<string, { label: string; className: string; selectedClassName: string }> = {
-  niet_weerhouden: {
-    label: "Niet weerhouden",
-    className: "border-red-300 text-red-700 hover:bg-red-50",
-    selectedClassName: "bg-red-100 border-red-400 text-red-800 ring-2 ring-red-300",
-  },
-  mogelijks: {
-    label: "Mogelijks",
-    className: "border-amber-300 text-amber-700 hover:bg-amber-50",
-    selectedClassName: "bg-amber-100 border-amber-400 text-amber-800 ring-2 ring-amber-300",
-  },
-  goede_kandidaat: {
-    label: "Goede kandidaat",
-    className: "border-emerald-300 text-emerald-700 hover:bg-emerald-50",
-    selectedClassName: "bg-emerald-100 border-emerald-400 text-emerald-800 ring-2 ring-emerald-300",
-  },
-};
-
 export default function AdoptionCandidateView({ candidate, animalName, kennismakingenSlot }: Props) {
   const router = useRouter();
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdoptionCandidate, null);
-  const [categoryState, categoryAction, categoryPending] = useActionState(setCategoryAdoptionCandidate, null);
   const [statusState, statusAction, statusPending] = useActionState(updateStatusAdoptionCandidate, null);
   const qa = candidate.questionnaireAnswers as Record<string, unknown> | null;
   const canDelete = candidate.status === "pending" || candidate.status === "screening";
@@ -57,10 +37,10 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
   }, [deleteState, router]);
 
   useEffect(() => {
-    if (categoryState?.success || statusState?.success) {
+    if (statusState?.success) {
       router.refresh();
     }
-  }, [categoryState, statusState, router]);
+  }, [statusState, router]);
 
   return (
     <div className="space-y-6">
@@ -76,13 +56,6 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
           }`}>
             {STATUS_LABELS[candidate.status] ?? candidate.status}
           </span>
-          {candidate.category && (
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-              CATEGORY_CONFIG[candidate.category]?.selectedClassName || "bg-gray-100 text-gray-800"
-            }`}>
-              {CATEGORY_CONFIG[candidate.category]?.label ?? candidate.category}
-            </span>
-          )}
         </div>
         {canDelete && (
           <form action={deleteAction}>
@@ -120,44 +93,11 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
         </div>
       )}
 
-      {categoryState && !categoryState.success && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-800">{categoryState.error}</p>
-        </div>
-      )}
-
       {statusState && !statusState.success && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm text-red-800">{statusState.error}</p>
         </div>
       )}
-
-      {/* Categorie selectie */}
-      <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="font-heading text-sm font-bold text-[#1b4332]">Categorie</h2>
-        {candidate.categorySetBy && (
-          <p className="mt-1 text-xs text-gray-400">Ingesteld door {candidate.categorySetBy}</p>
-        )}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {Object.entries(CATEGORY_CONFIG).map(([value, config]) => {
-            const isSelected = candidate.category === value;
-            return (
-              <form key={value} action={categoryAction}>
-                <input type="hidden" name="json" value={JSON.stringify({ id: candidate.id, category: value })} />
-                <button
-                  type="submit"
-                  disabled={categoryPending}
-                  className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-                    isSelected ? config.selectedClassName : config.className
-                  }`}
-                >
-                  {config.label}
-                </button>
-              </form>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Status acties */}
       {candidate.category === "niet_weerhouden" && candidate.status !== "rejected" && (
