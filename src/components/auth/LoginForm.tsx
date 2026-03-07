@@ -54,17 +54,17 @@ export default function LoginForm({
 
       {/* Wandelaar tab: registration form */}
       {tab === "wandelaar" && showRegister ? (
-        <div className="rounded-xl bg-white p-5 max-h-[60vh] overflow-y-auto">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-heading text-lg font-bold text-[#1b4332]">Registreer als wandelaar</h3>
+        <div>
+          <div className="mb-5 flex items-center justify-between">
+            <h3 className="font-heading text-lg font-bold text-white">Registreer als wandelaar</h3>
             <button
               onClick={() => setShowRegister(false)}
-              className="text-xs font-medium text-emerald-700 hover:text-emerald-900"
+              className="text-xs font-medium text-white/70 hover:text-white underline underline-offset-2"
             >
               Terug naar login
             </button>
           </div>
-          <WalkerRegistrationForm />
+          <WalkerRegistrationForm variant="dark" />
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">

@@ -82,7 +82,7 @@ export default function SplashLogin() {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-hidden"
+    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto"
       style={{
         background: "linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #40916c 100%)",
       }}
@@ -100,7 +100,7 @@ export default function SplashLogin() {
       </div>
 
       {/* Content container */}
-      <div className="relative z-10 flex flex-col items-center w-full px-6">
+      <div className="relative z-10 flex flex-col items-center w-full px-6 py-10">
         {/* Logo */}
         <div
           className={`flex flex-col items-center transition-all duration-1000 ease-out ${
