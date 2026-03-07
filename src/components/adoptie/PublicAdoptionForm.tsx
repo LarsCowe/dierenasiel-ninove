@@ -276,6 +276,19 @@ const DOG_QUESTIONS: Question[] = [
     label: "Is er nog belangrijker info die u wenst mee te geven die in u voordeel kan spreken om de adoptie aan u toe te kennen?",
   },
   {
+    type: "checkbox",
+    key: "beschikbareDagen",
+    label: "Op welke dagen kan je langskomen? Dit kan op maandag, woensdag, donderdag, vrijdag en zaterdag",
+    options: [
+      "Maandag (10u30 tot 15u30)",
+      "Woensdag (10u30 tot 15u30)",
+      "Donderdag (13 tot 16u)",
+      "Vrijdag (10u30 tot 15u30)",
+      "Zaterdag (10u30 tot 15u30)",
+    ],
+    required: true,
+  },
+  {
     type: "text",
     key: "adoptieVoorzien",
     label: "Voor wanneer is de adoptie voorzien?",
