@@ -61,7 +61,7 @@ export async function getCandidateExportData(
   const candidate = await getAdoptionCandidateForGdpr(candidateId);
   if (!candidate) return null;
 
-  const animalName = await getAnimalNameById(candidate.animalId);
+  const animalName = candidate.animalId ? await getAnimalNameById(candidate.animalId) : (candidate as Record<string, unknown>).requestedAnimalName as string || "Onbekend";
   const kennismakingen = await getKennismakingenForExport(candidateId);
   const contracts = await getContractsForExport(candidateId);
 

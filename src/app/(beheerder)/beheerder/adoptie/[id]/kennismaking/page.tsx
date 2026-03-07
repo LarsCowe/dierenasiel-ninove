@@ -38,7 +38,7 @@ export default async function KennismakingPlanPage({ params }: Props) {
         <KennismakingForm
           candidateId={candidate.id}
           candidateName={`${candidate.firstName} ${candidate.lastName}`}
-          animalId={candidate.animalId}
+          animalId={candidate.animalId!}
         />
       </div>
     </div>

@@ -18,6 +18,7 @@ export default async function ContractPage({ params }: Props) {
   if (!candidate) notFound();
   if (candidate.status !== "approved") notFound();
 
+  if (!candidate.animalId) notFound();
   const animal = await getAnimalById(candidate.animalId);
   if (!animal) notFound();
 

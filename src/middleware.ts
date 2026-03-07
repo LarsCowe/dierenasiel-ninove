@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml", "/wandelaar-registratie"];
+const PUBLIC_PATHS = ["/login", "/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml", "/wandelaar-registratie", "/adoptie-aanvraag"];
 
 // All roles with access to /beheerder routes (defined locally — Edge Runtime safe)
 const BACKOFFICE_ROLES = [

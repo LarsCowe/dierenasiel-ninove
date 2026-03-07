@@ -302,7 +302,9 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   email: varchar("email", { length: 200 }).notNull(),
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
-  animalId: integer("animal_id").notNull().references(() => animals.id),
+  animalId: integer("animal_id").references(() => animals.id),
+  requestedAnimalName: varchar("requested_animal_name", { length: 200 }),
+  species: varchar("species", { length: 20 }),
   questionnaireAnswers: jsonb("questionnaire_answers").notNull().default({}),
   category: varchar("category", { length: 30 }), // niet_weerhouden, mogelijks, goede_kandidaat
   categorySetBy: varchar("category_set_by", { length: 100 }),
