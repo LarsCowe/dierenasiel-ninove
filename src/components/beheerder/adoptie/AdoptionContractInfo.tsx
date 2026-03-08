@@ -42,7 +42,20 @@ export default function AdoptionContractInfo({ contract }: Props) {
           ? "border-red-200 bg-red-50"
           : "border-purple-100 bg-purple-50"
     }`}>
-      <h2 className="font-heading text-sm font-bold text-[#1b4332]">Adoptiecontract</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-heading text-sm font-bold text-[#1b4332]">Adoptiecontract</h2>
+        <a
+          href={`/api/adoptie-contract/${contract.id}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md bg-[#1b4332] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2d6a4f] transition-colors"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Contract afprinten
+        </a>
+      </div>
 
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <div>

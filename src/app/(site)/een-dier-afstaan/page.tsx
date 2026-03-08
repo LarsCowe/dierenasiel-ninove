@@ -90,14 +90,12 @@ export default function EenDierAfstaanPage() {
               Jammer genoeg werken we heel vaak met een wachtlijst, zeker voor
               grotere dieren.
             </p>
-            <a
-              href="https://forms.gle/T6SeJfv1Ynbyvfvz8"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/afstand"
               className="inline-flex items-center gap-2 px-8 py-4 bg-accent text-white rounded-full font-bold shadow-lg shadow-accent/40 hover:bg-accent/90 hover:-translate-y-0.5 transition-all"
             >
               Vul het formulier in
-            </a>
+            </Link>
           </div>
         </AnimateOnScroll>
 

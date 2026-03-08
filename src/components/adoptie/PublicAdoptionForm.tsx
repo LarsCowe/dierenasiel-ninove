@@ -5,7 +5,7 @@ import { submitPublicAdoptionRequest } from "@/lib/actions/public-adoption";
 import type { PublicAdoptionResult } from "@/lib/actions/public-adoption";
 import AdoptionPhotoUpload from "./AdoptionPhotoUpload";
 
-type Species = "hond" | "kat";
+type Species = "hond" | "kat" | "andere";
 
 interface Props {
   species: Species;
@@ -83,6 +83,7 @@ const CAT_QUESTIONS: Question[] = [
     key: "huurderDierenToegestaan",
     label: "Als je huurder bent, mag je van de verhuurder dieren houden?",
     options: ["JA", "NEEN"],
+    required: true,
   },
   {
     type: "text",
@@ -297,9 +298,135 @@ const DOG_QUESTIONS: Question[] = [
   },
 ];
 
+const OTHER_QUESTIONS: Question[] = [
+  // --- Info Adoptant ---
+  {
+    type: "text",
+    key: "kinderen",
+    label: "Zijn er kinderen/huisgenoten aanwezig in het gezin? Indien wel geef hun leeftijd(en)",
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "woningType",
+    label: "Welke woning heb je?",
+    options: ["Huis", "Appartement"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "eigenaarHuurder",
+    label: "Ben u eigenaar of huurder?",
+    options: ["Eigenaar", "Huurder"],
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "huurderDierenToegestaan",
+    label: "Als je huurder bent, mag je van de verhuurder dieren houden?",
+    options: ["Ja", "Neen", "Niet van toepassing"],
+    required: true,
+  },
+  // --- Tuin ---
+  {
+    type: "radio",
+    key: "tuinAanwezig",
+    label: "Is er een tuin aanwezig?",
+    options: ["Ja", "Neen"],
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "tuinOmheind",
+    label: "Is de tuin ontsnappingsvrij omheind?",
+    options: ["Ja", "Neen", "Niet van toepassing"],
+    required: true,
+  },
+  {
+    type: "text",
+    key: "tuinGrootte",
+    label: "Hoe groot is de tuin?",
+    required: true,
+  },
+  {
+    type: "checkbox",
+    key: "omheiningMateriaal",
+    label: "Met welke materialen is de tuin omheind?",
+    options: ["Geen omheining", "Draad", "Beplanting", "Schermen /muur"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "text",
+    key: "omheiningHoogte",
+    label: "Welke hoogte heeft de omheining?",
+    required: true,
+  },
+  // --- Info ivm adoptie ---
+  {
+    type: "radio",
+    key: "beseftVerantwoordelijkheid",
+    label: "Beseft u door een dier te adopteren dat dit een grote verantwoordelijkheid is dat u opneemt en dat dit niet voor even is maar langer zal zijn?",
+    options: ["Ja", "Neen"],
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "ervaringDieren",
+    label: "Hebt u ervaring met dieren?",
+    options: ["Ja", "Neen"],
+    required: true,
+  },
+  {
+    type: "text",
+    key: "ervaringBeschrijving",
+    label: "Indien JA: Welke dieren en beschrijf zo goed mogelijk",
+    required: true,
+  },
+  {
+    type: "text",
+    key: "huidigeDieren",
+    label: "Zijn er momenteel dieren aanwezig waar het dier zal komen te verblijven? Beschrijf zo nauwkeurig mogelijk (diersoort, ras, leeftijd, geslacht, steriel)?",
+    required: true,
+  },
+  {
+    type: "radio",
+    key: "verblijfplaats",
+    label: "Waar zal het dier verblijven?",
+    options: ["Binnen", "Buiten", "Binnen en buiten"],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "checkbox",
+    key: "vakanties",
+    label: "Aan welke oplossing denk je voor het dier tijdens vakanties?",
+    options: [
+      "Meenemen!",
+      "Door hem te plaatsen bij een familielid",
+      "Iemand komt bij ons thuis",
+    ],
+    allowOther: true,
+    required: true,
+  },
+  {
+    type: "text",
+    key: "extraInfo",
+    label: "Is er nog belangrijker info die u wenst mee te geven die in u voordeel kan spreken om de adoptie aan u toe te kennen?",
+  },
+  {
+    type: "text",
+    key: "adoptieVoorzien",
+    label: "Voor wanneer is de adoptie voorzien?",
+    required: true,
+  },
+];
+
 const QUESTIONS: Record<Species, Question[]> = {
   kat: CAT_QUESTIONS,
   hond: DOG_QUESTIONS,
+  andere: OTHER_QUESTIONS,
 };
 
 const inputClass =
@@ -390,7 +517,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
           <p>
             Dank je voor je begrip.<br />
             Tot snel!<br />
-            <strong>Team Honden Dierenasiel Ninove</strong>
+            <strong>Team Dierenasiel Ninove</strong>
           </p>
         </div>
         <a
@@ -421,10 +548,12 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
     });
   };
 
-  const speciesLabel = species === "hond" ? "hond" : "kat/kitten";
+  const speciesLabel = species === "hond" ? "hond" : species === "kat" ? "kat/kitten" : "dier";
   const title = species === "hond"
     ? "Adoptieaanvraag hond"
-    : "Adoptieaanvraag kat/kitten";
+    : species === "kat"
+      ? "Adoptieaanvraag kat/kitten"
+      : "Adoptieaanvraag andere dieren";
 
   return (
     <form action={formAction} className="mx-auto max-w-2xl space-y-6">
@@ -534,9 +663,9 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
           </div>
           <div>
             <label htmlFor="email" className={labelClass}>
-              E-mailadres
+              E-mailadres{species === "kat" && <span className="text-red-500"> *</span>}
             </label>
-            <input type="email" id="email" name="email" className={inputClass} />
+            <input type="email" id="email" name="email" required={species === "kat"} className={inputClass} />
           </div>
         </div>
       </div>
@@ -562,11 +691,11 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
         </div>
       </div>
 
-      {/* Foto upload - alleen honden */}
-      {species === "hond" && (
+      {/* Foto upload - honden en andere dieren */}
+      {(species === "hond" || species === "andere") && (
         <div className="rounded-2xl bg-white p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-700">
-            Voeg een paar foto&apos;s of filmpje toe waar de hond zou komen te verblijven.{" "}
+            Voeg een paar foto&apos;s of filmpje toe waar {species === "hond" ? "de hond" : "het dier"} zou komen te verblijven.{" "}
             <span className="font-bold">Zowel binnen als buiten!</span>
           </h2>
           <p className="mt-1 text-xs text-gray-500">

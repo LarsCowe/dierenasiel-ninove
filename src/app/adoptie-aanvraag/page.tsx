@@ -17,7 +17,7 @@ export default function AdoptieAanvraagLandingPage() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
           <Link
             href="/adoptie-aanvraag/hond"
             className="group rounded-2xl border-2 border-[#52796f]/20 bg-white p-8 text-center shadow-sm transition hover:border-[#52796f] hover:shadow-md"
@@ -41,6 +41,19 @@ export default function AdoptieAanvraagLandingPage() {
             <h2 className="mt-4 text-lg font-semibold text-[#1b4332]">Kat / Kitten</h2>
             <p className="mt-1 text-sm text-gray-500">
               Adoptieaanvraag voor een kat of kitten
+            </p>
+          </Link>
+
+          <Link
+            href="/adoptie-aanvraag/andere"
+            className="group rounded-2xl border-2 border-[#52796f]/20 bg-white p-8 text-center shadow-sm transition hover:border-[#52796f] hover:shadow-md"
+          >
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-4xl transition group-hover:bg-emerald-100">
+              🐾
+            </div>
+            <h2 className="mt-4 text-lg font-semibold text-[#1b4332]">Andere dieren</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Konijn, parkiet, cavia, ...
             </p>
           </Link>
         </div>

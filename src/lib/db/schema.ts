@@ -517,6 +517,25 @@ export const blacklistEntries = pgTable("blacklist_entries", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const surrenderRequests = pgTable("surrender_requests", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 200 }).notNull(),
+  species: varchar("species", { length: 20 }).notNull(), // hond, kat, andere
+  ownerName: varchar("owner_name", { length: 200 }).notNull(),
+  address: text("address").notNull(),
+  postalCode: varchar("postal_code", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  surrenderReason: text("surrender_reason").notNull(),
+  answers: jsonb("answers").notNull().default({}),
+  photoUrls: text("photo_urls").array(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, contacted, scheduled, completed, rejected
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_surrender_requests_status").on(table.status),
+  index("idx_surrender_requests_created_at").on(table.createdAt),
+]);
+
 export const shelterSettings = pgTable("shelter_settings", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 100 }).unique().notNull(),

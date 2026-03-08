@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const publicAdoptionSchema = z.object({
-  species: z.enum(["hond", "kat"]),
+  species: z.enum(["hond", "kat", "andere"]),
   requestedAnimalName: z.string().min(1, "Dit veld is verplicht").max(200),
   firstName: z.string().min(1, "Voornaam is verplicht").max(100),
   lastName: z.string().min(1, "Achternaam is verplicht").max(100),
