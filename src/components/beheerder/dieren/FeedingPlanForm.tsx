@@ -56,7 +56,7 @@ export default function FeedingPlanForm({
   };
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} noValidate className="space-y-6">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm font-medium text-emerald-800">
@@ -76,14 +76,15 @@ export default function FeedingPlanForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="fp-dieetType" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="fp-dieetType" className={`block text-sm font-medium ${fieldErrors?.["questionnaire.dieetType"] ? "text-red-700" : "text-gray-700"}`}>
             Dieet type <span className="text-red-500">*</span>
           </label>
           <select
             id="fp-dieetType"
             value={dieetType}
             onChange={(e) => setDieetType(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.["questionnaire.dieetType"] || undefined}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.["questionnaire.dieetType"] ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="">— Selecteer —</option>
             {DIEET_OPTIES.map((opt) => (
@@ -110,7 +111,7 @@ export default function FeedingPlanForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="fp-hoeveelheid" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="fp-hoeveelheid" className={`block text-sm font-medium ${fieldErrors?.["questionnaire.hoeveelheid"] ? "text-red-700" : "text-gray-700"}`}>
             Hoeveelheid <span className="text-red-500">*</span>
           </label>
           <input
@@ -118,21 +119,23 @@ export default function FeedingPlanForm({
             id="fp-hoeveelheid"
             value={hoeveelheid}
             onChange={(e) => setHoeveelheid(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.["questionnaire.hoeveelheid"] || undefined}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.["questionnaire.hoeveelheid"] ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             placeholder="bv. 200g per maaltijd"
           />
           <FieldError errors={fieldErrors?.["questionnaire.hoeveelheid"]} />
         </div>
 
         <div>
-          <label htmlFor="fp-frequentie" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="fp-frequentie" className={`block text-sm font-medium ${fieldErrors?.["questionnaire.frequentie"] ? "text-red-700" : "text-gray-700"}`}>
             Frequentie <span className="text-red-500">*</span>
           </label>
           <select
             id="fp-frequentie"
             value={frequentie}
             onChange={(e) => setFrequentie(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.["questionnaire.frequentie"] || undefined}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.["questionnaire.frequentie"] ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="">— Selecteer —</option>
             {FREQUENTIE_OPTIES.map((opt) => (

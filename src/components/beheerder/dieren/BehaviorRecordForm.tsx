@@ -149,7 +149,7 @@ export default function BehaviorRecordForm({
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} noValidate className="space-y-6">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm font-medium text-emerald-800">
@@ -170,7 +170,7 @@ export default function BehaviorRecordForm({
 
       {/* Date */}
       <div>
-        <label htmlFor="br-date" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="br-date" className={`block text-sm font-medium ${fieldErrors?.date ? "text-red-700" : "text-gray-700"}`}>
           Datum evaluatie <span className="text-red-500">*</span>
         </label>
         <input
@@ -179,7 +179,8 @@ export default function BehaviorRecordForm({
           name="date"
           required
           defaultValue={existingRecord?.date ?? new Date().toISOString().split("T")[0]}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.date || undefined}
+          className={`mt-1 block w-full rounded-lg border ${fieldErrors?.date ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
         <FieldError errors={fieldErrors?.date} />
       </div>
