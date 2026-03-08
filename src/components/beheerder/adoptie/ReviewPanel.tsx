@@ -85,22 +85,6 @@ export default function ReviewPanel({ candidateId, reviewMartine, reviewNathalie
                 <form action={formAction}>
                   <input type="hidden" name="candidateId" value={candidateId} />
                   <input type="hidden" name="reviewer" value={key} />
-                  <input type="hidden" name="value" value="geschikt" />
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
-                      current === "geschikt"
-                        ? "bg-emerald-600 text-white"
-                        : "border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                    }`}
-                  >
-                    Geschikt
-                  </button>
-                </form>
-                <form action={formAction}>
-                  <input type="hidden" name="candidateId" value={candidateId} />
-                  <input type="hidden" name="reviewer" value={key} />
                   <input type="hidden" name="value" value="in_beraad" />
                   <button
                     type="submit"
@@ -112,6 +96,22 @@ export default function ReviewPanel({ candidateId, reviewMartine, reviewNathalie
                     }`}
                   >
                     In beraad
+                  </button>
+                </form>
+                <form action={formAction}>
+                  <input type="hidden" name="candidateId" value={candidateId} />
+                  <input type="hidden" name="reviewer" value={key} />
+                  <input type="hidden" name="value" value="geschikt" />
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      current === "geschikt"
+                        ? "bg-emerald-600 text-white"
+                        : "border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    }`}
+                  >
+                    Geschikt
                   </button>
                 </form>
                 <form action={formAction}>
