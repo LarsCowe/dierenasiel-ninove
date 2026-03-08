@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { computeReviewResult } from "@/lib/utils/review-result";
 import type { AdoptionCandidateWithAnimal } from "@/lib/queries/adoption-candidates";
 
@@ -10,34 +11,26 @@ interface Props {
   activeCategory?: string;
 }
 
-const STATUS_BADGES: Record<string, { label: string; className: string }> = {
-  pending: { label: "Nieuw", className: "bg-blue-100 text-blue-800" },
-  screening: { label: "Screening", className: "bg-amber-100 text-amber-800" },
-  approved: { label: "Goedgekeurd", className: "bg-emerald-100 text-emerald-800" },
-  rejected: { label: "Afgewezen", className: "bg-red-100 text-red-800" },
-  adopted: { label: "Geadopteerd", className: "bg-purple-100 text-purple-800" },
-};
-
 const RESULT_BADGES: Record<string, { label: string; className: string }> = {
   geschikt: { label: "Geschikt", className: "bg-emerald-100 text-emerald-800" },
   niet_weerhouden: { label: "Niet weerhouden", className: "bg-red-100 text-red-800" },
   misschien: { label: "Misschien", className: "bg-amber-100 text-amber-800" },
 };
 
-const CATEGORY_FILTERS = [
-  { value: "", label: "Alle" },
+const CATEGORY_OPTIONS = [
+  { value: "", label: "Alle beoordelingen" },
   { value: "goede_kandidaat", label: "Goede kandidaat" },
   { value: "mogelijks", label: "Mogelijks" },
   { value: "niet_weerhouden", label: "Niet weerhouden" },
 ];
 
-type SortKey = "naam" | "dier" | "status" | "beoordeling" | "datum";
+type SortKey = "naam" | "dier" | "beoordeling" | "datum";
 type SortDir = "asc" | "desc";
 
-const STATUS_ORDER: Record<string, number> = { pending: 0, screening: 1, approved: 2, adopted: 3, rejected: 4 };
 const RESULT_ORDER: Record<string, number> = { geschikt: 0, misschien: 1, niet_weerhouden: 2 };
 
 export default function AdoptionCandidateList({ candidates, activeCategory }: Props) {
+  const router = useRouter();
   const [animalFilter, setAnimalFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("datum");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -65,9 +58,6 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
           const anA = (a.animalName || "").toLowerCase();
           const anB = (b.animalName || "").toLowerCase();
           return dir * anA.localeCompare(anB, "nl");
-        }
-        case "status": {
-          return dir * ((STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
         }
         case "beoordeling": {
           const rA = computeReviewResult(a.reviewMartine, a.reviewNathalie, a.reviewSven);
@@ -100,34 +90,17 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
     return <span className="ml-1">{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>;
   };
 
+  const dropdownClass = "rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-emerald-500 focus:ring-emerald-500";
+
   return (
     <div className="space-y-4">
-      {/* Filters row */}
+      {/* Filters row: 2 dropdowns + export */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORY_FILTERS.map((filter) => {
-            const isActive = (activeCategory || "") === filter.value;
-            return (
-              <Link
-                key={filter.value}
-                href={filter.value ? `/beheerder/adoptie?categorie=${filter.value}` : "/beheerder/adoptie"}
-                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-                  isActive
-                    ? "bg-[#1b4332] text-white"
-                    : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {filter.label}
-              </Link>
-            );
-          })}
-        </div>
-
         {uniqueAnimals.length > 0 && (
           <select
             value={animalFilter}
             onChange={(e) => setAnimalFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-emerald-500 focus:ring-emerald-500"
+            className={dropdownClass}
           >
             <option value="">Alle dieren</option>
             {uniqueAnimals.map((name) => (
@@ -135,6 +108,19 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
             ))}
           </select>
         )}
+
+        <select
+          value={activeCategory || ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            router.push(val ? `/beheerder/adoptie?categorie=${val}` : "/beheerder/adoptie");
+          }}
+          className={dropdownClass}
+        >
+          {CATEGORY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
 
         <a
           href="/api/export/adoption-candidates"
@@ -166,9 +152,6 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                 <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("dier")}>
                   Dier<SortIcon column="dier" />
                 </th>
-                <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("status")}>
-                  Status<SortIcon column="status" />
-                </th>
                 <th className="cursor-pointer select-none px-3 py-3 hover:text-gray-700" onClick={() => toggleSort("beoordeling")}>
                   Beoordeling<SortIcon column="beoordeling" />
                 </th>
@@ -180,7 +163,6 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sorted.map((candidate) => {
-                const statusBadge = STATUS_BADGES[candidate.status] ?? STATUS_BADGES.pending;
                 const reviewResult = computeReviewResult(
                   candidate.reviewMartine,
                   candidate.reviewNathalie,
@@ -213,11 +195,6 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                           ({candidate.species === "hond" ? "H" : "K"})
                         </span>
                       )}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge.className}`}>
-                        {statusBadge.label}
-                      </span>
                     </td>
                     <td className="px-3 py-3">
                       {resultBadge ? (
