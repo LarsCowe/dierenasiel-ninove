@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { bookWalk } from "@/lib/actions/walks";
 import type { Animal } from "@/types";
 
@@ -10,9 +10,18 @@ interface WalkBookingFormProps {
   onSuccess: () => void;
 }
 
+interface FieldErrors {
+  date?: string;
+  startTime?: string;
+}
+
 export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookingFormProps) {
   const [state, formAction, isPending] = useActionState(bookWalk, null);
   const hasHandledSuccess = useRef(false);
+
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     if (state?.success && !hasHandledSuccess.current) {
@@ -21,6 +30,39 @@ export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookin
       return () => clearTimeout(timer);
     }
   }, [state, onSuccess]);
+
+  function clearError(field: keyof FieldErrors) {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function validate(): boolean {
+    const errors: FieldErrors = {};
+
+    if (!date.trim()) {
+      errors.date = "Datum is verplicht.";
+    }
+    if (!startTime.trim()) {
+      errors.startTime = "Starttijd is verplicht.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!validate()) {
+      e.preventDefault();
+      return;
+    }
+    // Let the form submit via the server action
+  }
+
+  const dateError = fieldErrors.date || (state && !state.success && state.fieldErrors?.date?.[0]);
+  const startTimeError = fieldErrors.startTime || (state && !state.success && state.fieldErrors?.startTime?.[0]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -34,7 +76,7 @@ export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookin
             {state.message}
           </div>
         ) : (
-          <form action={formAction} className="mt-4 space-y-4">
+          <form action={formAction} onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
             <input type="hidden" name="animalId" value={dog.id} />
 
             {state && !state.success && state.error && (
@@ -44,35 +86,61 @@ export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookin
             )}
 
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="date"
+                className={`block text-sm font-medium ${dateError ? "text-red-600" : "text-gray-700"}`}
+              >
                 Datum
               </label>
               <input
                 type="date"
                 id="date"
                 name="date"
-                required
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  clearError("date");
+                }}
                 min={new Date().toISOString().split("T")[0]}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                aria-invalid={!!dateError}
+                aria-describedby={dateError ? "date-error" : undefined}
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 ${
+                  dateError ? "border-red-500" : "border-gray-300"
+                }`}
               />
-              {state && !state.success && state.fieldErrors?.date && (
-                <p className="mt-1 text-sm text-red-600">{state.fieldErrors.date[0]}</p>
+              {dateError && (
+                <p id="date-error" role="alert" className="mt-1 text-sm text-red-600">
+                  {dateError}
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="startTime"
+                className={`block text-sm font-medium ${startTimeError ? "text-red-600" : "text-gray-700"}`}
+              >
                 Starttijd
               </label>
               <input
                 type="time"
                 id="startTime"
                 name="startTime"
-                required
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                value={startTime}
+                onChange={(e) => {
+                  setStartTime(e.target.value);
+                  clearError("startTime");
+                }}
+                aria-invalid={!!startTimeError}
+                aria-describedby={startTimeError ? "startTime-error" : undefined}
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 ${
+                  startTimeError ? "border-red-500" : "border-gray-300"
+                }`}
               />
-              {state && !state.success && state.fieldErrors?.startTime && (
-                <p className="mt-1 text-sm text-red-600">{state.fieldErrors.startTime[0]}</p>
+              {startTimeError && (
+                <p id="startTime-error" role="alert" className="mt-1 text-sm text-red-600">
+                  {startTimeError}
+                </p>
               )}
             </div>
 
