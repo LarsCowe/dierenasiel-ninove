@@ -183,7 +183,7 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                   candidate.reviewSven,
                 );
                 const resultBadge = reviewResult ? RESULT_BADGES[reviewResult] : null;
-                const reviewCount = [candidate.reviewMartine, candidate.reviewNathalie, candidate.reviewSven].filter(Boolean).length;
+                const reviewCount = [candidate.reviewMartine, candidate.reviewNathalie, candidate.reviewSven].filter((r) => r && r !== "in_beraad").length;
 
                 return (
                   <tr key={candidate.id} className="hover:bg-gray-50">

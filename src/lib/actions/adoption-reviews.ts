@@ -87,6 +87,12 @@ export async function submitReview(
         .update(adoptionCandidates)
         .set({ category: categoryMap[result], categorySetBy: "Beoordeling (automatisch)" })
         .where(eq(adoptionCandidates.id, parsed.data.candidateId));
+    } else {
+      // All reviews are "in_beraad" or empty — reset category to null
+      await db
+        .update(adoptionCandidates)
+        .set({ category: null, categorySetBy: null })
+        .where(eq(adoptionCandidates.id, parsed.data.candidateId));
     }
 
     await logAudit(
