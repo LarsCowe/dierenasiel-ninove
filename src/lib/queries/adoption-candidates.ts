@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { adoptionCandidates, animals } from "@/lib/db/schema";
-import { eq, desc, isNull, sql } from "drizzle-orm";
+import { eq, desc, isNull, or, and, sql } from "drizzle-orm";
 import type { AdoptionCandidate } from "@/types";
 
 export type AdoptionCandidateWithAnimal = AdoptionCandidate & { animalName: string | null };
@@ -18,7 +18,11 @@ export async function getAdoptionCandidates(category?: string): Promise<Adoption
     let results;
     if (category === "blanco") {
       results = await query
-        .where(isNull(adoptionCandidates.category))
+        .where(and(
+          or(isNull(adoptionCandidates.reviewMartine), eq(adoptionCandidates.reviewMartine, "in_beraad")),
+          or(isNull(adoptionCandidates.reviewNathalie), eq(adoptionCandidates.reviewNathalie, "in_beraad")),
+          or(isNull(adoptionCandidates.reviewSven), eq(adoptionCandidates.reviewSven, "in_beraad")),
+        ))
         .orderBy(desc(adoptionCandidates.createdAt))
         .limit(100);
     } else if (category) {
