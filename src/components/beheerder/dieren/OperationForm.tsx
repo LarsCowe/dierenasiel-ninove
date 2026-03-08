@@ -34,7 +34,7 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
   const globalError = state && !state.success ? state.error : undefined;
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} noValidate className="space-y-3">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
           <p className="text-sm font-medium text-emerald-800">Operatie geregistreerd!</p>
@@ -50,7 +50,7 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label htmlFor="op-date" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="op-date" className={`block text-xs font-medium ${fieldErrors?.date ? "text-red-700" : "text-gray-600"}`}>
             Datum <span className="text-red-500">*</span>
           </label>
           <input
@@ -59,13 +59,14 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
             name="date"
             required
             defaultValue={new Date().toISOString().split("T")[0]}
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.date}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.date ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           />
           <FieldError errors={fieldErrors?.date} />
         </div>
 
         <div>
-          <label htmlFor="op-type" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="op-type" className={`block text-xs font-medium ${fieldErrors?.type ? "text-red-700" : "text-gray-600"}`}>
             Type <span className="text-red-500">*</span>
           </label>
           <select
@@ -73,7 +74,8 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
             name="type"
             required
             defaultValue=""
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.type}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.type ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="" disabled>Kies type...</option>
             {OPERATION_TYPES.map((t) => (
@@ -84,14 +86,15 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
         </div>
 
         <div>
-          <label htmlFor="op-status" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="op-status" className={`block text-xs font-medium ${fieldErrors?.status ? "text-red-700" : "text-gray-600"}`}>
             Status
           </label>
           <select
             id="op-status"
             name="status"
             defaultValue="gepland"
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.status}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.status ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             {OPERATION_STATUSES.map((s) => (
               <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -102,14 +105,15 @@ export default function OperationForm({ animalId, onCancel }: OperationFormProps
       </div>
 
       <div>
-        <label htmlFor="op-notes" className="block text-xs font-medium text-gray-600">
+        <label htmlFor="op-notes" className={`block text-xs font-medium ${fieldErrors?.notes ? "text-red-700" : "text-gray-600"}`}>
           Opmerkingen
         </label>
         <textarea
           id="op-notes"
           name="notes"
           rows={2}
-          className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.notes}
+          className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.notes ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
         <FieldError errors={fieldErrors?.notes} />
       </div>

@@ -38,6 +38,14 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
+function hasError(fieldErrors: Record<string, string[]> | undefined, field: string): boolean {
+  return !!fieldErrors?.[field]?.length;
+}
+
+const INPUT_BASE = "mt-1 block w-full rounded-lg border px-3 py-2 text-sm";
+const INPUT_NORMAL = `${INPUT_BASE} border-gray-300 focus:border-emerald-500 focus:ring-emerald-500`;
+const INPUT_ERROR = `${INPUT_BASE} border-red-500 focus:border-red-500 focus:ring-red-500`;
+
 export default function IntakeForm() {
   const [state, formAction, isPending] = useActionState(createAnimalIntake, null);
   const [species, setSpecies] = useState("");
@@ -57,10 +65,28 @@ export default function IntakeForm() {
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
 
+  // Scroll to first field with error after server action returns errors
+  useEffect(() => {
+    if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+      const firstErrorEl = formRef.current?.querySelector("[data-field-error]");
+      if (firstErrorEl) {
+        firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [fieldErrors]);
+
+  function fieldClass(field: string): string {
+    return hasError(fieldErrors, field) ? INPUT_ERROR : INPUT_NORMAL;
+  }
+
+  function labelClass(field: string): string {
+    return `block text-sm font-medium ${hasError(fieldErrors, field) ? "text-red-600" : "text-gray-700"}`;
+  }
+
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-8">
+    <form ref={formRef} action={formAction} noValidate className="space-y-8">
       {/* Success message */}
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
@@ -85,29 +111,31 @@ export default function IntakeForm() {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {/* Naam */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "name") ? { "data-field-error": true } : {})}>
+            <label htmlFor="name" className={labelClass("name")}>
               Naam <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               id="name"
               name="name"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "name") || undefined}
+              className={fieldClass("name")}
               placeholder="Bijv. Rex"
             />
             <FieldError errors={fieldErrors?.name} />
           </div>
 
           {/* Soort */}
-          <div>
-            <label htmlFor="species" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "species") ? { "data-field-error": true } : {})}>
+            <label htmlFor="species" className={labelClass("species")}>
               Soort <span className="text-red-500">*</span>
             </label>
             <select
               id="species"
               name="species"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "species") || undefined}
+              className={fieldClass("species")}
               value={species}
               onChange={(e) => setSpecies(e.target.value)}
             >
@@ -122,14 +150,15 @@ export default function IntakeForm() {
           </div>
 
           {/* Geslacht */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "gender") ? { "data-field-error": true } : {})}>
+            <label htmlFor="gender" className={labelClass("gender")}>
               Geslacht <span className="text-red-500">*</span>
             </label>
             <select
               id="gender"
               name="gender"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "gender") || undefined}
+              className={fieldClass("gender")}
               disabled={!species}
             >
               <option value="">Selecteer geslacht...</option>
@@ -144,44 +173,50 @@ export default function IntakeForm() {
           </div>
 
           {/* Ras */}
-          <div>
-            <label htmlFor="breed" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "breed") ? { "data-field-error": true } : {})}>
+            <label htmlFor="breed" className={labelClass("breed")}>
               Ras
             </label>
             <input
               type="text"
               id="breed"
               name="breed"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "breed") || undefined}
+              className={fieldClass("breed")}
               placeholder="Bijv. Mechelse Herder"
             />
+            <FieldError errors={fieldErrors?.breed} />
           </div>
 
           {/* Kleur */}
-          <div>
-            <label htmlFor="color" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "color") ? { "data-field-error": true } : {})}>
+            <label htmlFor="color" className={labelClass("color")}>
               Kleur
             </label>
             <input
               type="text"
               id="color"
               name="color"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "color") || undefined}
+              className={fieldClass("color")}
               placeholder="Bijv. bruin"
             />
+            <FieldError errors={fieldErrors?.color} />
           </div>
 
           {/* Geboortedatum */}
-          <div>
-            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "dateOfBirth") ? { "data-field-error": true } : {})}>
+            <label htmlFor="dateOfBirth" className={labelClass("dateOfBirth")}>
               Geboortedatum
             </label>
             <input
               type="date"
               id="dateOfBirth"
               name="dateOfBirth"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "dateOfBirth") || undefined}
+              className={fieldClass("dateOfBirth")}
             />
+            <FieldError errors={fieldErrors?.dateOfBirth} />
           </div>
         </div>
       </div>
@@ -194,31 +229,35 @@ export default function IntakeForm() {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {/* Chipnummer */}
-          <div>
-            <label htmlFor="identificationNr" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "identificationNr") ? { "data-field-error": true } : {})}>
+            <label htmlFor="identificationNr" className={labelClass("identificationNr")}>
               Chipnummer
             </label>
             <input
               type="text"
               id="identificationNr"
               name="identificationNr"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "identificationNr") || undefined}
+              className={fieldClass("identificationNr")}
               placeholder="Bijv. 981100004567890"
             />
+            <FieldError errors={fieldErrors?.identificationNr} />
           </div>
 
           {/* Paspoortnummer */}
-          <div>
-            <label htmlFor="passportNr" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "passportNr") ? { "data-field-error": true } : {})}>
+            <label htmlFor="passportNr" className={labelClass("passportNr")}>
               Paspoortnummer
             </label>
             <input
               type="text"
               id="passportNr"
               name="passportNr"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "passportNr") || undefined}
+              className={fieldClass("passportNr")}
               placeholder="Bijv. BE-123456"
             />
+            <FieldError errors={fieldErrors?.passportNr} />
           </div>
         </div>
       </div>
@@ -231,8 +270,8 @@ export default function IntakeForm() {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {/* Intake datum */}
-          <div>
-            <label htmlFor="intakeDate" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "intakeDate") ? { "data-field-error": true } : {})}>
+            <label htmlFor="intakeDate" className={labelClass("intakeDate")}>
               Intake datum <span className="text-red-500">*</span>
             </label>
             <input
@@ -240,14 +279,15 @@ export default function IntakeForm() {
               id="intakeDate"
               name="intakeDate"
               defaultValue={today}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "intakeDate") || undefined}
+              className={fieldClass("intakeDate")}
             />
             <FieldError errors={fieldErrors?.intakeDate} />
           </div>
 
           {/* Reden binnenkomst */}
-          <div>
-            <label htmlFor="intakeReason" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "intakeReason") ? { "data-field-error": true } : {})}>
+            <label htmlFor="intakeReason" className={labelClass("intakeReason")}>
               Reden binnenkomst
             </label>
             <select
@@ -255,7 +295,8 @@ export default function IntakeForm() {
               name="intakeReason"
               value={intakeReason}
               onChange={(e) => setIntakeReason(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "intakeReason") || undefined}
+              className={fieldClass("intakeReason")}
             >
               {INTAKE_REASONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -263,6 +304,7 @@ export default function IntakeForm() {
                 </option>
               ))}
             </select>
+            <FieldError errors={fieldErrors?.intakeReason} />
           </div>
         </div>
 
@@ -276,28 +318,30 @@ export default function IntakeForm() {
               Bij een IBN-intake wordt automatisch een deadline van 60 dagen berekend.
             </p>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="dossierNr" className="block text-sm font-medium text-gray-700">
+              <div {...(hasError(fieldErrors, "dossierNr") ? { "data-field-error": true } : {})}>
+                <label htmlFor="dossierNr" className={labelClass("dossierNr")}>
                   Dossiernummer DWV <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   id="dossierNr"
                   name="dossierNr"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  aria-invalid={hasError(fieldErrors, "dossierNr") || undefined}
+                  className={fieldClass("dossierNr")}
                   placeholder="Bijv. DWV-2026-12345"
                 />
                 <FieldError errors={fieldErrors?.dossierNr} />
               </div>
-              <div>
-                <label htmlFor="pvNr" className="block text-sm font-medium text-gray-700">
+              <div {...(hasError(fieldErrors, "pvNr") ? { "data-field-error": true } : {})}>
+                <label htmlFor="pvNr" className={labelClass("pvNr")}>
                   PV-nummer politie <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   id="pvNr"
                   name="pvNr"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  aria-invalid={hasError(fieldErrors, "pvNr") || undefined}
+                  className={fieldClass("pvNr")}
                   placeholder="Bijv. PV-2026-001"
                 />
                 <FieldError errors={fieldErrors?.pvNr} />
@@ -330,53 +374,61 @@ export default function IntakeForm() {
               Melding details
             </h3>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="intakeMetadata.melderNaam" className="block text-sm font-medium text-gray-700">
+              <div {...(hasError(fieldErrors, "intakeMetadata.melderNaam") ? { "data-field-error": true } : {})}>
+                <label htmlFor="intakeMetadata.melderNaam" className={labelClass("intakeMetadata.melderNaam")}>
                   Naam melder
                 </label>
                 <input
                   type="text"
                   id="intakeMetadata.melderNaam"
                   name="intakeMetadata.melderNaam"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  aria-invalid={hasError(fieldErrors, "intakeMetadata.melderNaam") || undefined}
+                  className={fieldClass("intakeMetadata.melderNaam")}
                   placeholder="Naam van de persoon die gemeld heeft"
                 />
+                <FieldError errors={fieldErrors?.["intakeMetadata.melderNaam"]} />
               </div>
-              <div>
-                <label htmlFor="intakeMetadata.melderDatum" className="block text-sm font-medium text-gray-700">
+              <div {...(hasError(fieldErrors, "intakeMetadata.melderDatum") ? { "data-field-error": true } : {})}>
+                <label htmlFor="intakeMetadata.melderDatum" className={labelClass("intakeMetadata.melderDatum")}>
                   Datum melding
                 </label>
                 <input
                   type="date"
                   id="intakeMetadata.melderDatum"
                   name="intakeMetadata.melderDatum"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  aria-invalid={hasError(fieldErrors, "intakeMetadata.melderDatum") || undefined}
+                  className={fieldClass("intakeMetadata.melderDatum")}
                 />
+                <FieldError errors={fieldErrors?.["intakeMetadata.melderDatum"]} />
               </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="intakeMetadata.melderLocatie" className="block text-sm font-medium text-gray-700">
+              <div className="sm:col-span-2" {...(hasError(fieldErrors, "intakeMetadata.melderLocatie") ? { "data-field-error": true } : {})}>
+                <label htmlFor="intakeMetadata.melderLocatie" className={labelClass("intakeMetadata.melderLocatie")}>
                   Locatie ophaling
                 </label>
                 <input
                   type="text"
                   id="intakeMetadata.melderLocatie"
                   name="intakeMetadata.melderLocatie"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  aria-invalid={hasError(fieldErrors, "intakeMetadata.melderLocatie") || undefined}
+                  className={fieldClass("intakeMetadata.melderLocatie")}
                   placeholder="Adres of locatie waar het dier is opgehaald"
                 />
+                <FieldError errors={fieldErrors?.["intakeMetadata.melderLocatie"]} />
               </div>
               {intakeReason === "ibn" && (
-                <div className="sm:col-span-2">
-                  <label htmlFor="intakeMetadata.betrokkenInstanties" className="block text-sm font-medium text-gray-700">
+                <div className="sm:col-span-2" {...(hasError(fieldErrors, "intakeMetadata.betrokkenInstanties") ? { "data-field-error": true } : {})}>
+                  <label htmlFor="intakeMetadata.betrokkenInstanties" className={labelClass("intakeMetadata.betrokkenInstanties")}>
                     Betrokken instanties
                   </label>
                   <input
                     type="text"
                     id="intakeMetadata.betrokkenInstanties"
                     name="intakeMetadata.betrokkenInstanties"
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    aria-invalid={hasError(fieldErrors, "intakeMetadata.betrokkenInstanties") || undefined}
+                    className={fieldClass("intakeMetadata.betrokkenInstanties")}
                     placeholder="Bijv. Politiezone Ninove, Dierenwelzijn Vlaanderen"
                   />
+                  <FieldError errors={fieldErrors?.["intakeMetadata.betrokkenInstanties"]} />
                 </div>
               )}
             </div>
@@ -391,8 +443,8 @@ export default function IntakeForm() {
         </h2>
 
         <div className="mt-4 space-y-4">
-          <div>
-            <label htmlFor="shortDescription" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "shortDescription") ? { "data-field-error": true } : {})}>
+            <label htmlFor="shortDescription" className={labelClass("shortDescription")}>
               Korte beschrijving
             </label>
             <input
@@ -400,22 +452,26 @@ export default function IntakeForm() {
               id="shortDescription"
               name="shortDescription"
               maxLength={300}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "shortDescription") || undefined}
+              className={fieldClass("shortDescription")}
               placeholder="Korte samenvatting (max 300 tekens)"
             />
+            <FieldError errors={fieldErrors?.shortDescription} />
           </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          <div {...(hasError(fieldErrors, "description") ? { "data-field-error": true } : {})}>
+            <label htmlFor="description" className={labelClass("description")}>
               Uitgebreide beschrijving
             </label>
             <textarea
               id="description"
               name="description"
               rows={4}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={hasError(fieldErrors, "description") || undefined}
+              className={fieldClass("description")}
               placeholder="Beschrijf het dier, karakter, bijzonderheden..."
             />
+            <FieldError errors={fieldErrors?.description} />
           </div>
         </div>
       </div>

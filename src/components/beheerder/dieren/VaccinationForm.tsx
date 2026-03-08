@@ -20,7 +20,7 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
   const globalError = state && !state.success ? state.error : undefined;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} noValidate className="space-y-4">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <p className="text-sm font-medium text-emerald-800">Vaccinatie geregistreerd!</p>
@@ -36,7 +36,7 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <label htmlFor="vac-type" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="vac-type" className={`block text-sm font-medium ${fieldErrors?.type ? "text-red-700" : "text-gray-700"}`}>
             Type <span className="text-red-500">*</span>
           </label>
           <select
@@ -44,7 +44,8 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
             name="type"
             required
             defaultValue=""
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.type}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.type ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="" disabled>Kies type...</option>
             {VACCINATION_TYPES.map((t) => (
@@ -55,7 +56,7 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
         </div>
 
         <div>
-          <label htmlFor="vac-date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="vac-date" className={`block text-sm font-medium ${fieldErrors?.date ? "text-red-700" : "text-gray-700"}`}>
             Datum <span className="text-red-500">*</span>
           </label>
           <input
@@ -64,20 +65,22 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
             name="date"
             required
             defaultValue={new Date().toISOString().split("T")[0]}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.date}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.date ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           />
           <FieldError errors={fieldErrors?.date} />
         </div>
 
         <div>
-          <label htmlFor="vac-nextDue" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="vac-nextDue" className={`block text-sm font-medium ${fieldErrors?.nextDueDate ? "text-red-700" : "text-gray-700"}`}>
             Volgende vervaldatum
           </label>
           <input
             type="date"
             id="vac-nextDue"
             name="nextDueDate"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.nextDueDate}
+            className={`mt-1 block w-full rounded-lg border ${fieldErrors?.nextDueDate ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           />
         </div>
       </div>
@@ -98,14 +101,15 @@ export default function VaccinationForm({ animalId, onCancel }: VaccinationFormP
       </div>
 
       <div>
-        <label htmlFor="vac-notes" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="vac-notes" className={`block text-sm font-medium ${fieldErrors?.notes ? "text-red-700" : "text-gray-700"}`}>
           Opmerkingen
         </label>
         <textarea
           id="vac-notes"
           name="notes"
           rows={2}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.notes}
+          className={`mt-1 block w-full rounded-lg border ${fieldErrors?.notes ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
       </div>
 

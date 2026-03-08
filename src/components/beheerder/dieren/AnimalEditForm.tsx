@@ -17,7 +17,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
   const globalError = state && !state.success ? state.error : undefined;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} noValidate className="space-y-4">
       <input type="hidden" name="id" value={animal.id} />
 
       {/* Header */}
@@ -55,7 +55,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label htmlFor="name" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="name" className={`block text-xs font-medium ${fieldErrors?.name ? "text-red-700" : "text-gray-600"}`}>
               Naam <span className="text-red-500">*</span>
             </label>
             <input
@@ -63,7 +63,8 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               id="name"
               name="name"
               defaultValue={animal.name}
-              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.name || undefined}
+              className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.name ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             />
             <FieldError errors={fieldErrors?.name} />
           </div>
@@ -83,14 +84,15 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
           </div>
 
           <div>
-            <label htmlFor="gender" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="gender" className={`block text-xs font-medium ${fieldErrors?.gender ? "text-red-700" : "text-gray-600"}`}>
               Geslacht <span className="text-red-500">*</span>
             </label>
             <select
               id="gender"
               name="gender"
               defaultValue={animal.gender ?? ""}
-              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.gender || undefined}
+              className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.gender ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             >
               <option value="">Selecteer...</option>
               <option value="mannelijk">&#9794; Mannelijk</option>
@@ -140,7 +142,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
           </div>
 
           <div>
-            <label htmlFor="intakeDate" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="intakeDate" className={`block text-xs font-medium ${fieldErrors?.intakeDate ? "text-red-700" : "text-gray-600"}`}>
               Intakedatum
             </label>
             <input
@@ -148,7 +150,8 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               id="intakeDate"
               name="intakeDate"
               defaultValue={animal.intakeDate ?? ""}
-              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.intakeDate || undefined}
+              className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.intakeDate ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             />
             <FieldError errors={fieldErrors?.intakeDate} />
           </div>

@@ -7,9 +7,48 @@ interface Props {
   onClose: () => void;
 }
 
+function hasFieldError(
+  state: { success: false; error?: string; fieldErrors?: Record<string, string[]> } | null,
+  field: string,
+): boolean {
+  if (!state || state.success !== false) return false;
+  if (state.fieldErrors?.[field]?.length) return true;
+  return false;
+}
+
+function getFieldError(
+  state: { success: false; error?: string; fieldErrors?: Record<string, string[]> } | null,
+  field: string,
+): string | undefined {
+  if (!state || state.success !== false) return undefined;
+  return state.fieldErrors?.[field]?.[0];
+}
+
+function inputClassName(hasError: boolean): string {
+  return `w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 ${
+    hasError
+      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+      : "border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+  }`;
+}
+
+function labelClassName(hasError: boolean): string {
+  return `mb-1 block text-sm font-medium ${hasError ? "text-red-600" : "text-gray-700"}`;
+}
+
 export default function WalkerCreateForm({ onClose }: Props) {
   const [state, formAction, isPending] = useActionState(createWalkerManual, null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const errorState = state && !state.success ? state : null;
+
+  const fields = ["firstName", "lastName", "email", "phone", "dateOfBirth", "address"] as const;
+  const fieldHasError = Object.fromEntries(
+    fields.map((f) => [f, hasFieldError(errorState, f)]),
+  ) as Record<(typeof fields)[number], boolean>;
+  const fieldError = Object.fromEntries(
+    fields.map((f) => [f, getFieldError(errorState, f)]),
+  ) as Record<(typeof fields)[number], string | undefined>;
 
   useEffect(() => {
     if (state?.success) {
@@ -24,10 +63,10 @@ export default function WalkerCreateForm({ onClose }: Props) {
         Nieuwe wandelaar toevoegen
       </h2>
 
-      <form ref={formRef} action={formAction} className="space-y-4">
+      <form ref={formRef} action={formAction} noValidate className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="wc-firstName" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-firstName" className={labelClassName(fieldHasError.firstName)}>
               Voornaam *
             </label>
             <input
@@ -35,11 +74,15 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="firstName"
               type="text"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.firstName || undefined}
+              className={inputClassName(fieldHasError.firstName)}
             />
+            {fieldError.firstName && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.firstName}</p>
+            )}
           </div>
           <div>
-            <label htmlFor="wc-lastName" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-lastName" className={labelClassName(fieldHasError.lastName)}>
               Achternaam *
             </label>
             <input
@@ -47,14 +90,18 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="lastName"
               type="text"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.lastName || undefined}
+              className={inputClassName(fieldHasError.lastName)}
             />
+            {fieldError.lastName && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.lastName}</p>
+            )}
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="wc-email" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-email" className={labelClassName(fieldHasError.email)}>
               E-mail *
             </label>
             <input
@@ -62,11 +109,15 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="email"
               type="email"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.email || undefined}
+              className={inputClassName(fieldHasError.email)}
             />
+            {fieldError.email && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.email}</p>
+            )}
           </div>
           <div>
-            <label htmlFor="wc-phone" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-phone" className={labelClassName(fieldHasError.phone)}>
               Telefoon *
             </label>
             <input
@@ -74,14 +125,18 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="phone"
               type="tel"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.phone || undefined}
+              className={inputClassName(fieldHasError.phone)}
             />
+            {fieldError.phone && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.phone}</p>
+            )}
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="wc-dateOfBirth" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-dateOfBirth" className={labelClassName(fieldHasError.dateOfBirth)}>
               Geboortedatum *
             </label>
             <input
@@ -89,11 +144,15 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="dateOfBirth"
               type="date"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.dateOfBirth || undefined}
+              className={inputClassName(fieldHasError.dateOfBirth)}
             />
+            {fieldError.dateOfBirth && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.dateOfBirth}</p>
+            )}
           </div>
           <div>
-            <label htmlFor="wc-address" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="wc-address" className={labelClassName(fieldHasError.address)}>
               Adres *
             </label>
             <input
@@ -101,8 +160,12 @@ export default function WalkerCreateForm({ onClose }: Props) {
               name="address"
               type="text"
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={fieldHasError.address || undefined}
+              className={inputClassName(fieldHasError.address)}
             />
+            {fieldError.address && (
+              <p className="mt-1 text-sm text-red-600">{fieldError.address}</p>
+            )}
           </div>
         </div>
 

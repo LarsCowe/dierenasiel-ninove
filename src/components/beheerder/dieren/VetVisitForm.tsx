@@ -27,7 +27,7 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
   const [diagnosisMode, setDiagnosisMode] = useState<"select" | "custom">("select");
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} noValidate className="space-y-3">
       {state?.success && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
           <p className="text-sm font-medium text-emerald-800">Bezoek geregistreerd!</p>
@@ -43,7 +43,7 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="vv-date" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="vv-date" className={`block text-xs font-medium ${fieldErrors?.date ? "text-red-700" : "text-gray-600"}`}>
             Datum <span className="text-red-500">*</span>
           </label>
           <input
@@ -52,13 +52,14 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
             name="date"
             required
             defaultValue={new Date().toISOString().split("T")[0]}
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.date}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.date ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           />
           <FieldError errors={fieldErrors?.date} />
         </div>
 
         <div>
-          <label htmlFor="vv-location" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="vv-location" className={`block text-xs font-medium ${fieldErrors?.location ? "text-red-700" : "text-gray-600"}`}>
             Locatie <span className="text-red-500">*</span>
           </label>
           <select
@@ -66,7 +67,8 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
             name="location"
             required
             defaultValue=""
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.location}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.location ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="" disabled>Kies locatie...</option>
             {VET_VISIT_LOCATIONS.map((loc) => (
@@ -79,7 +81,7 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
 
       <div>
         <div className="flex items-center justify-between">
-          <label htmlFor="vv-diagnosis" className="block text-xs font-medium text-gray-600">
+          <label htmlFor="vv-diagnosis" className={`block text-xs font-medium ${fieldErrors?.diagnosis ? "text-red-700" : "text-gray-600"}`}>
             Diagnose
           </label>
           <button
@@ -95,7 +97,8 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
             id="vv-diagnosis"
             name="diagnosis"
             defaultValue=""
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.diagnosis}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.diagnosis ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           >
             <option value="">Geen diagnose geselecteerd</option>
             {COMMON_DIAGNOSES.map((d) => (
@@ -109,47 +112,51 @@ export default function VetVisitForm({ animalId, onCancel }: VetVisitFormProps) 
             name="diagnosis"
             maxLength={200}
             placeholder="Typ een diagnose..."
-            className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            aria-invalid={!!fieldErrors?.diagnosis}
+            className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.diagnosis ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
           />
         )}
         <FieldError errors={fieldErrors?.diagnosis} />
       </div>
 
       <div>
-        <label htmlFor="vv-complaints" className="block text-xs font-medium text-gray-600">
+        <label htmlFor="vv-complaints" className={`block text-xs font-medium ${fieldErrors?.complaints ? "text-red-700" : "text-gray-600"}`}>
           Klachten / Bevindingen
         </label>
         <textarea
           id="vv-complaints"
           name="complaints"
           rows={2}
-          className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.complaints}
+          className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.complaints ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
         <FieldError errors={fieldErrors?.complaints} />
       </div>
 
       <div>
-        <label htmlFor="vv-todo" className="block text-xs font-medium text-gray-600">
+        <label htmlFor="vv-todo" className={`block text-xs font-medium ${fieldErrors?.todo ? "text-red-700" : "text-gray-600"}`}>
           Vervolgstappen / Todo
         </label>
         <textarea
           id="vv-todo"
           name="todo"
           rows={2}
-          className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.todo}
+          className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.todo ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
         <FieldError errors={fieldErrors?.todo} />
       </div>
 
       <div>
-        <label htmlFor="vv-notes" className="block text-xs font-medium text-gray-600">
+        <label htmlFor="vv-notes" className={`block text-xs font-medium ${fieldErrors?.notes ? "text-red-700" : "text-gray-600"}`}>
           Opmerkingen
         </label>
         <textarea
           id="vv-notes"
           name="notes"
           rows={2}
-          className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-invalid={!!fieldErrors?.notes}
+          className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.notes ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
         />
       </div>
 

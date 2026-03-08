@@ -33,8 +33,10 @@ export default function KennismakingForm({ candidateId, candidateName, animalId 
     action(formData);
   }
 
+  const fieldErrors = state && !state.success ? (state as { fieldErrors?: Record<string, string[]> }).fieldErrors : undefined;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {state && !state.success && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4">
           <p className="text-sm font-medium text-red-800">{state.error || "Er ging iets mis. Controleer de gegevens."}</p>
@@ -50,7 +52,7 @@ export default function KennismakingForm({ candidateId, candidateName, animalId 
           </div>
 
           <div>
-            <label htmlFor="scheduledAt" className="block text-xs font-medium text-gray-500">
+            <label htmlFor="scheduledAt" className={`block text-xs font-medium ${fieldErrors?.scheduledAt ? "text-red-700" : "text-gray-500"}`}>
               Datum en tijd *
             </label>
             <input
@@ -58,12 +60,13 @@ export default function KennismakingForm({ candidateId, candidateName, animalId 
               id="scheduledAt"
               name="scheduledAt"
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.scheduledAt}
+              className={`mt-1 block w-full rounded-md border ${fieldErrors?.scheduledAt ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
             />
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-xs font-medium text-gray-500">
+            <label htmlFor="location" className={`block text-xs font-medium ${fieldErrors?.location ? "text-red-700" : "text-gray-500"}`}>
               Locatie
             </label>
             <input
@@ -72,7 +75,8 @@ export default function KennismakingForm({ candidateId, candidateName, animalId 
               name="location"
               placeholder="bv. Bezoekruimte A"
               maxLength={200}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.location}
+              className={`mt-1 block w-full rounded-md border ${fieldErrors?.location ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
             />
           </div>
         </div>

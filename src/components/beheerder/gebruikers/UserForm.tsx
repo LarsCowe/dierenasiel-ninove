@@ -33,6 +33,23 @@ export default function UserForm({ editUser, onClose }: Props) {
   );
   const [resetState, resetAction, resetPending] = useActionState(resetUserPassword, null);
   const formRef = useRef<HTMLFormElement>(null);
+  const prevStateRef = useRef(state);
+
+  const hasFieldError = (field: string): boolean =>
+    !!(state && !state.success && state.fieldErrors?.[field]?.length);
+
+  const inputClassName = (field: string): string => {
+    const base = "w-full rounded-lg border px-3 py-2 text-sm focus:ring-1";
+    if (hasFieldError(field)) {
+      return `${base} border-red-500 focus:border-red-500 focus:ring-red-500`;
+    }
+    return `${base} border-gray-300 focus:border-emerald-500 focus:ring-emerald-500`;
+  };
+
+  const labelClassName = (field: string): string => {
+    const base = "mb-1 block text-sm font-medium";
+    return hasFieldError(field) ? `${base} text-red-600` : `${base} text-gray-700`;
+  };
 
   useEffect(() => {
     if (state?.success) {
@@ -41,18 +58,46 @@ export default function UserForm({ editUser, onClose }: Props) {
     }
   }, [state, onClose]);
 
+  // Scroll to first error field when validation fails
+  useEffect(() => {
+    if (
+      state &&
+      !state.success &&
+      state.fieldErrors &&
+      state !== prevStateRef.current
+    ) {
+      const errorFields = Object.keys(state.fieldErrors);
+      if (errorFields.length > 0) {
+        const firstErrorField = errorFields[0];
+        const fieldIdMap: Record<string, string> = {
+          name: "user-name",
+          email: "user-email",
+          role: "user-role",
+          password: "user-password",
+        };
+        const elementId = fieldIdMap[firstErrorField];
+        if (elementId) {
+          const element = document.getElementById(elementId);
+          element?.scrollIntoView({ behavior: "smooth", block: "center" });
+          element?.focus();
+        }
+      }
+    }
+    prevStateRef.current = state;
+  }, [state]);
+
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#1b4332]">
         {isEdit ? "Gebruiker bewerken" : "Nieuwe gebruiker"}
       </h2>
 
-      <form ref={formRef} action={formAction} className="space-y-4">
+      <form ref={formRef} action={formAction} noValidate className="space-y-4">
         {isEdit && <input type="hidden" name="id" value={editUser.id} />}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="user-name" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="user-name" className={labelClassName("name")}>
               Naam *
             </label>
             <input
@@ -60,7 +105,8 @@ export default function UserForm({ editUser, onClose }: Props) {
               name="name"
               type="text"
               defaultValue={editUser?.name ?? ""}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={hasFieldError("name") || undefined}
+              className={inputClassName("name")}
             />
             {state && !state.success && state.fieldErrors?.name && (
               <p className="mt-1 text-xs text-red-600">{state.fieldErrors.name[0]}</p>
@@ -68,7 +114,7 @@ export default function UserForm({ editUser, onClose }: Props) {
           </div>
 
           <div>
-            <label htmlFor="user-email" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="user-email" className={labelClassName("email")}>
               E-mail *
             </label>
             <input
@@ -76,7 +122,8 @@ export default function UserForm({ editUser, onClose }: Props) {
               name="email"
               type="email"
               defaultValue={editUser?.email ?? ""}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={hasFieldError("email") || undefined}
+              className={inputClassName("email")}
             />
             {state && !state.success && state.fieldErrors?.email && (
               <p className="mt-1 text-xs text-red-600">{state.fieldErrors.email[0]}</p>
@@ -86,14 +133,15 @@ export default function UserForm({ editUser, onClose }: Props) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="user-role" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="user-role" className={labelClassName("role")}>
               Rol *
             </label>
             <select
               id="user-role"
               name="role"
               defaultValue={editUser?.role ?? ""}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={hasFieldError("role") || undefined}
+              className={inputClassName("role")}
             >
               <option value="">Selecteer een rol...</option>
               {BACKOFFICE_ROLES.map((role) => (
@@ -109,14 +157,15 @@ export default function UserForm({ editUser, onClose }: Props) {
 
           {!isEdit && (
             <div>
-              <label htmlFor="user-password" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="user-password" className={labelClassName("password")}>
                 Wachtwoord *
               </label>
               <input
                 id="user-password"
                 name="password"
                 type="password"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                aria-invalid={hasFieldError("password") || undefined}
+                className={inputClassName("password")}
               />
               {state && !state.success && state.fieldErrors?.password && (
                 <p className="mt-1 text-xs text-red-600">{state.fieldErrors.password[0]}</p>
@@ -174,7 +223,7 @@ export default function UserForm({ editUser, onClose }: Props) {
       {isEdit && (
         <div className="mt-6 border-t border-gray-200 pt-4">
           <h3 className="text-sm font-semibold text-gray-700">Wachtwoord resetten</h3>
-          <form action={resetAction} className="mt-2 flex items-end gap-3">
+          <form action={resetAction} noValidate className="mt-2 flex items-end gap-3">
             <input type="hidden" name="id" value={editUser.id} />
             <div className="flex-1">
               <label htmlFor="reset-password" className="mb-1 block text-xs font-medium text-gray-600">

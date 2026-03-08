@@ -64,7 +64,7 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   };
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} noValidate className="space-y-6">
       {globalError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm font-medium text-red-800">{globalError}</p>
@@ -83,24 +83,24 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Persoonlijke gegevens</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="firstName" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="firstName" className={`block text-xs font-medium ${fieldErrors?.firstName ? "text-red-700" : "text-gray-600"}`}>
               Voornaam <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="firstName" name="firstName" required className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <input type="text" id="firstName" name="firstName" required aria-invalid={!!fieldErrors?.firstName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.firstName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.firstName} />
           </div>
           <div>
-            <label htmlFor="lastName" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="lastName" className={`block text-xs font-medium ${fieldErrors?.lastName ? "text-red-700" : "text-gray-600"}`}>
               Achternaam <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="lastName" name="lastName" required className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <input type="text" id="lastName" name="lastName" required aria-invalid={!!fieldErrors?.lastName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.lastName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.lastName} />
           </div>
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-gray-600">
+            <label htmlFor="email" className={`block text-xs font-medium ${fieldErrors?.email ? "text-red-700" : "text-gray-600"}`}>
               E-mailadres <span className="text-red-500">*</span>
             </label>
-            <input type="email" id="email" name="email" required className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <input type="email" id="email" name="email" required aria-invalid={!!fieldErrors?.email} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.email ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.email} />
           </div>
           <div>
@@ -137,10 +137,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
         )}
         <div className="mt-3 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600">
+            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
               Woonsituatie <span className="text-red-500">*</span>
             </label>
-            <select value={questionnaire.woonsituatie} onChange={(e) => updateQ("woonsituatie", e.target.value)} className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500">
+            <select value={questionnaire.woonsituatie} onChange={(e) => updateQ("woonsituatie", e.target.value)} aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
               <option value="">Selecteer...</option>
               <option value="huis_met_tuin">Huis met tuin</option>
               <option value="appartement">Appartement</option>
@@ -183,10 +183,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600">
+            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
               Werksituatie <span className="text-red-500">*</span>
             </label>
-            <select value={questionnaire.werkSituatie} onChange={(e) => updateQ("werkSituatie", e.target.value)} className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500">
+            <select value={questionnaire.werkSituatie} onChange={(e) => updateQ("werkSituatie", e.target.value)} aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
               <option value="">Selecteer...</option>
               <option value="voltijds_thuis">Voltijds thuis</option>
               <option value="deeltijds">Deeltijds</option>
@@ -205,10 +205,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600">
+            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
               Motivatie <span className="text-red-500">*</span>
             </label>
-            <textarea rows={3} value={questionnaire.motivatie} onChange={(e) => updateQ("motivatie", e.target.value)} placeholder="Waarom wilt u dit dier adopteren?" className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <textarea rows={3} value={questionnaire.motivatie} onChange={(e) => updateQ("motivatie", e.target.value)} placeholder="Waarom wilt u dit dier adopteren?" aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
           </div>
 
           <div>

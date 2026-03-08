@@ -45,8 +45,10 @@ export default function AdoptionContractForm({ candidateId, candidateName, anima
     action(fd);
   }
 
+  const fieldErrors = state && !state.success ? (state as { fieldErrors?: Record<string, string[]> }).fieldErrors : undefined;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {state && !state.success && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm text-red-800">{state.error}</p>
@@ -71,7 +73,7 @@ export default function AdoptionContractForm({ candidateId, candidateName, anima
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Details</h2>
         <div className="mt-3 space-y-4">
           <div>
-            <label htmlFor="contractDate" className="block text-xs font-medium text-gray-500">
+            <label htmlFor="contractDate" className={`block text-xs font-medium ${fieldErrors?.contractDate ? "text-red-700" : "text-gray-500"}`}>
               Contractdatum *
             </label>
             <input
@@ -80,13 +82,14 @@ export default function AdoptionContractForm({ candidateId, candidateName, anima
               name="contractDate"
               required
               defaultValue={new Date().toISOString().split("T")[0]}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              aria-invalid={!!fieldErrors?.contractDate}
+              className={`mt-1 block w-full rounded-md border ${fieldErrors?.contractDate ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="paymentAmount" className="block text-xs font-medium text-gray-500">
+              <label htmlFor="paymentAmount" className={`block text-xs font-medium ${fieldErrors?.paymentAmount ? "text-red-700" : "text-gray-500"}`}>
                 Bedrag (EUR) *
               </label>
               <input
@@ -95,19 +98,21 @@ export default function AdoptionContractForm({ candidateId, candidateName, anima
                 name="paymentAmount"
                 required
                 placeholder="bv. 150.00"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                aria-invalid={!!fieldErrors?.paymentAmount}
+                className={`mt-1 block w-full rounded-md border ${fieldErrors?.paymentAmount ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
               />
             </div>
 
             <div>
-              <label htmlFor="paymentMethod" className="block text-xs font-medium text-gray-500">
+              <label htmlFor="paymentMethod" className={`block text-xs font-medium ${fieldErrors?.paymentMethod ? "text-red-700" : "text-gray-500"}`}>
                 Betaalwijze *
               </label>
               <select
                 id="paymentMethod"
                 name="paymentMethod"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                aria-invalid={!!fieldErrors?.paymentMethod}
+                className={`mt-1 block w-full rounded-md border ${fieldErrors?.paymentMethod ? "border-red-500" : "border-gray-300"} px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
               >
                 {PAYMENT_METHODS.map((m) => (
                   <option key={m.value} value={m.value}>{m.label}</option>
