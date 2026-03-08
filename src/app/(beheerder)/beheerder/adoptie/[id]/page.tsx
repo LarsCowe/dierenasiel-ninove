@@ -63,6 +63,7 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
         <AdoptionCandidateView
           candidate={candidate}
           animalName={animal?.name}
+          hasContract={!!contract}
           kennismakingenSlot={
             <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
               <h2 className="font-heading text-sm font-bold text-[#1b4332]">Kennismakingen</h2>

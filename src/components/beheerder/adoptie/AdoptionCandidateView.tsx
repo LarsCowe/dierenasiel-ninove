@@ -13,6 +13,7 @@ interface Props {
   candidate: AdoptionCandidate;
   animalName?: string;
   kennismakingenSlot?: React.ReactNode;
+  hasContract?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -23,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
   adopted: "Geadopteerd",
 };
 
-export default function AdoptionCandidateView({ candidate, animalName, kennismakingenSlot }: Props) {
+export default function AdoptionCandidateView({ candidate, animalName, kennismakingenSlot, hasContract }: Props) {
   const router = useRouter();
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdoptionCandidate, null);
   const [statusState, statusAction, statusPending] = useActionState(updateStatusAdoptionCandidate, null);
@@ -130,10 +131,10 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
         </div>
       )}
 
-      {candidate.status === "approved" && (
+      {!hasContract && candidate.animalId && (
         <div className="rounded-xl border border-purple-100 bg-purple-50 p-5 shadow-sm">
-          <h2 className="font-heading text-sm font-bold text-purple-800">Goedgekeurd voor adoptie</h2>
-          <p className="mt-1 text-sm text-purple-700">Deze kandidaat is goedgekeurd. Maak het adoptiecontract op.</p>
+          <h2 className="font-heading text-sm font-bold text-purple-800">Adoptiecontract</h2>
+          <p className="mt-1 text-sm text-purple-700">Maak het adoptiecontract op voor deze kandidaat.</p>
           <Link
             href={`/beheerder/adoptie/${candidate.id}/contract`}
             className="mt-3 inline-block rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
