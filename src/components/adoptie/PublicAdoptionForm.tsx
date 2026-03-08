@@ -649,7 +649,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
               <select
                 id="requestedAnimalSelect"
                 value={selectedAnimal}
-                onChange={(e) => { setSelectedAnimal(e.target.value); clearError("requestedAnimalName"); }}
+                onChange={(e) => { setSelectedAnimal(e.target.value); if (e.target.value) setCustomAnimalName(""); clearError("requestedAnimalName"); }}
                 className={errors.requestedAnimalName ? inputError : inputNormal}
                 aria-invalid={!!errors.requestedAnimalName}
               >
@@ -657,21 +657,20 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
                 {adoptableAnimals.map((name) => (
                   <option key={name} value={name}>{name}</option>
                 ))}
-                <option value="__other__">Andere</option>
               </select>
-              {selectedAnimal === "__other__" && (
-                <input
-                  type="text"
-                  value={customAnimalName}
-                  onChange={(e) => { setCustomAnimalName(e.target.value); clearError("requestedAnimalName"); }}
-                  placeholder="Naam van het dier"
-                  className={`${errors.requestedAnimalName ? inputError : inputNormal} mt-2`}
-                />
-              )}
+              <label htmlFor="customAnimalName" className="block text-sm font-medium text-gray-700 mt-4">Andere:</label>
+              <input
+                type="text"
+                id="customAnimalName"
+                value={customAnimalName}
+                onChange={(e) => { setCustomAnimalName(e.target.value); if (e.target.value) setSelectedAnimal(""); clearError("requestedAnimalName"); }}
+                placeholder="Typ hier de naam van het dier"
+                className={`${errors.requestedAnimalName ? inputError : inputNormal} mt-1`}
+              />
               <input
                 type="hidden"
                 name="requestedAnimalName"
-                value={selectedAnimal === "__other__" ? customAnimalName : selectedAnimal}
+                value={customAnimalName || selectedAnimal}
               />
             </>
           ) : (
