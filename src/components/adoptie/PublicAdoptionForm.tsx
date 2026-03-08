@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef, useCallback } from "react";
 import { submitPublicAdoptionRequest } from "@/lib/actions/public-adoption";
 import type { PublicAdoptionResult } from "@/lib/actions/public-adoption";
 import AdoptionPhotoUpload from "./AdoptionPhotoUpload";
@@ -299,7 +299,6 @@ const DOG_QUESTIONS: Question[] = [
 ];
 
 const OTHER_QUESTIONS: Question[] = [
-  // --- Info Adoptant ---
   {
     type: "text",
     key: "kinderen",
@@ -328,7 +327,6 @@ const OTHER_QUESTIONS: Question[] = [
     options: ["Ja", "Neen", "Niet van toepassing"],
     required: true,
   },
-  // --- Tuin ---
   {
     type: "radio",
     key: "tuinAanwezig",
@@ -363,7 +361,6 @@ const OTHER_QUESTIONS: Question[] = [
     label: "Welke hoogte heeft de omheining?",
     required: true,
   },
-  // --- Info ivm adoptie ---
   {
     type: "radio",
     key: "beseftVerantwoordelijkheid",
@@ -429,49 +426,110 @@ const QUESTIONS: Record<Species, Question[]> = {
   andere: OTHER_QUESTIONS,
 };
 
-const inputClass =
-  "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none";
-const labelClass = "block text-sm font-medium text-gray-700";
+// --- Styling ---
+const inputBase =
+  "mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors";
+const inputNormal = `${inputBase} border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]`;
+const inputError = `${inputBase} border-red-500 bg-red-50/40 focus:border-red-500 focus:ring-1 focus:ring-red-500`;
+const labelNormal = "block text-sm font-medium text-gray-700";
+const labelError = "block text-sm font-medium text-red-700";
+const errorMsg = "mt-1.5 text-xs font-medium text-red-600";
+
+function scrollToFirstError() {
+  // Small delay so DOM has updated with error states
+  setTimeout(() => {
+    const el = document.querySelector("[data-field-error]");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, 50);
+}
 
 export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: Props) {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [otherValues, setOtherValues] = useState<Record<string, string>>({});
   const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
-  const [missingFields, setMissingFields] = useState<Set<string>>(new Set());
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedAnimal, setSelectedAnimal] = useState("");
   const [customAnimalName, setCustomAnimalName] = useState("");
 
+  // Controlled base fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [address, setAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  const formRef = useRef<HTMLFormElement>(null);
   const questions = QUESTIONS[species];
+
+  const clearError = useCallback((key: string) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
   const submitAction = async (
     _prev: PublicAdoptionResult | null,
-    formData: FormData,
+    _formData: FormData,
   ): Promise<PublicAdoptionResult> => {
-    // Client-side validation of required questionnaire fields
-    const missing = new Set<string>();
+    const newErrors: Record<string, string> = {};
+
+    // Validate base fields
+    const animalName = selectedAnimal === "__other__" ? customAnimalName : selectedAnimal || "";
+    if (adoptableAnimals.length > 0 && !animalName.trim()) {
+      newErrors.requestedAnimalName = "Kies een dier of vul een naam in";
+    }
+    if (!firstName.trim()) newErrors.firstName = "Voornaam is verplicht";
+    if (!lastName.trim()) newErrors.lastName = "Achternaam is verplicht";
+    if (!dateOfBirth) newErrors.dateOfBirth = "Geboortedatum is verplicht";
+    if (!address.trim()) newErrors.address = "Straat en huisnummer is verplicht";
+    if (!postalCode.trim()) newErrors.postalCode = "Postcode en gemeente is verplicht";
+    if (!phone.trim()) newErrors.phone = "Gsm nummer is verplicht";
+    if (species === "kat" && !email.trim()) newErrors.email = "E-mailadres is verplicht";
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Ongeldig e-mailadres";
+
+    // Validate questionnaire fields
     for (const q of questions) {
       if (!q.required) continue;
       const val = answers[q.key];
       if (!val || (typeof val === "string" && !val.trim()) || (Array.isArray(val) && val.length === 0)) {
-        missing.add(q.key);
+        newErrors[q.key] = q.type === "text"
+          ? "Dit veld is verplicht"
+          : q.type === "radio"
+            ? "Selecteer een optie"
+            : "Selecteer minstens 1 optie";
       }
     }
-    if (missing.size > 0) {
-      setMissingFields(missing);
-      return { success: false, error: "Niet alle verplichte vragen zijn beantwoord. Scroll omlaag om de ontbrekende velden in te vullen." };
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      scrollToFirstError();
+      const count = Object.keys(newErrors).length;
+      return {
+        success: false,
+        error: `Er ${count === 1 ? "is 1 veld" : `zijn ${count} velden`} niet correct ingevuld. Corrigeer de gemarkeerde velden.`,
+      };
     }
-    setMissingFields(new Set());
+    setErrors({});
 
     const payload = {
       species,
-      requestedAnimalName: formData.get("requestedAnimalName") as string,
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      dateOfBirth: formData.get("dateOfBirth") as string,
-      address: formData.get("address") as string,
-      postalCode: formData.get("postalCode") as string,
-      phone: formData.get("phone") as string,
-      email: (formData.get("email") as string) || "",
+      requestedAnimalName: adoptableAnimals.length > 0
+        ? animalName
+        : firstName, // fallback for text input
+      firstName,
+      lastName,
+      dateOfBirth,
+      address,
+      postalCode,
+      phone,
+      email: email || "",
       questionnaireAnswers: { ...answers } as Record<string, unknown>,
     };
 
@@ -534,6 +592,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
 
   const updateAnswer = (key: string, value: string | string[]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
+    clearError(key);
   };
 
   const toggleCheckbox = (key: string, option: string) => {
@@ -546,6 +605,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
           : [...current, option],
       };
     });
+    clearError(key);
   };
 
   const speciesLabel = species === "hond" ? "hond" : species === "kat" ? "kat/kitten" : "dier";
@@ -556,7 +616,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
       : "Adoptieaanvraag andere dieren";
 
   return (
-    <form action={formAction} className="mx-auto max-w-2xl space-y-6">
+    <form ref={formRef} action={formAction} className="mx-auto max-w-2xl space-y-6" noValidate>
       {/* Header */}
       <div className="rounded-2xl border-t-4 border-[#52796f] bg-white p-6 shadow-sm">
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">{title}</h1>
@@ -567,56 +627,63 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
       </div>
 
       {globalError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm font-medium text-red-800">{globalError}</p>
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4" role="alert">
+          <div className="flex gap-2">
+            <svg className="h-5 w-5 shrink-0 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium text-red-800">{globalError}</p>
+          </div>
         </div>
       )}
 
       {/* Gewenst dier */}
       <div className="rounded-2xl bg-white p-6 shadow-sm">
-        <label htmlFor="requestedAnimalName" className={labelClass}>
-          Welke {speciesLabel} wens je te adopteren? <span className="text-red-500">*</span>
-        </label>
-        {adoptableAnimals.length > 0 ? (
-          <>
-            <select
-              id="requestedAnimalSelect"
-              value={selectedAnimal}
-              onChange={(e) => setSelectedAnimal(e.target.value)}
-              className={inputClass}
-              required={selectedAnimal !== "__other__"}
-            >
-              <option value="">-- Maak een keuze --</option>
-              {adoptableAnimals.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-              <option value="__other__">Andere</option>
-            </select>
-            {selectedAnimal === "__other__" && (
+        <BaseField
+          label={`Welke ${speciesLabel} wens je te adopteren?`}
+          error={errors.requestedAnimalName}
+          required
+        >
+          {adoptableAnimals.length > 0 ? (
+            <>
+              <select
+                id="requestedAnimalSelect"
+                value={selectedAnimal}
+                onChange={(e) => { setSelectedAnimal(e.target.value); clearError("requestedAnimalName"); }}
+                className={errors.requestedAnimalName ? inputError : inputNormal}
+                aria-invalid={!!errors.requestedAnimalName}
+              >
+                <option value="">-- Maak een keuze --</option>
+                {adoptableAnimals.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+                <option value="__other__">Andere</option>
+              </select>
+              {selectedAnimal === "__other__" && (
+                <input
+                  type="text"
+                  value={customAnimalName}
+                  onChange={(e) => { setCustomAnimalName(e.target.value); clearError("requestedAnimalName"); }}
+                  placeholder="Naam van het dier"
+                  className={`${errors.requestedAnimalName ? inputError : inputNormal} mt-2`}
+                />
+              )}
               <input
-                type="text"
-                value={customAnimalName}
-                onChange={(e) => setCustomAnimalName(e.target.value)}
-                placeholder="Naam van het dier"
-                required
-                className={`${inputClass} mt-2`}
+                type="hidden"
+                name="requestedAnimalName"
+                value={selectedAnimal === "__other__" ? customAnimalName : selectedAnimal}
               />
-            )}
+            </>
+          ) : (
             <input
-              type="hidden"
+              type="text"
+              id="requestedAnimalName"
               name="requestedAnimalName"
-              value={selectedAnimal === "__other__" ? customAnimalName : selectedAnimal}
+              className={errors.requestedAnimalName ? inputError : inputNormal}
+              aria-invalid={!!errors.requestedAnimalName}
             />
-          </>
-        ) : (
-          <input
-            type="text"
-            id="requestedAnimalName"
-            name="requestedAnimalName"
-            required
-            className={inputClass}
-          />
-        )}
+          )}
+        </BaseField>
       </div>
 
       {/* Persoonlijke gegevens */}
@@ -624,49 +691,77 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
         <h2 className="mb-4 text-base font-semibold text-[#1b4332]">Gegevens adoptant</h2>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="firstName" className={labelClass}>
-                Voornaam <span className="text-red-500">*</span>
-              </label>
-              <input type="text" id="firstName" name="firstName" required className={inputClass} />
-            </div>
-            <div>
-              <label htmlFor="lastName" className={labelClass}>
-                Achternaam <span className="text-red-500">*</span>
-              </label>
-              <input type="text" id="lastName" name="lastName" required className={inputClass} />
-            </div>
+            <BaseField label="Voornaam" error={errors.firstName} required>
+              <input
+                type="text"
+                id="firstName"
+                value={firstName}
+                onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }}
+                className={errors.firstName ? inputError : inputNormal}
+                aria-invalid={!!errors.firstName}
+              />
+            </BaseField>
+            <BaseField label="Achternaam" error={errors.lastName} required>
+              <input
+                type="text"
+                id="lastName"
+                value={lastName}
+                onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }}
+                className={errors.lastName ? inputError : inputNormal}
+                aria-invalid={!!errors.lastName}
+              />
+            </BaseField>
           </div>
-          <div>
-            <label htmlFor="dateOfBirth" className={labelClass}>
-              Geboortedatum <span className="text-red-500">*</span>
-            </label>
-            <input type="date" id="dateOfBirth" name="dateOfBirth" required className={inputClass} />
-          </div>
-          <div>
-            <label htmlFor="address" className={labelClass}>
-              Straat en huisnummer <span className="text-red-500">*</span>
-            </label>
-            <input type="text" id="address" name="address" required className={inputClass} />
-          </div>
-          <div>
-            <label htmlFor="postalCode" className={labelClass}>
-              Postcode en gemeente <span className="text-red-500">*</span>
-            </label>
-            <input type="text" id="postalCode" name="postalCode" required className={inputClass} />
-          </div>
-          <div>
-            <label htmlFor="phone" className={labelClass}>
-              Gsm nummer <span className="text-red-500">*</span>
-            </label>
-            <input type="tel" id="phone" name="phone" required className={inputClass} />
-          </div>
-          <div>
-            <label htmlFor="email" className={labelClass}>
-              E-mailadres{species === "kat" && <span className="text-red-500"> *</span>}
-            </label>
-            <input type="email" id="email" name="email" required={species === "kat"} className={inputClass} />
-          </div>
+          <BaseField label="Geboortedatum" error={errors.dateOfBirth} required>
+            <input
+              type="date"
+              id="dateOfBirth"
+              value={dateOfBirth}
+              onChange={(e) => { setDateOfBirth(e.target.value); clearError("dateOfBirth"); }}
+              className={errors.dateOfBirth ? inputError : inputNormal}
+              aria-invalid={!!errors.dateOfBirth}
+            />
+          </BaseField>
+          <BaseField label="Straat en huisnummer" error={errors.address} required>
+            <input
+              type="text"
+              id="address"
+              value={address}
+              onChange={(e) => { setAddress(e.target.value); clearError("address"); }}
+              className={errors.address ? inputError : inputNormal}
+              aria-invalid={!!errors.address}
+            />
+          </BaseField>
+          <BaseField label="Postcode en gemeente" error={errors.postalCode} required>
+            <input
+              type="text"
+              id="postalCode"
+              value={postalCode}
+              onChange={(e) => { setPostalCode(e.target.value); clearError("postalCode"); }}
+              className={errors.postalCode ? inputError : inputNormal}
+              aria-invalid={!!errors.postalCode}
+            />
+          </BaseField>
+          <BaseField label="Gsm nummer" error={errors.phone} required>
+            <input
+              type="tel"
+              id="phone"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); clearError("phone"); }}
+              className={errors.phone ? inputError : inputNormal}
+              aria-invalid={!!errors.phone}
+            />
+          </BaseField>
+          <BaseField label="E-mailadres" error={errors.email} required={species === "kat"}>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+              className={errors.email ? inputError : inputNormal}
+              aria-invalid={!!errors.email}
+            />
+          </BaseField>
         </div>
       </div>
 
@@ -685,7 +780,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
               onOtherChange={(key, val) =>
                 setOtherValues((prev) => ({ ...prev, [key]: val }))
               }
-              hasError={missingFields.has(q.key)}
+              error={errors[q.key]}
             />
           ))}
         </div>
@@ -726,6 +821,33 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
   );
 }
 
+// --- Reusable base field wrapper ---
+function BaseField({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div {...(error ? { "data-field-error": true } : {})}>
+      <label className={error ? labelError : labelNormal}>
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+      </label>
+      {children}
+      {error && (
+        <p className={errorMsg} role="alert">{error}</p>
+      )}
+    </div>
+  );
+}
+
+// --- Reusable question field renderer ---
 function QuestionField({
   question,
   value,
@@ -733,7 +855,7 @@ function QuestionField({
   onChange,
   onToggleCheckbox,
   onOtherChange,
-  hasError,
+  error,
 }: {
   question: Question;
   value: string | string[] | undefined;
@@ -741,14 +863,14 @@ function QuestionField({
   onChange: (key: string, value: string | string[]) => void;
   onToggleCheckbox: (key: string, option: string) => void;
   onOtherChange: (key: string, value: string) => void;
-  hasError?: boolean;
+  error?: string;
 }) {
-  const errorBorder = hasError ? "rounded-lg border border-red-300 bg-red-50/30 p-3 -m-3" : "";
+  const lbl = error ? labelError : labelNormal;
 
   if (question.type === "text") {
     return (
-      <div className={errorBorder}>
-        <label className={labelClass}>
+      <div {...(error ? { "data-field-error": true } : {})}>
+        <label className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
         </label>
@@ -757,21 +879,23 @@ function QuestionField({
           value={(value as string) || ""}
           onChange={(e) => onChange(question.key, e.target.value)}
           placeholder={question.placeholder}
-          className={inputClass}
+          className={error ? inputError : inputNormal}
+          aria-invalid={!!error}
+          aria-describedby={error ? `err-${question.key}` : undefined}
         />
-        {hasError && <p className="mt-1 text-xs text-red-600">Dit veld is verplicht</p>}
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
       </div>
     );
   }
 
   if (question.type === "radio") {
     return (
-      <div className={errorBorder}>
-        <p className={labelClass}>
+      <fieldset {...(error ? { "data-field-error": true } : {})} aria-invalid={!!error}>
+        <legend className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
-        </p>
-        <div className="mt-2 space-y-2">
+        </legend>
+        <div className={`mt-2 space-y-2 rounded-lg px-3 py-2 ${error ? "border border-red-300 bg-red-50/40" : ""}`}>
           {question.options.map((option) => (
             <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -803,25 +927,29 @@ function QuestionField({
                   onOtherChange(question.key, e.target.value);
                   onChange(question.key, "__other__");
                 }}
-                className="ml-1 flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none"
+                className={`ml-1 flex-1 rounded border px-2 py-1 text-sm outline-none ${
+                  error
+                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]"
+                }`}
               />
             </label>
           )}
         </div>
-        {hasError && <p className="mt-1 text-xs text-red-600">Selecteer een optie</p>}
-      </div>
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
+      </fieldset>
     );
   }
 
   if (question.type === "checkbox") {
     const selected = (value as string[]) || [];
     return (
-      <div className={errorBorder}>
-        <p className={labelClass}>
+      <fieldset {...(error ? { "data-field-error": true } : {})} aria-invalid={!!error}>
+        <legend className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
-        </p>
-        <div className="mt-2 space-y-2">
+        </legend>
+        <div className={`mt-2 space-y-2 rounded-lg px-3 py-2 ${error ? "border border-red-300 bg-red-50/40" : ""}`}>
           {question.options.map((option) => (
             <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -855,13 +983,17 @@ function QuestionField({
                     onChange(question.key, selected.map((s) => s === oldVal ? newVal : s));
                   }
                 }}
-                className="ml-1 flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none"
+                className={`ml-1 flex-1 rounded border px-2 py-1 text-sm outline-none ${
+                  error
+                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]"
+                }`}
               />
             </label>
           )}
         </div>
-        {hasError && <p className="mt-1 text-xs text-red-600">Selecteer minstens 1 optie</p>}
-      </div>
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
+      </fieldset>
     );
   }
 

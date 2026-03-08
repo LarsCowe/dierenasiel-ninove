@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useCallback } from "react";
 import { submitSurrenderRequest } from "@/lib/actions/surrender";
 import type { SurrenderResult } from "@/lib/actions/surrender";
 import AdoptionPhotoUpload from "@/components/adoptie/AdoptionPhotoUpload";
@@ -29,7 +29,6 @@ interface CheckboxQuestion {
 }
 type Question = RadioQuestion | TextQuestion | CheckboxQuestion;
 
-// --- Sections ---
 interface Section {
   title: string;
   questions: Question[];
@@ -170,11 +169,7 @@ const INFO_DIER_QUESTIONS: Question[] = [
 ];
 
 const BESCHRIJVING_QUESTIONS: Question[] = [
-  {
-    type: "text",
-    key: "karakter",
-    label: "Beschrijf het karakter",
-  },
+  { type: "text", key: "karakter", label: "Beschrijf het karakter" },
 ];
 
 const WANNEER_QUESTIONS: Question[] = [
@@ -200,17 +195,27 @@ const SECTIONS: Section[] = [
   { title: "Wanneer kan u langs komen?", questions: WANNEER_QUESTIONS },
 ];
 
-const inputClass =
-  "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none";
-const labelClass = "block text-sm font-medium text-gray-700";
+// --- Styling ---
+const inputBase =
+  "mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors";
+const inputNormal = `${inputBase} border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]`;
+const inputError = `${inputBase} border-red-500 bg-red-50/40 focus:border-red-500 focus:ring-1 focus:ring-red-500`;
+const labelNormal = "block text-sm font-medium text-gray-700";
+const labelError = "block text-sm font-medium text-red-700";
+const errorMsg = "mt-1.5 text-xs font-medium text-red-600";
+
+function scrollToFirstError() {
+  setTimeout(() => {
+    const el = document.querySelector("[data-field-error]");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 50);
+}
 
 export default function SurrenderForm() {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [otherValues, setOtherValues] = useState<Record<string, string>>({});
-  const [uploadedFiles, setUploadedFiles] = useState<
-    { url: string; name: string }[]
-  >([]);
-  const [missingFields, setMissingFields] = useState<Set<string>>(new Set());
+  const [uploadedFiles, setUploadedFiles] = useState<{ url: string; name: string }[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Base fields
   const [email, setEmail] = useState("");
@@ -224,43 +229,55 @@ export default function SurrenderForm() {
 
   const allQuestions = SECTIONS.flatMap((s) => s.questions);
 
+  const clearError = useCallback((key: string) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
   const submitAction = async (
     _prev: SurrenderResult | null,
     _formData: FormData,
   ): Promise<SurrenderResult> => {
-    // Validate base fields
-    const baseErrors: string[] = [];
-    if (!email) baseErrors.push("email");
-    if (!species) baseErrors.push("species");
-    if (!ownerName) baseErrors.push("ownerName");
-    if (!address) baseErrors.push("address");
-    if (!postalCode) baseErrors.push("postalCode");
-    if (!phone) baseErrors.push("phone");
-    if (!surrenderReason) baseErrors.push("surrenderReason");
+    const newErrors: Record<string, string> = {};
 
-    // Validate questionnaire
-    const missing = new Set<string>();
+    // Validate base fields
+    if (!email.trim()) newErrors.email = "E-mailadres is verplicht";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Ongeldig e-mailadres";
+    if (!species) newErrors.species = "Selecteer een diersoort";
+    if (species === "__other__" && !customSpecies.trim()) newErrors.species = "Vul de diersoort in";
+    if (!ownerName.trim()) newErrors.ownerName = "Naam is verplicht";
+    if (!address.trim()) newErrors.address = "Straat en huisnummer is verplicht";
+    if (!postalCode.trim()) newErrors.postalCode = "Postcode en gemeente is verplicht";
+    if (!phone.trim()) newErrors.phone = "Gsm nummer is verplicht";
+    if (!surrenderReason.trim()) newErrors.surrenderReason = "Reden van afstand is verplicht";
+
+    // Validate questionnaire fields
     for (const q of allQuestions) {
       if (!q.required) continue;
       const val = answers[q.key];
-      if (
-        !val ||
-        (typeof val === "string" && !val.trim()) ||
-        (Array.isArray(val) && val.length === 0)
-      ) {
-        missing.add(q.key);
+      if (!val || (typeof val === "string" && !val.trim()) || (Array.isArray(val) && val.length === 0)) {
+        newErrors[q.key] = q.type === "text"
+          ? "Dit veld is verplicht"
+          : q.type === "radio"
+            ? "Selecteer een optie"
+            : "Selecteer minstens 1 optie";
       }
     }
 
-    if (baseErrors.length > 0 || missing.size > 0) {
-      setMissingFields(new Set([...baseErrors, ...missing]));
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      scrollToFirstError();
+      const count = Object.keys(newErrors).length;
       return {
         success: false,
-        error:
-          "Niet alle verplichte velden zijn ingevuld. Controleer het formulier.",
+        error: `Er ${count === 1 ? "is 1 veld" : `zijn ${count} velden`} niet correct ingevuld. Corrigeer de gemarkeerde velden.`,
       };
     }
-    setMissingFields(new Set());
+    setErrors({});
 
     const resolvedAnswers = { ...answers } as Record<string, unknown>;
     for (const [key, val] of Object.entries(resolvedAnswers)) {
@@ -269,8 +286,7 @@ export default function SurrenderForm() {
       }
     }
 
-    const speciesValue =
-      species === "__other__" ? customSpecies : species;
+    const speciesValue = species === "__other__" ? customSpecies : species;
 
     const payload = {
       email,
@@ -295,18 +311,8 @@ export default function SurrenderForm() {
     return (
       <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-          <svg
-            className="h-8 w-8 text-emerald-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
+          <svg className="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <h2 className="font-heading text-2xl font-bold text-emerald-800">
@@ -336,6 +342,7 @@ export default function SurrenderForm() {
 
   const updateAnswer = (key: string, value: string | string[]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
+    clearError(key);
   };
 
   const toggleCheckbox = (key: string, option: string) => {
@@ -348,10 +355,11 @@ export default function SurrenderForm() {
           : [...current, option],
       };
     });
+    clearError(key);
   };
 
   return (
-    <form action={formAction} className="mx-auto max-w-2xl space-y-6">
+    <form action={formAction} className="mx-auto max-w-2xl space-y-6" noValidate>
       {/* Header */}
       <div className="rounded-2xl border-t-4 border-[#52796f] bg-white p-6 shadow-sm">
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
@@ -359,55 +367,46 @@ export default function SurrenderForm() {
         </h1>
         <p className="mt-2 text-sm text-gray-600">
           Dierenasiel Ninove &mdash; Vul dit formulier in om een dier af te
-          staan. Alle velden met{" "}
-          <span className="text-red-500">*</span> zijn verplicht.
+          staan. Alle velden met <span className="text-red-500">*</span> zijn verplicht.
         </p>
       </div>
 
       {globalError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm font-medium text-red-800">{globalError}</p>
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4" role="alert">
+          <div className="flex gap-2">
+            <svg className="h-5 w-5 shrink-0 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium text-red-800">{globalError}</p>
+          </div>
         </div>
       )}
 
       {/* E-mail + diersoort */}
       <div className="rounded-2xl bg-white p-6 shadow-sm space-y-4">
-        <div>
-          <label htmlFor="email" className={labelClass}>
-            E-mailadres <span className="text-red-500">*</span>
-          </label>
+        <BaseField label="E-mailadres" error={errors.email} required>
           <input
             type="email"
-            id="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className={`${inputClass} ${missingFields.has("email") ? "border-red-300 bg-red-50/30" : ""}`}
+            onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
+            className={errors.email ? inputError : inputNormal}
+            aria-invalid={!!errors.email}
           />
-          {missingFields.has("email") && (
-            <p className="mt-1 text-xs text-red-600">Dit veld is verplicht</p>
-          )}
-        </div>
+        </BaseField>
 
-        <div>
-          <p className={labelClass}>
-            Welk dier wenst u af te staan?{" "}
-            <span className="text-red-500">*</span>
-          </p>
-          <div
-            className={`mt-2 space-y-2 ${missingFields.has("species") ? "rounded-lg border border-red-300 bg-red-50/30 p-3 -m-1" : ""}`}
-          >
+        <fieldset {...(errors.species ? { "data-field-error": true } : {})} aria-invalid={!!errors.species}>
+          <legend className={errors.species ? labelError : labelNormal}>
+            Welk dier wenst u af te staan? <span className="text-red-500">*</span>
+          </legend>
+          <div className={`mt-2 space-y-2 rounded-lg px-3 py-2 ${errors.species ? "border border-red-300 bg-red-50/40" : ""}`}>
             {["Hond", "Kat"].map((opt) => (
-              <label
-                key={opt}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
+              <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="radio"
                   name="species"
                   value={opt.toLowerCase()}
                   checked={species === opt.toLowerCase()}
-                  onChange={() => setSpecies(opt.toLowerCase())}
+                  onChange={() => { setSpecies(opt.toLowerCase()); clearError("species"); }}
                   className="h-4 w-4 border-gray-300 text-[#52796f] focus:ring-[#52796f]"
                 />
                 {opt}
@@ -419,7 +418,7 @@ export default function SurrenderForm() {
                 name="species"
                 value="__other__"
                 checked={species === "__other__"}
-                onChange={() => setSpecies("__other__")}
+                onChange={() => { setSpecies("__other__"); clearError("species"); }}
                 className="h-4 w-4 border-gray-300 text-[#52796f] focus:ring-[#52796f]"
               />
               Anders:
@@ -429,15 +428,18 @@ export default function SurrenderForm() {
                 onChange={(e) => {
                   setCustomSpecies(e.target.value);
                   setSpecies("__other__");
+                  clearError("species");
                 }}
-                className="ml-1 flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none"
+                className={`ml-1 flex-1 rounded border px-2 py-1 text-sm outline-none ${
+                  errors.species
+                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]"
+                }`}
               />
             </label>
           </div>
-          {missingFields.has("species") && (
-            <p className="mt-1 text-xs text-red-600">Selecteer een optie</p>
-          )}
-        </div>
+          {errors.species && <p className={errorMsg} role="alert">{errors.species}</p>}
+        </fieldset>
       </div>
 
       {/* Info huidige eigenaar */}
@@ -446,97 +448,51 @@ export default function SurrenderForm() {
           Info huidige eigenaar van het dier
         </h2>
         <div className="space-y-4">
-          <div>
-            <label htmlFor="ownerName" className={labelClass}>
-              Naam en voornaam eigenaar van het dier{" "}
-              <span className="text-red-500">*</span>
-            </label>
+          <BaseField label="Naam en voornaam eigenaar van het dier" error={errors.ownerName} required>
             <input
               type="text"
-              id="ownerName"
               value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-              required
-              className={`${inputClass} ${missingFields.has("ownerName") ? "border-red-300 bg-red-50/30" : ""}`}
+              onChange={(e) => { setOwnerName(e.target.value); clearError("ownerName"); }}
+              className={errors.ownerName ? inputError : inputNormal}
+              aria-invalid={!!errors.ownerName}
             />
-            {missingFields.has("ownerName") && (
-              <p className="mt-1 text-xs text-red-600">
-                Dit veld is verplicht
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="address" className={labelClass}>
-              Straat en huisnummer <span className="text-red-500">*</span>
-            </label>
+          </BaseField>
+          <BaseField label="Straat en huisnummer" error={errors.address} required>
             <input
               type="text"
-              id="address"
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              className={`${inputClass} ${missingFields.has("address") ? "border-red-300 bg-red-50/30" : ""}`}
+              onChange={(e) => { setAddress(e.target.value); clearError("address"); }}
+              className={errors.address ? inputError : inputNormal}
+              aria-invalid={!!errors.address}
             />
-            {missingFields.has("address") && (
-              <p className="mt-1 text-xs text-red-600">
-                Dit veld is verplicht
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="postalCode" className={labelClass}>
-              Postcode en gemeente <span className="text-red-500">*</span>
-            </label>
+          </BaseField>
+          <BaseField label="Postcode en gemeente" error={errors.postalCode} required>
             <input
               type="text"
-              id="postalCode"
               value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              required
-              className={`${inputClass} ${missingFields.has("postalCode") ? "border-red-300 bg-red-50/30" : ""}`}
+              onChange={(e) => { setPostalCode(e.target.value); clearError("postalCode"); }}
+              className={errors.postalCode ? inputError : inputNormal}
+              aria-invalid={!!errors.postalCode}
             />
-            {missingFields.has("postalCode") && (
-              <p className="mt-1 text-xs text-red-600">
-                Dit veld is verplicht
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="phone" className={labelClass}>
-              Gsm nummer <span className="text-red-500">*</span>
-            </label>
+          </BaseField>
+          <BaseField label="Gsm nummer" error={errors.phone} required>
             <input
               type="tel"
-              id="phone"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              className={`${inputClass} ${missingFields.has("phone") ? "border-red-300 bg-red-50/30" : ""}`}
+              onChange={(e) => { setPhone(e.target.value); clearError("phone"); }}
+              className={errors.phone ? inputError : inputNormal}
+              aria-invalid={!!errors.phone}
             />
-            {missingFields.has("phone") && (
-              <p className="mt-1 text-xs text-red-600">
-                Dit veld is verplicht
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="surrenderReason" className={labelClass}>
-              Reden van afstand <span className="text-red-500">*</span>
-            </label>
+          </BaseField>
+          <BaseField label="Reden van afstand" error={errors.surrenderReason} required>
             <textarea
-              id="surrenderReason"
               rows={3}
               value={surrenderReason}
-              onChange={(e) => setSurrenderReason(e.target.value)}
-              required
-              className={`${inputClass} resize-y ${missingFields.has("surrenderReason") ? "border-red-300 bg-red-50/30" : ""}`}
+              onChange={(e) => { setSurrenderReason(e.target.value); clearError("surrenderReason"); }}
+              className={`${errors.surrenderReason ? inputError : inputNormal} resize-y`}
+              aria-invalid={!!errors.surrenderReason}
             />
-            {missingFields.has("surrenderReason") && (
-              <p className="mt-1 text-xs text-red-600">
-                Dit veld is verplicht
-              </p>
-            )}
-          </div>
+          </BaseField>
         </div>
       </div>
 
@@ -547,7 +503,7 @@ export default function SurrenderForm() {
             {section.title}
           </h2>
 
-          {/* Photo upload in "Info over het dier" section, after naamDier */}
+          {/* Photo upload in "Info over het dier" section */}
           {si === 0 && (
             <div className="mb-6">
               <p className="text-sm font-medium text-gray-700 mb-2">
@@ -558,10 +514,7 @@ export default function SurrenderForm() {
                 Upload maximaal 5 bestanden (afbeelding). Maximaal 10 MB per
                 bestand.
               </p>
-              <AdoptionPhotoUpload
-                files={uploadedFiles}
-                onChange={setUploadedFiles}
-              />
+              <AdoptionPhotoUpload files={uploadedFiles} onChange={setUploadedFiles} />
             </div>
           )}
 
@@ -577,7 +530,7 @@ export default function SurrenderForm() {
                 onOtherChange={(key, val) =>
                   setOtherValues((prev) => ({ ...prev, [key]: val }))
                 }
-                hasError={missingFields.has(q.key)}
+                error={errors[q.key]}
               />
             ))}
           </div>
@@ -597,10 +550,33 @@ export default function SurrenderForm() {
 
       <p className="pb-8 text-xs text-gray-400">
         Door dit formulier in te dienen ga je akkoord dat je gegevens verwerkt
-        worden door Dierenasiel Ninove in het kader van de
-        afstandsprocedure.
+        worden door Dierenasiel Ninove in het kader van de afstandsprocedure.
       </p>
     </form>
+  );
+}
+
+// --- Reusable base field wrapper ---
+function BaseField({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div {...(error ? { "data-field-error": true } : {})}>
+      <label className={error ? labelError : labelNormal}>
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+      </label>
+      {children}
+      {error && <p className={errorMsg} role="alert">{error}</p>}
+    </div>
   );
 }
 
@@ -612,7 +588,7 @@ function QuestionField({
   onChange,
   onToggleCheckbox,
   onOtherChange,
-  hasError,
+  error,
 }: {
   question: Question;
   value: string | string[] | undefined;
@@ -620,16 +596,14 @@ function QuestionField({
   onChange: (key: string, value: string | string[]) => void;
   onToggleCheckbox: (key: string, option: string) => void;
   onOtherChange: (key: string, value: string) => void;
-  hasError?: boolean;
+  error?: string;
 }) {
-  const errorBorder = hasError
-    ? "rounded-lg border border-red-300 bg-red-50/30 p-3 -m-3"
-    : "";
+  const lbl = error ? labelError : labelNormal;
 
   if (question.type === "text") {
     return (
-      <div className={errorBorder}>
-        <label className={labelClass}>
+      <div {...(error ? { "data-field-error": true } : {})}>
+        <label className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
         </label>
@@ -637,28 +611,25 @@ function QuestionField({
           type="text"
           value={(value as string) || ""}
           onChange={(e) => onChange(question.key, e.target.value)}
-          className={inputClass}
+          className={error ? inputError : inputNormal}
+          aria-invalid={!!error}
+          aria-describedby={error ? `err-${question.key}` : undefined}
         />
-        {hasError && (
-          <p className="mt-1 text-xs text-red-600">Dit veld is verplicht</p>
-        )}
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
       </div>
     );
   }
 
   if (question.type === "radio") {
     return (
-      <div className={errorBorder}>
-        <p className={labelClass}>
+      <fieldset {...(error ? { "data-field-error": true } : {})} aria-invalid={!!error}>
+        <legend className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
-        </p>
-        <div className="mt-2 space-y-2">
+        </legend>
+        <div className={`mt-2 space-y-2 rounded-lg px-3 py-2 ${error ? "border border-red-300 bg-red-50/40" : ""}`}>
           {question.options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center gap-2 text-sm text-gray-700"
-            >
+            <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
               <input
                 type="radio"
                 name={question.key}
@@ -688,32 +659,31 @@ function QuestionField({
                   onOtherChange(question.key, e.target.value);
                   onChange(question.key, "__other__");
                 }}
-                className="ml-1 flex-1 rounded border border-gray-300 px-2 py-1 text-sm focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f] outline-none"
+                className={`ml-1 flex-1 rounded border px-2 py-1 text-sm outline-none ${
+                  error
+                    ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:border-[#52796f] focus:ring-1 focus:ring-[#52796f]"
+                }`}
               />
             </label>
           )}
         </div>
-        {hasError && (
-          <p className="mt-1 text-xs text-red-600">Selecteer een optie</p>
-        )}
-      </div>
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
+      </fieldset>
     );
   }
 
   if (question.type === "checkbox") {
     const selected = (value as string[]) || [];
     return (
-      <div className={errorBorder}>
-        <p className={labelClass}>
+      <fieldset {...(error ? { "data-field-error": true } : {})} aria-invalid={!!error}>
+        <legend className={lbl}>
           {question.label}
           {question.required && <span className="text-red-500"> *</span>}
-        </p>
-        <div className="mt-2 space-y-2">
+        </legend>
+        <div className={`mt-2 space-y-2 rounded-lg px-3 py-2 ${error ? "border border-red-300 bg-red-50/40" : ""}`}>
           {question.options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center gap-2 text-sm text-gray-700"
-            >
+            <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={selected.includes(option)}
@@ -724,12 +694,8 @@ function QuestionField({
             </label>
           ))}
         </div>
-        {hasError && (
-          <p className="mt-1 text-xs text-red-600">
-            Selecteer minstens 1 optie
-          </p>
-        )}
-      </div>
+        {error && <p id={`err-${question.key}`} className={errorMsg} role="alert">{error}</p>}
+      </fieldset>
     );
   }
 
