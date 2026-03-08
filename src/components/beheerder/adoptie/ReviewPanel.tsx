@@ -53,9 +53,9 @@ export default function ReviewPanel({ candidateId, reviewMartine, reviewNathalie
       </div>
 
       <p className="mt-1 text-xs text-gray-500">
-        Elke beoordelaar geeft aan of de kandidaat geschikt is. Bij 1x &quot;niet weerhouden&quot; is het eindresultaat
-        automatisch &quot;niet weerhouden&quot;. Bij unaniem &quot;geschikt&quot; is het resultaat &quot;geschikt&quot;.
-        Anders: &quot;misschien&quot;.
+        Elke beoordelaar geeft aan of de kandidaat geschikt is. Standaard staat elke beoordeling op &quot;In beraad&quot;.
+        Bij 1x &quot;niet weerhouden&quot; is het eindresultaat automatisch &quot;niet weerhouden&quot;.
+        Bij unaniem &quot;geschikt&quot; is het resultaat &quot;geschikt&quot;. Anders: &quot;misschien&quot;.
       </p>
 
       {state && !state.success && (
@@ -73,9 +73,11 @@ export default function ReviewPanel({ candidateId, reviewMartine, reviewNathalie
                   <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                     current === "geschikt"
                       ? "bg-emerald-100 text-emerald-700"
-                      : "bg-red-100 text-red-700"
+                      : current === "niet_weerhouden"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-blue-100 text-blue-700"
                   }`}>
-                    {current === "geschikt" ? "Geschikt" : "Niet weerhouden"}
+                    {current === "geschikt" ? "Geschikt" : current === "niet_weerhouden" ? "Niet weerhouden" : "In beraad"}
                   </span>
                 )}
               </div>
@@ -94,6 +96,22 @@ export default function ReviewPanel({ candidateId, reviewMartine, reviewNathalie
                     }`}
                   >
                     Geschikt
+                  </button>
+                </form>
+                <form action={formAction}>
+                  <input type="hidden" name="candidateId" value={candidateId} />
+                  <input type="hidden" name="reviewer" value={key} />
+                  <input type="hidden" name="value" value="in_beraad" />
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      current === "in_beraad" || !current
+                        ? "bg-blue-600 text-white"
+                        : "border border-blue-300 text-blue-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    In beraad
                   </button>
                 </form>
                 <form action={formAction}>

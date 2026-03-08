@@ -281,7 +281,7 @@ function QuestionnaireDisplay({ data }: { data: Record<string, unknown> }) {
             <p className="text-xs font-bold uppercase tracking-wide text-[#1b4332]">
               {QUESTION_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm italic text-gray-500">
+            <p className="mt-1 whitespace-pre-wrap text-sm text-blue-600">
               {formatValue(key, value)}
             </p>
           </div>

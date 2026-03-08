@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeReviewResult } from "@/lib/utils/review-result";
+import { hardDeleteAdoptionCandidate } from "@/lib/actions/adoption-candidates";
 import type { AdoptionCandidateWithAnimal } from "@/lib/queries/adoption-candidates";
 
 interface Props {
@@ -34,6 +35,18 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
   const [animalFilter, setAnimalFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("datum");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleDelete = (id: number, name: string) => {
+    if (!confirm(`Weet je zeker dat je "${name}" definitief wilt verwijderen?`)) return;
+    setDeletingId(id);
+    startTransition(async () => {
+      await hardDeleteAdoptionCandidate(id);
+      setDeletingId(null);
+      router.refresh();
+    });
+  };
 
   const uniqueAnimals = Array.from(
     new Set(candidates.map((c) => c.animalName).filter(Boolean) as string[]),
@@ -213,12 +226,25 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
                       <div className="text-xs text-gray-400">{new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</div>
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <Link
-                        href={`/beheerder/adoptie/${candidate.id}`}
-                        className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
-                      >
-                        Bekijken
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/beheerder/adoptie/${candidate.id}`}
+                          className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+                        >
+                          Bekijken
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(candidate.id, `${candidate.firstName} ${candidate.lastName}`)}
+                          disabled={isPending && deletingId === candidate.id}
+                          className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          title="Definitief verwijderen"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

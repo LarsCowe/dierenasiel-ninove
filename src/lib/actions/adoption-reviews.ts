@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { ActionResult } from "@/types";
 
 const REVIEWERS = ["martine", "nathalie", "sven"] as const;
-const REVIEW_VALUES = ["geschikt", "niet_weerhouden"] as const;
+const REVIEW_VALUES = ["geschikt", "niet_weerhouden", "in_beraad"] as const;
 
 const reviewSchema = z.object({
   candidateId: z.coerce.number().positive(),

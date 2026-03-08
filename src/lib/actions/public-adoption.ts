@@ -66,6 +66,9 @@ export async function submitPublicAdoptionRequest(
         },
         status: "pending",
         notes: `Publieke aanvraag via website (${parsed.data.species})`,
+        reviewMartine: "in_beraad",
+        reviewNathalie: "in_beraad",
+        reviewSven: "in_beraad",
       })
       .returning();
 

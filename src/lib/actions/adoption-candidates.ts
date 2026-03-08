@@ -54,6 +54,9 @@ export async function createAdoptionCandidate(
         questionnaireAnswers: parsed.data.questionnaireAnswers,
         status: "pending",
         notes: parsed.data.notes || null,
+        reviewMartine: "in_beraad",
+        reviewNathalie: "in_beraad",
+        reviewSven: "in_beraad",
       })
       .returning();
 
@@ -229,6 +232,38 @@ export async function deleteAdoptionCandidate(
     await db.delete(adoptionCandidates).where(eq(adoptionCandidates.id, id));
 
     await logAudit("delete_adoption_candidate", "adoption_candidate", existing.id, existing, null);
+    revalidatePath("/beheerder/adoptie");
+
+    return { success: true, data: undefined };
+  } catch {
+    return {
+      success: false,
+      error: "Er ging iets mis bij het verwijderen. Probeer het later opnieuw.",
+    };
+  }
+}
+
+export async function hardDeleteAdoptionCandidate(id: number): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  if (!id || isNaN(id)) {
+    return { success: false, error: "Ongeldig kandidaat-ID" };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionCandidates)
+      .where(eq(adoptionCandidates.id, id))
+      .limit(1);
+    if (!existing) return { success: false, error: "Kandidaat niet gevonden" };
+
+    await db.delete(adoptionCandidates).where(eq(adoptionCandidates.id, id));
+
+    await logAudit("hard_delete_adoption_candidate", "adoption_candidate", existing.id, existing, null);
     revalidatePath("/beheerder/adoptie");
 
     return { success: true, data: undefined };
