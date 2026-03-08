@@ -265,7 +265,7 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
 
             <div className="border-t border-white/10 pt-4">
               <h3 className="font-heading text-sm font-bold text-white mb-3">Wandeluren</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
                 {[
                   { day: "Maandag", hours: "10:00 – 12:00" },
                   { day: "Woensdag", hours: "10:00 – 12:00" },
