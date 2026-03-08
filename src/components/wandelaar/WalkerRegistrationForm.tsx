@@ -265,16 +265,16 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
 
             <div className="border-t border-white/10 pt-4">
               <h3 className="font-heading text-sm font-bold text-white mb-3">Wandeluren</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {[
                   { day: "Maandag", hours: "10:00 – 12:00" },
                   { day: "Woensdag", hours: "10:00 – 12:00" },
                   { day: "Vrijdag", hours: "10:00 – 12:00" },
                   { day: "Zaterdag", hours: "10:00 – 12:00" },
                 ].map((item) => (
-                  <div key={item.day} className="bg-white/5 rounded-xl px-4 py-3 text-center">
-                    <span className="block text-sm font-semibold text-white/90">{item.day}</span>
-                    <span className="block text-xs text-white/60 font-mono mt-1">{item.hours}</span>
+                  <div key={item.day} className="bg-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-white/90">{item.day}</span>
+                    <span className="text-sm text-white/60 font-mono whitespace-nowrap">{item.hours}</span>
                   </div>
                 ))}
               </div>
