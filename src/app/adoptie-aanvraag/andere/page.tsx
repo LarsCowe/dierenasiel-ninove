@@ -3,6 +3,8 @@ import { animals } from "@/lib/db/schema";
 import { eq, and, asc, notInArray } from "drizzle-orm";
 import PublicAdoptionForm from "@/components/adoptie/PublicAdoptionForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function AndereAdoptieAanvraagPage() {
   const adoptableOther = await db
     .select({ id: animals.id, name: animals.name })
