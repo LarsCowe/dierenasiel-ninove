@@ -21,8 +21,9 @@ const RESULT_BADGES: Record<string, { label: string; className: string }> = {
 const CATEGORY_OPTIONS = [
   { value: "", label: "Alle beoordelingen" },
   { value: "goede_kandidaat", label: "Goede kandidaat" },
-  { value: "mogelijks", label: "Mogelijks" },
+  { value: "mogelijks", label: "Misschien" },
   { value: "niet_weerhouden", label: "Niet weerhouden" },
+  { value: "blanco", label: "Blanco" },
 ];
 
 type SortKey = "naam" | "dier" | "beoordeling" | "datum";

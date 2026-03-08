@@ -8,7 +8,7 @@ interface Props {
 
 export default async function AdoptiePage({ searchParams }: Props) {
   const { categorie } = await searchParams;
-  const validCategories = ["niet_weerhouden", "mogelijks", "goede_kandidaat"];
+  const validCategories = ["niet_weerhouden", "mogelijks", "goede_kandidaat", "blanco"];
   const activeCategory = categorie && validCategories.includes(categorie) ? categorie : undefined;
   const candidates = await getAdoptionCandidates(activeCategory);
 

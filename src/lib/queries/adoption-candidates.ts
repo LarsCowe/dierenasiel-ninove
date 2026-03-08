@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { adoptionCandidates, animals } from "@/lib/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, isNull, sql } from "drizzle-orm";
 import type { AdoptionCandidate } from "@/types";
 
 export type AdoptionCandidateWithAnimal = AdoptionCandidate & { animalName: string | null };
@@ -15,14 +15,22 @@ export async function getAdoptionCandidates(category?: string): Promise<Adoption
       .from(adoptionCandidates)
       .leftJoin(animals, eq(adoptionCandidates.animalId, animals.id));
 
-    const results = category
-      ? await query
-          .where(eq(adoptionCandidates.category, category))
-          .orderBy(desc(adoptionCandidates.createdAt))
-          .limit(100)
-      : await query
-          .orderBy(desc(adoptionCandidates.createdAt))
-          .limit(100);
+    let results;
+    if (category === "blanco") {
+      results = await query
+        .where(isNull(adoptionCandidates.category))
+        .orderBy(desc(adoptionCandidates.createdAt))
+        .limit(100);
+    } else if (category) {
+      results = await query
+        .where(eq(adoptionCandidates.category, category))
+        .orderBy(desc(adoptionCandidates.createdAt))
+        .limit(100);
+    } else {
+      results = await query
+        .orderBy(desc(adoptionCandidates.createdAt))
+        .limit(100);
+    }
 
     return results.map((r) => ({
       ...r.candidate,
