@@ -237,7 +237,7 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
           onClick={() => setShowReglement(false)}
         >
           <div
-            className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-[#1b4332] border border-white/10 shadow-2xl p-6"
+            className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-[#1b4332] border border-white/10 shadow-2xl p-6 sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -264,17 +264,17 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
             </ol>
 
             <div className="border-t border-white/10 pt-4">
-              <h3 className="font-heading text-sm font-bold text-white mb-2">Wandeluren</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <h3 className="font-heading text-sm font-bold text-white mb-3">Wandeluren</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { day: "Maandag", hours: "10:00 – 12:00" },
                   { day: "Woensdag", hours: "10:00 – 12:00" },
                   { day: "Vrijdag", hours: "10:00 – 12:00" },
                   { day: "Zaterdag", hours: "10:00 – 12:00" },
                 ].map((item) => (
-                  <div key={item.day} className="bg-white/5 rounded-lg px-3 py-2 flex justify-between items-center">
-                    <span className="text-sm font-medium text-white/90">{item.day}</span>
-                    <span className="text-xs text-white/60 font-mono">{item.hours}</span>
+                  <div key={item.day} className="bg-white/5 rounded-xl px-4 py-3 text-center">
+                    <span className="block text-sm font-semibold text-white/90">{item.day}</span>
+                    <span className="block text-xs text-white/60 font-mono mt-1">{item.hours}</span>
                   </div>
                 ))}
               </div>
