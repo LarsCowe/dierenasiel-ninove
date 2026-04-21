@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { animals } from "@/lib/db/schema";
 import { and, eq, isNull, isNotNull, sql } from "drizzle-orm";
-import { fileURLToPath } from "node:url";
 
 /**
  * Backfill: dieren die vóór de fix in Story 10.1 via `registerOuttake`
@@ -10,6 +9,8 @@ import { fileURLToPath } from "node:url";
  *
  * Idempotent: alleen rijen met ontbrekende `adoptedDate` én aanwezige
  * `outtakeDate` + `outtakeReason='adoptie'` worden aangeraakt.
+ *
+ * Uitvoeren via: `npx tsx --env-file=.env.local src/lib/db/backfill/run-backfill-adopted-date.ts`
  */
 export async function backfillAdoptedDate(): Promise<{ updatedCount: number }> {
   const result = await db
@@ -26,19 +27,4 @@ export async function backfillAdoptedDate(): Promise<{ updatedCount: number }> {
     .returning({ id: animals.id });
 
   return { updatedCount: result.length };
-}
-
-// Direct uitvoerbaar via: npx tsx src/lib/db/backfill/backfill-adopted-date.ts
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  backfillAdoptedDate()
-    .then(({ updatedCount }) => {
-      // eslint-disable-next-line no-console
-      console.log(`✓ Backfill voltooid: ${updatedCount} dier(en) geüpdatet.`);
-      process.exit(0);
-    })
-    .catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error("✗ Backfill gefaald:", err);
-      process.exit(1);
-    });
 }

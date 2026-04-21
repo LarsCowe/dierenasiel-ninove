@@ -13,6 +13,12 @@ export const questionnaireSchema = z.object({
   opmerkingen: z.string(),
 });
 
+// Velden waarvoor lege string "" een validatiefout geeft. Gebruikt door
+// AdoptionCandidateForm om per-veld rode randen te tonen bij server-errors.
+// Synchronisatie met questionnaireSchema wordt bewaakt door een unit test.
+export const QUESTIONNAIRE_REQUIRED_FIELDS = ["woonsituatie", "werkSituatie", "motivatie"] as const;
+export type QuestionnaireRequiredField = (typeof QUESTIONNAIRE_REQUIRED_FIELDS)[number];
+
 export const categorySchema = z.object({
   category: z.enum(["niet_weerhouden", "mogelijks", "goede_kandidaat"]),
 });

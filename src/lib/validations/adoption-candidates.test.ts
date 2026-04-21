@@ -4,6 +4,7 @@ import {
   questionnaireSchema,
   categorySchema,
   updateStatusSchema,
+  QUESTIONNAIRE_REQUIRED_FIELDS,
 } from "./adoption-candidates";
 
 const validQuestionnaire = {
@@ -254,6 +255,39 @@ describe("categorySchema", () => {
   it("requires category field", () => {
     const result = categorySchema.safeParse({});
     expect(result.success).toBe(false);
+  });
+});
+
+describe("QUESTIONNAIRE_REQUIRED_FIELDS sync met questionnaireSchema", () => {
+  it("elke gedeclareerde required-field wijst een bestaande schema-key aan", () => {
+    const shape = questionnaireSchema.shape;
+    for (const key of QUESTIONNAIRE_REQUIRED_FIELDS) {
+      expect(shape, `questionnaireSchema mist key '${key}'`).toHaveProperty(key);
+    }
+  });
+
+  it("dekt ALLE string/select-velden die falen bij lege string — vangt schema-drift op", () => {
+    // Enkel velden die in de UI als text-input/select/textarea worden getoond
+    // (= string-getypeerde state). Boolean/nullable fields zoals tuinOmheind
+    // en eerderHuisdieren zijn checkboxes / ja-nee selects en vallen niet
+    // onder "leeg = rode rand" UX.
+    const stringFieldKeys = [
+      "woonsituatie",
+      "huidigeHuisdieren",
+      "werkSituatie",
+      "uurAlleen",
+      "ervaring",
+      "motivatie",
+      "opmerkingen",
+    ] as const;
+
+    const failingWithEmpty = new Set<string>();
+    for (const key of stringFieldKeys) {
+      const attempt = { ...validQuestionnaire, [key]: "" };
+      const result = questionnaireSchema.safeParse(attempt);
+      if (!result.success) failingWithEmpty.add(key);
+    }
+    expect(new Set(QUESTIONNAIRE_REQUIRED_FIELDS)).toEqual(failingWithEmpty);
   });
 });
 

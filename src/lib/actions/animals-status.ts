@@ -219,6 +219,7 @@ export async function registerOuttake(
     revalidatePath("/beheerder/dieren");
     revalidatePath(`/beheerder/dieren/${parsed.data.animalId}`);
     revalidatePath("/beheerder/dieren/kennel");
+    revalidatePath("/beheerder");
 
     return { success: true, data: undefined };
   } catch (err) {

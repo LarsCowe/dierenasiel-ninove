@@ -188,6 +188,27 @@ describe("AdoptionCandidateForm — veldretentie bij validatiefout", () => {
     expect(motivatie.className).toMatch(/border-red-500/);
   });
 
+  it("toont foutbanner en reset isPending wanneer server action throwt (netwerk/crash)", async () => {
+    mockCreateCandidate.mockRejectedValue(new Error("network down"));
+
+    render(<AdoptionCandidateForm availableAnimals={availableAnimals} />);
+
+    fillPersonalFields({ firstName: "Jan", lastName: "Janssens", email: "jan@example.com" });
+    const submitBtn = screen.getByRole("button", { name: /aanvraag registreren/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/er ging iets mis bij het verzenden/i)).toBeInTheDocument();
+    });
+
+    // Button moet weer actief zijn (isPending = false) zodat user opnieuw kan proberen.
+    // useTransition's isPending zet zich in een aparte tick na setState → wacht tot
+    // disabled daadwerkelijk gereset is i.p.v. een sync assertie.
+    await waitFor(() => {
+      expect((submitBtn as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
+
   it("AC3: navigeert naar /beheerder/adoptie/[id] na succesvolle submit", async () => {
     mockCreateCandidate.mockResolvedValue({
       success: true,

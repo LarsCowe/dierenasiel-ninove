@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createAdoptionCandidate } from "@/lib/actions/adoption-candidates";
+import { QUESTIONNAIRE_REQUIRED_FIELDS } from "@/lib/validations/adoption-candidates";
 import AdoptionAnimalSelector from "./AdoptionAnimalSelector";
 import type { Animal } from "@/types";
 
@@ -22,6 +23,9 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   const [animalId, setAnimalId] = useState<number>(0);
   // Alle velden zijn controlled. De form gebruikt onSubmit i.p.v. <form action={...}>
   // om React 19's post-action DOM-reset op <input>/<select> te vermijden (zie story 10.2).
+  // `name=` attributen op de inputs zijn behouden zodat browser-autofill
+  // en password-manager heuristieken (op email/address) blijven werken,
+  // ook al leest de submit-flow uit React state i.p.v. FormData.
   const [personal, setPersonal] = useState({
     firstName: "",
     lastName: "",
@@ -65,10 +69,17 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
       const fd = new FormData();
       fd.append("json", JSON.stringify(payload));
 
-      const result = await createAdoptionCandidate(null, fd);
-      setState(result);
-      if (result.success) {
-        router.push(`/beheerder/adoptie/${result.data.id}`);
+      try {
+        const result = await createAdoptionCandidate(null, fd);
+        setState(result);
+        if (result.success) {
+          router.push(`/beheerder/adoptie/${result.data.id}`);
+        }
+      } catch {
+        setState({
+          success: false,
+          error: "Er ging iets mis bij het verzenden. Probeer het later opnieuw.",
+        });
       }
     });
   };
@@ -82,9 +93,13 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   // Per-veld foutdetectie voor questionnaire: Zod's flatten() geeft enkel een top-level
   // questionnaireAnswers-fout, niet per sub-veld. We markeren alleen de verplichte velden
   // die effectief leeg zijn — correct ingevulde velden blijven groen, ook na een failed submit.
-  const woonsituatieError = Boolean(questionnaireErrors) && !questionnaire.woonsituatie;
-  const werkSituatieError = Boolean(questionnaireErrors) && !questionnaire.werkSituatie;
-  const motivatieError = Boolean(questionnaireErrors) && !questionnaire.motivatie;
+  // De lijst van required fields komt uit questionnaireSchema (sync bewaakt door unit test).
+  const hasQError = Boolean(questionnaireErrors);
+  const questionnaireFieldError = (key: (typeof QUESTIONNAIRE_REQUIRED_FIELDS)[number]) =>
+    hasQError && !questionnaire[key];
+  const woonsituatieError = questionnaireFieldError("woonsituatie");
+  const werkSituatieError = questionnaireFieldError("werkSituatie");
+  const motivatieError = questionnaireFieldError("motivatie");
 
   const updateQ = <K extends keyof typeof questionnaire>(key: K, value: (typeof questionnaire)[K]) => {
     setQuestionnaire((prev) => ({ ...prev, [key]: value }));

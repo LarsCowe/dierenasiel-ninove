@@ -356,6 +356,9 @@ describe("registerOuttake", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/1");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/kennel");
+    // Story 10.1: dashboard moet ook revalidaten zodat Recente Adopties
+    // direct de nieuwe uitstroom-adoptie toont.
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder");
   });
 
   it("returns error on database failure", async () => {
