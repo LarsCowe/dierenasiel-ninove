@@ -3,6 +3,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import AdoptionCandidateForm from "./AdoptionCandidateForm";
 
+// jsdom definieert `scrollIntoView` niet op HTMLElement. Het component roept
+// scrollIntoView aan na een failed submit (Story 10.4) — zonder deze stub
+// crasht useEffect en zouden niet-scroll-gerelateerde tests ook falen.
+if (!("scrollIntoView" in HTMLElement.prototype)) {
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    value: () => {},
+    writable: true,
+    configurable: true,
+  });
+}
+
 const { mockRouterPush, mockCreateCandidate } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
   mockCreateCandidate: vi.fn(),
@@ -228,5 +239,92 @@ describe("AdoptionCandidateForm — veldretentie bij validatiefout", () => {
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith("/beheerder/adoptie/42");
     });
+  });
+});
+
+// --- Story 10.4: Scroll-to-first-error UX ---
+
+describe("AdoptionCandidateForm — scroll-to-first-error", () => {
+  beforeEach(() => {
+    mockRouterPush.mockReset();
+    mockCreateCandidate.mockReset();
+  });
+
+  it("Story 10.4 / AC1+AC2: scrollt en focust naar het eerste foutieve veld na submit-error", async () => {
+    mockCreateCandidate.mockResolvedValue({
+      success: false,
+      error: "Niet alle verplichte velden zijn correct ingevuld.",
+      fieldErrors: { firstName: ["Voornaam is verplicht"] },
+    });
+
+    render(<AdoptionCandidateForm availableAnimals={availableAnimals} />);
+
+    const scrollSpy = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+    const focusSpy = vi.spyOn(HTMLElement.prototype, "focus");
+
+    fireEvent.click(screen.getByRole("button", { name: /aanvraag registreren/i }));
+
+    await waitFor(() => {
+      expect(mockCreateCandidate).toHaveBeenCalled();
+    });
+
+    // Wacht tot scrollIntoView effectief is aangeroepen op het firstName-veld.
+    await waitFor(() => {
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    // De spy is aangeroepen op de `this`-waarde van scrollIntoView. Haal eerste
+    // invocation-context op en verifieer dat het firstName-veld is.
+    const firstInvocationThis = scrollSpy.mock.instances[0] as HTMLElement;
+    expect(firstInvocationThis.id).toBe("firstName");
+
+    // Focus moet ook op firstName gezet zijn.
+    expect(focusSpy.mock.instances.some((inst) => (inst as HTMLElement).id === "firstName")).toBe(true);
+
+    scrollSpy.mockRestore();
+    focusSpy.mockRestore();
+  });
+
+  it("Story 10.4: bij meerdere fouten scrollt enkel naar EERSTE in DOM-volgorde", async () => {
+    mockCreateCandidate.mockResolvedValue({
+      success: false,
+      error: "Niet alle verplichte velden zijn correct ingevuld.",
+      fieldErrors: {
+        firstName: ["Voornaam verplicht"],
+        email: ["E-mail verplicht"],
+      },
+    });
+
+    render(<AdoptionCandidateForm availableAnimals={availableAnimals} />);
+
+    const scrollSpy = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+
+    fireEvent.click(screen.getByRole("button", { name: /aanvraag registreren/i }));
+
+    await waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+
+    // firstName staat vóór email in de DOM → scroll target moet firstName zijn.
+    const target = scrollSpy.mock.instances[0] as HTMLElement;
+    expect(target.id).toBe("firstName");
+
+    scrollSpy.mockRestore();
+  });
+
+  it("Story 10.4 / AC3: geen scroll bij succesvolle submit", async () => {
+    mockCreateCandidate.mockResolvedValue({ success: true, data: { id: 99 } });
+
+    render(<AdoptionCandidateForm availableAnimals={availableAnimals} />);
+
+    const scrollSpy = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+
+    fillPersonalFields({ firstName: "Jan", lastName: "Janssens", email: "jan@example.com" });
+    fireEvent.click(screen.getByRole("button", { name: /aanvraag registreren/i }));
+
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalled());
+
+    // Na succesvolle submit wordt er doorgenavigeerd; geen scroll-intent op deze form.
+    expect(scrollSpy).not.toHaveBeenCalled();
+
+    scrollSpy.mockRestore();
   });
 });

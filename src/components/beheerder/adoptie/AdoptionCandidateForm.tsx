@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createAdoptionCandidate } from "@/lib/actions/adoption-candidates";
 import { QUESTIONNAIRE_REQUIRED_FIELDS } from "@/lib/validations/adoption-candidates";
@@ -48,6 +48,7 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   });
   const [state, setState] = useState<SubmitResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const updateP = <K extends keyof typeof personal>(key: K, value: string) => {
     setPersonal((prev) => ({ ...prev, [key]: value }));
@@ -105,8 +106,24 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
     setQuestionnaire((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Story 10.4: na een failed submit, scroll en focus het eerste veld met
+  // aria-invalid="true". Respecteert prefers-reduced-motion voor toegankelijkheid.
+  useEffect(() => {
+    if (!state || state.success) return;
+    const form = formRef.current;
+    if (!form) return;
+    const firstInvalid = form.querySelector<HTMLElement>('[aria-invalid="true"]');
+    if (!firstInvalid) return;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    firstInvalid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    firstInvalid.focus({ preventScroll: true });
+  }, [state]);
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-6">
       {globalError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm font-medium text-red-800">{globalError}</p>
