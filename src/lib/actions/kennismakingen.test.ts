@@ -115,11 +115,14 @@ describe("createKennismaking", () => {
     if (!result.success) expect(result.error).toBe("Kandidaat niet gevonden");
   });
 
-  it("returns error when candidate is not goede_kandidaat", async () => {
-    mockSelectLimit.mockResolvedValue([{ ...mockCandidate, category: "mogelijks" }]);
-    const result = await createKennismaking(null, makeFormData(validData));
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("goede kandidaat");
+  it("allows kennismaking voor elke kandidaat-categorie (category-restrictie gerelaxeerd)", async () => {
+    // Voorheen werd kennismaking enkel toegestaan voor "goede_kandidaat";
+    // die restrictie is verwijderd. Alle categorieën mogen nu een kennismaking plannen.
+    for (const category of ["niet_weerhouden", "mogelijks", "goede_kandidaat", null]) {
+      mockSelectLimit.mockResolvedValueOnce([{ ...mockCandidate, category }]);
+      const result = await createKennismaking(null, makeFormData(validData));
+      expect(result.success, `category=${category} zou success moeten geven`).toBe(true);
+    }
   });
 
   it("creates record on success", async () => {

@@ -19,9 +19,14 @@ describe("kennismakingSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires animalId", () => {
+  it("allows kennismaking without animalId (optioneel sinds commit b42b33d)", () => {
     const result = kennismakingSchema.safeParse({ ...validKennismaking, animalId: undefined });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+  });
+
+  it("allows kennismaking met null animalId", () => {
+    const result = kennismakingSchema.safeParse({ ...validKennismaking, animalId: null });
+    expect(result.success).toBe(true);
   });
 
   it("requires scheduledAt", () => {
