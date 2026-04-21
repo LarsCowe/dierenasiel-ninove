@@ -222,3 +222,23 @@ export async function getOccupiedCageNumbers(excludeCampaignId?: number): Promis
   }
   return map;
 }
+
+
+/**
+ * Top N actieve zwerfkat-campagnes (status != 'afgerond'), gesorteerd op
+ * requestDate desc. Gebruikt door het dashboard-widget (Story 10.8).
+ */
+export async function getActiveStrayCatCampaigns(limit = 10): Promise<StrayCatCampaign[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaigns)
+      .where(ne(strayCatCampaigns.status, 'afgerond'))
+      .orderBy(desc(strayCatCampaigns.requestDate))
+      .limit(limit);
+    return rows as StrayCatCampaign[];
+  } catch (err) {
+    console.error('getActiveStrayCatCampaigns query failed:', err);
+    return [];
+  }
+}

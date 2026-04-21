@@ -1,13 +1,18 @@
 import { getDashboardStats } from "@/lib/queries/dashboard";
+import { getActiveStrayCatCampaigns } from "@/lib/queries/stray-cat-campaigns";
 import StatsCards from "@/components/beheerder/dashboard/StatsCards";
 import AlertWidget from "@/components/beheerder/dashboard/AlertWidget";
 import TodoWidget from "@/components/beheerder/dashboard/TodoWidget";
 import DeadlineWidget from "@/components/beheerder/dashboard/DeadlineWidget";
 import RecentAdoptions from "@/components/beheerder/dashboard/RecentAdoptions";
 import StatusOverview from "@/components/beheerder/dashboard/StatusOverview";
+import ActiveStrayCatCampaigns from "@/components/beheerder/dashboard/ActiveStrayCatCampaigns";
 
 export default async function BeheerderDashboard() {
-  const stats = await getDashboardStats();
+  const [stats, activeStrayCatCampaigns] = await Promise.all([
+    getDashboardStats(),
+    getActiveStrayCatCampaigns(10),
+  ]);
 
   return (
     <div>
@@ -25,6 +30,7 @@ export default async function BeheerderDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <StatusOverview statuses={stats.animalsByStatus} />
         <RecentAdoptions adoptions={stats.recentAdoptions} />
+        <ActiveStrayCatCampaigns campaigns={activeStrayCatCampaigns} />
         <AlertWidget />
         <DeadlineWidget />
         <TodoWidget />

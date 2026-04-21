@@ -459,3 +459,47 @@ describe("getOccupiedCageNumbers (Story 10.7)", () => {
     expect(result).toEqual({ K7: 2 });
   });
 });
+
+describe("getActiveStrayCatCampaigns (Story 10.8)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset chain (getCampaignReport test overschrijft mockSelect met throw).
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+    mockSelectWhere.mockReturnValue({ orderBy: mockSelectOrderBy });
+    mockSelectOrderBy.mockReturnValue({ limit: mockSelectLimit });
+  });
+
+  it("retourneert lijst van actieve campagnes", async () => {
+    const mockData = [
+      { id: 3, municipality: "Halle", status: "kooien_geplaatst", requestDate: "2026-04-20" },
+      { id: 2, municipality: "Gooik", status: "in_behandeling", requestDate: "2026-04-15" },
+    ];
+    mockSelectLimit.mockResolvedValueOnce(mockData);
+
+    const { getActiveStrayCatCampaigns } = await import("./stray-cat-campaigns");
+    const result = await getActiveStrayCatCampaigns(10);
+
+    expect(result).toEqual(mockData);
+  });
+
+  it("retourneert lege array bij DB-fout", async () => {
+    mockSelect.mockImplementationOnce(() => {
+      throw new Error("DB down");
+    });
+
+    const { getActiveStrayCatCampaigns } = await import("./stray-cat-campaigns");
+    const result = await getActiveStrayCatCampaigns(10);
+
+    expect(result).toEqual([]);
+  });
+
+  it("retourneert lege array wanneer geen actieve campagnes", async () => {
+    mockSelectLimit.mockResolvedValueOnce([]);
+
+    const { getActiveStrayCatCampaigns } = await import("./stray-cat-campaigns");
+    const result = await getActiveStrayCatCampaigns(5);
+
+    expect(result).toEqual([]);
+  });
+});
