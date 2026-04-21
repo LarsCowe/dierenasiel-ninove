@@ -29,6 +29,7 @@ const COLUMNS: Column[] = [
   { key: "species", label: "Soort", sortable: true },
   { key: "breed", label: "Ras", sortable: false },
   { key: "status", label: "Status", sortable: true },
+  { key: "isAvailableForAdoption", label: "Ter adoptie", sortable: false },
   { key: "kennelId", label: "Kennel", sortable: false },
   { key: "intakeDate", label: "Intake datum", sortable: true },
 ];
@@ -107,6 +108,17 @@ export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTablePro
                   }`}
                 >
                   {statusLabel(animal.status ?? "")}
+                </span>
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 text-sm">
+                <span
+                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    animal.isAvailableForAdoption
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {animal.isAvailableForAdoption ? "Ja" : "Nee"}
                 </span>
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
