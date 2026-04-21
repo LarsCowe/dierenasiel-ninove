@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
-import { strayCatCampaigns, animals } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections, animals } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte, sql, isNotNull, ne } from "drizzle-orm";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
-import type { StrayCatCampaign } from "@/types";
+import type { StrayCatCampaign, StrayCatCampaignInspection } from "@/types";
 import type { SQL } from "drizzle-orm";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -239,6 +239,24 @@ export async function getActiveStrayCatCampaigns(limit = 10): Promise<StrayCatCa
     return rows as StrayCatCampaign[];
   } catch (err) {
     console.error('getActiveStrayCatCampaigns query failed:', err);
+    return [];
+  }
+}
+
+
+/**
+ * Inspectie-log entries voor een campagne (Story 10.9), nieuwste eerst.
+ */
+export async function getInspectionsForCampaign(campaignId: number): Promise<StrayCatCampaignInspection[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignInspections)
+      .where(eq(strayCatCampaignInspections.campaignId, campaignId))
+      .orderBy(desc(strayCatCampaignInspections.inspectionDate), desc(strayCatCampaignInspections.id));
+    return rows as StrayCatCampaignInspection[];
+  } catch (err) {
+    console.error('getInspectionsForCampaign query failed:', err);
     return [];
   }
 }

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { StrayCatCampaign, ActionResult } from "@/types";
+import type { StrayCatCampaign, StrayCatCampaignInspection, ActionResult } from "@/types";
 import {
   deployCagesAction,
   registerInspectionAction,
@@ -19,11 +19,13 @@ import {
 } from "@/lib/constants";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoUpload from "./CampaignPhotoUpload";
+import InspectionLogSection from "./InspectionLogSection";
 
 interface Props {
   campaign: StrayCatCampaign;
   availableCats: { id: number; name: string }[];
   occupiedCages: Record<string, number>;
+  inspections: StrayCatCampaignInspection[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -383,7 +385,7 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
 }
 
 // --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats, occupiedCages }: Props) {
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections }: Props) {
   const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
   const currentIndex = statusOrder.indexOf(campaign.status);
 
@@ -446,6 +448,11 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
           </dl>
         )}
       </div>
+
+      {/* Inspectie-log (Story 10.9) — zichtbaar vanaf kooien_geplaatst, onafhankelijk van status-flow */}
+      {currentIndex >= 1 && (
+        <InspectionLogSection campaignId={campaign.id} inspections={inspections} />
+      )}
 
       {/* Inspectie (alleen zichtbaar vanaf kooien_geplaatst) */}
       {currentIndex >= 1 && (

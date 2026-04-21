@@ -506,6 +506,20 @@ export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   index("idx_stray_cat_campaigns_request_date").on(table.requestDate),
 ]);
 
+// Story 10.9: log van alle inspectiebezoeken op een campagne (incl. lege).
+export const strayCatCampaignInspections = pgTable("stray_cat_campaign_inspections", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id")
+    .notNull()
+    .references(() => strayCatCampaigns.id, { onDelete: "cascade" }),
+  inspectionDate: date("inspection_date").notNull(),
+  wasSuccessful: boolean("was_successful").notNull().default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_stray_cat_campaign_inspections_campaign_id").on(table.campaignId),
+]);
+
 export const blacklistEntries = pgTable("blacklist_entries", {
   id: serial("id").primaryKey(),
   firstName: varchar("first_name", { length: 100 }).notNull(),

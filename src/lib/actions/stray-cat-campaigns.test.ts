@@ -60,6 +60,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/db/schema", () => ({
   strayCatCampaigns: Symbol("strayCatCampaigns"),
+  strayCatCampaignInspections: Symbol("strayCatCampaignInspections"),
 }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
@@ -71,6 +72,7 @@ import {
   registerInspectionAction,
   completeCampaignAction,
   linkAnimalAction,
+  addInspectionAction,
 } from "./stray-cat-campaigns";
 
 // Default: logged in beheerder with permission
@@ -354,5 +356,88 @@ describe("linkAnimalAction", () => {
     const result = await linkAnimalAction({ campaignId: 1, linkedAnimalId: 0 });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("addInspectionAction (Story 10.9)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupAuth();
+  });
+
+  it("slaat een succesvolle inspectie-log op en logt audit", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, status: "kooien_geplaatst" });
+    mockInsertReturning.mockResolvedValue([{
+      id: 99, campaignId: 1, inspectionDate: "2026-04-21", wasSuccessful: true, notes: null,
+    }]);
+
+    const result = await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      wasSuccessful: true,
+      notes: "",
+    });
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockInsert).toHaveBeenCalled();
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        campaignId: 1,
+        inspectionDate: "2026-04-21",
+        wasSuccessful: true,
+      }),
+    );
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "stray_cat_campaign.inspection_log_added",
+      "stray_cat_campaign",
+      1,
+      null,
+      expect.objectContaining({ inspectionId: 99, wasSuccessful: true }),
+    );
+  });
+
+  it("slaat een lege inspectie-log op met notes", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 2, status: "kooien_geplaatst" });
+    mockInsertReturning.mockResolvedValue([{
+      id: 100, campaignId: 2, inspectionDate: "2026-04-22", wasSuccessful: false, notes: "Niets in kooien",
+    }]);
+
+    const result = await addInspectionAction({
+      campaignId: 2,
+      inspectionDate: "2026-04-22",
+      wasSuccessful: false,
+      notes: "Niets in kooien",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ wasSuccessful: false, notes: "Niets in kooien" }),
+    );
+  });
+
+  it("weigert wanneer campagne niet bestaat", async () => {
+    mockGetCampaignById.mockResolvedValue(null);
+
+    const result = await addInspectionAction({
+      campaignId: 999,
+      inspectionDate: "2026-04-21",
+      wasSuccessful: false,
+    });
+
+    expect(result).toEqual({ success: false, error: "Campagne niet gevonden" });
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("weigert ongeldige datum", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, status: "kooien_geplaatst" });
+
+    const result = await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "niet-een-datum",
+      wasSuccessful: false,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Ongeldige invoer");
   });
 });

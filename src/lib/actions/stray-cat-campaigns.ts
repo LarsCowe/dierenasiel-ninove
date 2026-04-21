@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { strayCatCampaigns } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getCampaignById, getOccupiedCageNumbers } from "@/lib/queries/stray-cat-campaigns";
 import {
@@ -14,6 +14,7 @@ import {
   registerInspectionSchema,
   completeCampaignSchema,
   linkAnimalSchema,
+  addInspectionSchema,
 } from "@/lib/validations/stray-cat-campaigns";
 import type { ActionResult } from "@/types";
 
@@ -251,5 +252,50 @@ export async function linkAnimalAction(
   } catch (error) {
     console.error("linkAnimalAction failed:", error);
     return { success: false, error: "Dier koppelen mislukt. Probeer opnieuw." };
+  }
+}
+
+/**
+ * Story 10.9: log-entry toevoegen voor een inspectiebezoek (kan succesvol of leeg zijn).
+ * Wijzigt de campagne-status NIET — puur een audit-log.
+ */
+export async function addInspectionAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = addInspectionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige invoer", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const campaign = await getCampaignById(parsed.data.campaignId);
+    if (!campaign) return { success: false, error: "Campagne niet gevonden" };
+
+    const [record] = await db
+      .insert(strayCatCampaignInspections)
+      .values({
+        campaignId: parsed.data.campaignId,
+        inspectionDate: parsed.data.inspectionDate,
+        wasSuccessful: parsed.data.wasSuccessful,
+        notes: parsed.data.notes || null,
+      })
+      .returning();
+
+    await logAudit(
+      "stray_cat_campaign.inspection_log_added",
+      "stray_cat_campaign",
+      parsed.data.campaignId,
+      null,
+      { inspectionId: record.id, inspectionDate: record.inspectionDate, wasSuccessful: record.wasSuccessful },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("addInspectionAction failed:", error);
+    return { success: false, error: "Inspectie-log toevoegen mislukt. Probeer opnieuw." };
   }
 }

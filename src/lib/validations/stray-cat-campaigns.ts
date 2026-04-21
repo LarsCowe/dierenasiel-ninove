@@ -56,3 +56,13 @@ export const linkAnimalSchema = z.object({
 });
 
 export type LinkAnimalInput = z.infer<typeof linkAnimalSchema>;
+
+// Story 10.9: add-only log entry (geen edit/delete in schietversie).
+export const addInspectionSchema = z.object({
+  campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
+  inspectionDate: dateString,
+  wasSuccessful: z.coerce.boolean().default(false),
+  notes: z.string().trim().max(1000, "Notities mag max 1000 tekens zijn").optional().default(""),
+});
+
+export type AddInspectionInput = z.infer<typeof addInspectionSchema>;
