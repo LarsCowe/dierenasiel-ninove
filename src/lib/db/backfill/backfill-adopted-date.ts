@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { animals } from "@/lib/db/schema";
 import { and, eq, isNull, isNotNull, sql } from "drizzle-orm";
+import { fileURLToPath } from "node:url";
 
 /**
  * Backfill: dieren die vóór de fix in Story 10.1 via `registerOuttake`
@@ -28,7 +29,7 @@ export async function backfillAdoptedDate(): Promise<{ updatedCount: number }> {
 }
 
 // Direct uitvoerbaar via: npx tsx src/lib/db/backfill/backfill-adopted-date.ts
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   backfillAdoptedDate()
     .then(({ updatedCount }) => {
       // eslint-disable-next-line no-console
