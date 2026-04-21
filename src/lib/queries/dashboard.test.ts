@@ -182,6 +182,30 @@ describe("getDashboardStats", () => {
     expect(stats.activeUsers).toBe(3);
   });
 
+  it("includes animals adopted via uitstroom-registratie flow (adoptedDate set by registerOuttake)", async () => {
+    // Simuleert een dier geadopteerd via registerOuttake(id, "adoptie", "2026-04-15")
+    // waarbij adoptedDate nu correct wordt gezet op gelijke waarde als outtakeDate.
+    const uitstroomAdoption = {
+      id: 42,
+      name: "Bello",
+      species: "hond",
+      adoptedDate: "2026-04-15",
+    };
+    mockResults.push(
+      [{ species: "hond", count: 1 }],
+      [{ status: "geadopteerd", count: 1 }],
+      [uitstroomAdoption],
+      [{ count: 0 }],
+      [{ count: 1 }],
+      [{ count: 1 }],
+    );
+
+    const stats = await getDashboardStats();
+
+    expect(stats.recentAdoptions).toContainEqual(uitstroomAdoption);
+    expect(stats.recentAdoptions[0].adoptedDate).toBe("2026-04-15");
+  });
+
   it("returns empty stats when database query fails (graceful fallback)", async () => {
     // Make the first query reject — Promise.all will reject
     mockResults.length = 0;

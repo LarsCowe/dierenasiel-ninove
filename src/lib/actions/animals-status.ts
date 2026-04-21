@@ -191,16 +191,24 @@ export async function registerOuttake(
 
     const newStatus = OUTTAKE_STATUS_MAP[parsed.data.outtakeReason];
 
+    const updateValues: Partial<typeof animals.$inferInsert> = {
+      status: newStatus,
+      isInShelter: false,
+      outtakeDate: parsed.data.outtakeDate,
+      outtakeReason: parsed.data.outtakeReason,
+      kennelId: null,
+      updatedAt: new Date(),
+    };
+
+    // adoptedDate moet gezet worden bij adoptie: dashboard "Recente Adopties"
+    // filtert op adoptedDate IS NOT NULL.
+    if (parsed.data.outtakeReason === "adoptie") {
+      updateValues.adoptedDate = parsed.data.outtakeDate;
+    }
+
     const [updated] = await db
       .update(animals)
-      .set({
-        status: newStatus,
-        isInShelter: false,
-        outtakeDate: parsed.data.outtakeDate,
-        outtakeReason: parsed.data.outtakeReason,
-        kennelId: null,
-        updatedAt: new Date(),
-      })
+      .set(updateValues)
       .where(eq(animals.id, parsed.data.animalId))
       .returning();
 

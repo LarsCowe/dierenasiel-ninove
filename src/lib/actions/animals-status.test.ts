@@ -438,6 +438,50 @@ describe("registerOuttake", () => {
       expect(result.guardWarnings!.some((w: { code: string }) => w.code === "cat_vaccination_missing")).toBe(true);
     }
   });
+
+  // --- Story 10.1: adoptedDate sync with uitstroom-adoptie flow ---
+
+  it("sets adoptedDate equal to outtakeDate when outtakeReason is adoptie", async () => {
+    const result = await registerOuttake(1, "adoptie", "2026-04-15");
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "geadopteerd",
+        outtakeDate: "2026-04-15",
+        outtakeReason: "adoptie",
+        adoptedDate: "2026-04-15",
+      }),
+    );
+  });
+
+  it("does NOT set adoptedDate when outtakeReason is terug_eigenaar", async () => {
+    mockUpdateReturning.mockResolvedValue([{
+      ...mockAnimal,
+      status: "terug_eigenaar",
+      outtakeReason: "terug_eigenaar",
+    }]);
+
+    const result = await registerOuttake(1, "terug_eigenaar", "2026-04-15");
+
+    expect(result.success).toBe(true);
+    const updatePayload = mockUpdateSet.mock.calls[0][0];
+    expect(updatePayload).not.toHaveProperty("adoptedDate");
+  });
+
+  it("does NOT set adoptedDate when outtakeReason is euthanasie", async () => {
+    mockUpdateReturning.mockResolvedValue([{
+      ...mockAnimal,
+      status: "geeuthanaseerd",
+      outtakeReason: "euthanasie",
+    }]);
+
+    const result = await registerOuttake(1, "euthanasie", "2026-04-15");
+
+    expect(result.success).toBe(true);
+    const updatePayload = mockUpdateSet.mock.calls[0][0];
+    expect(updatePayload).not.toHaveProperty("adoptedDate");
+  });
 });
 
 describe("toggleAdoptionAvailability", () => {
