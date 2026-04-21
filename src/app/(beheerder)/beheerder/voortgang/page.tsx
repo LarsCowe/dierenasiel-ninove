@@ -139,6 +139,8 @@ const EPICS: Epic[] = [
       { id: "10.2", title: "Adoptie-formulier behoudt ingevulde velden bij validatiefout", status: "done" },
       { id: "10.3", title: "Fix stale tests voor kennismakingen animalId-validatie", status: "done" },
       { id: "10.4", title: "Scroll-to-first-error UX op adoptie-formulier", status: "done" },
+      { id: "10.5", title: "Dashboard bucket '(nog) niet ter adoptie' in Dieren per Status", status: "done" },
+      { id: "10.6", title: "Kolom 'Ter adoptie' op dierenoverzicht", status: "done" },
     ],
   },
 ];
