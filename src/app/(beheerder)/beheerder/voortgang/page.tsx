@@ -133,12 +133,12 @@ const EPICS: Epic[] = [
   {
     id: 10,
     title: "Klantfeedback Sven (post-go-live iteratie 2)",
-    status: "in-progress",
+    status: "done",
     stories: [
       { id: "10.1", title: "Dashboard: adoptie via uitstroomregistratie verschijnt niet bij recente adopties", status: "done" },
       { id: "10.2", title: "Adoptie-formulier behoudt ingevulde velden bij validatiefout", status: "done" },
       { id: "10.3", title: "Fix stale tests voor kennismakingen animalId-validatie", status: "done" },
-      { id: "10.4", title: "Scroll-to-first-error UX op adoptie-formulier", status: "in-progress" },
+      { id: "10.4", title: "Scroll-to-first-error UX op adoptie-formulier", status: "done" },
     ],
   },
 ];
