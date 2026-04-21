@@ -142,6 +142,8 @@ const EPICS: Epic[] = [
       { id: "10.5", title: "Dashboard bucket '(nog) niet ter adoptie' in Dieren per Status", status: "done" },
       { id: "10.6", title: "Kolom 'Ter adoptie' op dierenoverzicht", status: "done" },
       { id: "10.7", title: "Kooinummer-picker met uniekheid per actieve zwerfkat-campagne + klikbare rij op overzicht", status: "done" },
+      { id: "10.8", title: "Dashboard-widget: lopende zwerfkat-opdrachten", status: "done" },
+      { id: "10.9", title: "Inspectie-log: meerdere inspecties per zwerfkat-campagne (incl. lege)", status: "done" },
     ],
   },
 ];
