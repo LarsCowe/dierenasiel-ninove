@@ -6,6 +6,7 @@ const {
   mockLogAudit,
   mockRevalidatePath,
   mockGetCampaignById,
+  mockGetOccupiedCageNumbers,
   mockInsertValues,
   mockInsertReturning,
   mockInsert,
@@ -18,6 +19,7 @@ const {
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
   const mockGetCampaignById = vi.fn();
+  const mockGetOccupiedCageNumbers = vi.fn();
 
   // insert chain: db.insert().values().returning()
   const mockInsertReturning = vi.fn();
@@ -35,6 +37,7 @@ const {
     mockLogAudit,
     mockRevalidatePath,
     mockGetCampaignById,
+    mockGetOccupiedCageNumbers,
     mockInsertValues,
     mockInsertReturning,
     mockInsert,
@@ -50,6 +53,7 @@ vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 vi.mock("@/lib/queries/stray-cat-campaigns", () => ({
   getCampaignById: mockGetCampaignById,
+  getOccupiedCageNumbers: mockGetOccupiedCageNumbers,
 }));
 vi.mock("@/lib/db", () => ({
   db: { insert: mockInsert, update: mockUpdate },
@@ -142,6 +146,8 @@ describe("deployCagesAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setupAuth();
+    // Default: geen kooi bezet. Tests die uniekheid testen overschrijven dit.
+    mockGetOccupiedCageNumbers.mockResolvedValue({});
   });
 
   it("deploys cages and updates status to kooien_geplaatst", async () => {
@@ -187,6 +193,39 @@ describe("deployCagesAction", () => {
     });
 
     expect(result).toEqual({ success: false, error: "Campagne niet gevonden" });
+  });
+
+  it("Story 10.7: rejects als een kooi al in gebruik is in andere lopende campagne", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 5, status: "open" });
+    mockGetOccupiedCageNumbers.mockResolvedValue({ K2: 3 });
+
+    const result = await deployCagesAction({
+      campaignId: 5,
+      cageDeploymentDate: "2026-03-05",
+      cageNumbers: "K1,K2,K3",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("K2");
+      expect(result.error).toContain("#3");
+    }
+    // DB-update mag NIET gebeuren bij conflict
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("Story 10.7: slaagt wanneer geen enkele geselecteerde kooi bezet is", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 5, status: "open" });
+    mockGetOccupiedCageNumbers.mockResolvedValue({ K7: 2 });
+
+    const result = await deployCagesAction({
+      campaignId: 5,
+      cageDeploymentDate: "2026-03-05",
+      cageNumbers: "K1,K2",
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
   });
 });
 

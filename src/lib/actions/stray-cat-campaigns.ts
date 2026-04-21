@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { strayCatCampaigns } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { getCampaignById } from "@/lib/queries/stray-cat-campaigns";
+import { getCampaignById, getOccupiedCageNumbers } from "@/lib/queries/stray-cat-campaigns";
 import {
   createCampaignSchema,
   deployCagesSchema,
@@ -87,6 +87,21 @@ export async function deployCagesAction(
     if (!campaign) return { success: false, error: "Campagne niet gevonden" };
     if (campaign.status !== "open")
       return { success: false, error: "Campagne moet status 'open' hebben" };
+
+    // Story 10.7: kooinummers mogen niet reeds in een andere lopende campagne gebruikt worden.
+    const requestedCages = parsed.data.cageNumbers
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const occupied = await getOccupiedCageNumbers(parsed.data.campaignId);
+    for (const num of requestedCages) {
+      if (occupied[num]) {
+        return {
+          success: false,
+          error: `Kooi ${num} is al in gebruik in campagne #${occupied[num]}.`,
+        };
+      }
+    }
 
     await db
       .update(strayCatCampaigns)

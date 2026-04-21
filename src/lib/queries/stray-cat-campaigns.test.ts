@@ -53,6 +53,8 @@ vi.mock("drizzle-orm", () => ({
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
   gte: vi.fn((...args: unknown[]) => ({ type: "gte", args })),
   lte: vi.fn((...args: unknown[]) => ({ type: "lte", args })),
+  ne: vi.fn((...args: unknown[]) => ({ type: "ne", args })),
+  isNotNull: vi.fn((col: unknown) => ({ type: "isNotNull", col })),
   sql: Object.assign(vi.fn(), { raw: vi.fn() }),
 }));
 
@@ -63,6 +65,7 @@ import {
   getCampaignsForAdmin,
   getDistinctMunicipalities,
   getCampaignReport,
+  getOccupiedCageNumbers,
 } from "./stray-cat-campaigns";
 
 describe("getCampaignById", () => {
@@ -412,5 +415,47 @@ describe("getCampaignReport", () => {
 
     expect(result.campaigns).toEqual([]);
     expect(result.stats.total).toBe(0);
+  });
+});
+
+describe("getOccupiedCageNumbers (Story 10.7)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Vorige describe ("getCampaignReport") overschrijft mockSelect met een throw.
+    // Reset naar de default select→from→where chain voor deze tests.
+    mockSelect.mockReturnValue({ from: mockSelectFrom });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere, orderBy: mockSelectOrderBy });
+  });
+
+  it("returns empty map when geen active campagnes met kooinummers", async () => {
+    mockSelectWhere.mockResolvedValueOnce([]);
+    const result = await getOccupiedCageNumbers();
+    expect(result).toEqual({});
+  });
+
+  it("parset komma-gescheiden kooinummers met trim", async () => {
+    mockSelectWhere.mockResolvedValueOnce([
+      { id: 7, cageNumbers: "K1, K2 ,K3" },
+    ]);
+    const result = await getOccupiedCageNumbers();
+    expect(result).toEqual({ K1: 7, K2: 7, K3: 7 });
+  });
+
+  it("mergt kooinummers over meerdere actieve campagnes", async () => {
+    mockSelectWhere.mockResolvedValueOnce([
+      { id: 1, cageNumbers: "K1,K2" },
+      { id: 2, cageNumbers: "K5" },
+    ]);
+    const result = await getOccupiedCageNumbers();
+    expect(result).toEqual({ K1: 1, K2: 1, K5: 2 });
+  });
+
+  it("skipt rijen met null cageNumbers", async () => {
+    mockSelectWhere.mockResolvedValueOnce([
+      { id: 1, cageNumbers: null },
+      { id: 2, cageNumbers: "K7" },
+    ]);
+    const result = await getOccupiedCageNumbers();
+    expect(result).toEqual({ K7: 2 });
   });
 });

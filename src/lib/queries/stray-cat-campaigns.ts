@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { strayCatCampaigns, animals } from "@/lib/db/schema";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, isNotNull, ne } from "drizzle-orm";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
 import type { StrayCatCampaign } from "@/types";
 import type { SQL } from "drizzle-orm";
@@ -193,4 +193,32 @@ export async function getCatsAvailableForLinking() {
         eq(animals.isInShelter, true),
       ),
     );
+}
+
+
+/**
+ * Geeft een map {kooinummer -> campaignId} van kooinummers die momenteel in gebruik
+ * zijn in een lopende campagne (status != 'afgerond'). Gebruikt door Story 10.7 om
+ * het picker-UI en server-side validatie te voeden.
+ */
+export async function getOccupiedCageNumbers(excludeCampaignId?: number): Promise<Record<string, number>> {
+  const conditions = [
+    ne(strayCatCampaigns.status, 'afgerond'),
+    isNotNull(strayCatCampaigns.cageNumbers),
+  ];
+  if (excludeCampaignId !== undefined) {
+    conditions.push(ne(strayCatCampaigns.id, excludeCampaignId));
+  }
+  const rows = await db
+    .select({ id: strayCatCampaigns.id, cageNumbers: strayCatCampaigns.cageNumbers })
+    .from(strayCatCampaigns)
+    .where(and(...conditions));
+  const map: Record<string, number> = {};
+  for (const row of rows) {
+    if (!row.cageNumbers) continue;
+    for (const num of row.cageNumbers.split(',').map((s) => s.trim()).filter(Boolean)) {
+      map[num] = row.id;
+    }
+  }
+  return map;
 }

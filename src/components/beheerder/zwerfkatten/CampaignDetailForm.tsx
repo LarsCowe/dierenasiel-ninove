@@ -15,6 +15,7 @@ import {
   FIV_FELV_STATUS_LABELS,
   CAMPAIGN_OUTCOMES,
   CAMPAIGN_OUTCOME_LABELS,
+  CAGE_NUMBERS,
 } from "@/lib/constants";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoUpload from "./CampaignPhotoUpload";
@@ -22,6 +23,7 @@ import CampaignPhotoUpload from "./CampaignPhotoUpload";
 interface Props {
   campaign: StrayCatCampaign;
   availableCats: { id: number; name: string }[];
+  occupiedCages: Record<string, number>;
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -47,50 +49,90 @@ async function handleDeployCages(prev: ActionResult | null, formData: FormData) 
   });
 }
 
-function DeployCagesSection({ campaignId }: { campaignId: number }) {
+function DeployCagesSection({
+  campaignId,
+  occupiedCages,
+}: {
+  campaignId: number;
+  occupiedCages: Record<string, number>;
+}) {
   const [state, formAction, isPending] = useActionState(handleDeployCages, null);
+  const [selectedCages, setSelectedCages] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     if (state?.success) router.refresh();
   }, [state, router]);
 
+  const toggleCage = (num: string) => {
+    setSelectedCages((prev) =>
+      prev.includes(num) ? prev.filter((x) => x !== num) : [...prev, num],
+    );
+  };
+
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="campaignId" value={campaignId} />
+      <input type="hidden" name="cageNumbers" value={selectedCages.join(",")} />
       {state && !state.success && state.error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</div>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="cageDeploymentDate" className="block text-sm font-medium text-gray-700">
-            Datum kooi-uitzetting *
+      <div>
+        <label htmlFor="cageDeploymentDate" className="block text-sm font-medium text-gray-700">
+          Datum kooi-uitzetting *
+        </label>
+        <input
+          type="date"
+          id="cageDeploymentDate"
+          name="cageDeploymentDate"
+          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 sm:w-64"
+        />
+        <FieldError errors={(state && !state.success ? state.fieldErrors?.cageDeploymentDate : undefined) as string[] | undefined} />
+      </div>
+      <div>
+        <div className="flex items-baseline justify-between">
+          <label className="block text-sm font-medium text-gray-700">
+            Kooiennummers * <span className="text-xs font-normal text-gray-500">(meerdere mogelijk)</span>
           </label>
-          <input
-            type="date"
-            id="cageDeploymentDate"
-            name="cageDeploymentDate"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          />
-          <FieldError errors={(state && !state.success ? state.fieldErrors?.cageDeploymentDate : undefined) as string[] | undefined} />
+          <span className="text-xs text-gray-500">
+            {selectedCages.length > 0 ? `${selectedCages.length} geselecteerd` : "Geen geselecteerd"}
+          </span>
         </div>
-        <div>
-          <label htmlFor="cageNumbers" className="block text-sm font-medium text-gray-700">
-            Kooiennummers *
-          </label>
-          <input
-            type="text"
-            id="cageNumbers"
-            name="cageNumbers"
-            placeholder="Bijv. K1, K2, K3"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          />
-          <FieldError errors={(state && !state.success ? state.fieldErrors?.cageNumbers : undefined) as string[] | undefined} />
+        <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-5">
+          {CAGE_NUMBERS.map((num) => {
+            const occupiedBy = occupiedCages[num];
+            const isOccupied = occupiedBy !== undefined;
+            const isSelected = selectedCages.includes(num);
+            return (
+              <label
+                key={num}
+                title={isOccupied ? `In gebruik in campagne #${occupiedBy}` : undefined}
+                className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+                  isOccupied
+                    ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+                    : isSelected
+                      ? "border-amber-500 bg-amber-50 text-amber-900"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  disabled={isOccupied}
+                  onChange={() => toggleCage(num)}
+                  className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 disabled:cursor-not-allowed"
+                />
+                <span className="font-medium">{num}</span>
+                {isOccupied && <span className="ml-auto text-xs">#{occupiedBy}</span>}
+              </label>
+            );
+          })}
         </div>
+        <FieldError errors={(state && !state.success ? state.fieldErrors?.cageNumbers : undefined) as string[] | undefined} />
       </div>
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || selectedCages.length === 0}
         className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
       >
         {isPending ? "Bezig..." : "Kooien uitzetten"}
@@ -341,7 +383,7 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
 }
 
 // --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats }: Props) {
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages }: Props) {
   const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
   const currentIndex = statusOrder.indexOf(campaign.status);
 
@@ -396,7 +438,7 @@ export default function CampaignDetailForm({ campaign, availableCats }: Props) {
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Kooi-uitzetting</h3>
         {campaign.status === "open" ? (
-          <DeployCagesSection campaignId={campaign.id} />
+          <DeployCagesSection campaignId={campaign.id} occupiedCages={occupiedCages} />
         ) : (
           <dl className="grid gap-4 sm:grid-cols-2">
             <ReadonlyField label="Datum kooi-uitzetting" value={campaign.cageDeploymentDate} />
