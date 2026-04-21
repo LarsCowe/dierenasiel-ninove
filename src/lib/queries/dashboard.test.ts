@@ -206,6 +206,33 @@ describe("getDashboardStats", () => {
     expect(stats.recentAdoptions[0].adoptedDate).toBe("2026-04-15");
   });
 
+  it("Story 10.5: animalsByStatus ondersteunt de niet_ter_adoptie bucket", async () => {
+    // De DB-query past SQL CASE-WHEN toe zodat beschikbaar+isAvailable=false
+    // als aparte bucket "niet_ter_adoptie" wordt teruggegeven. We simuleren die
+    // output en verifiëren dat stats deze bucket doorlaat naar StatusOverview.
+    mockResults.push(
+      [{ species: "hond", count: 10 }], // animalsBySpecies
+      [
+        { status: "beschikbaar", count: 5 },
+        { status: "niet_ter_adoptie", count: 2 },
+        { status: "geadopteerd", count: 3 },
+      ],
+      [],
+      [{ count: 0 }],
+      [{ count: 0 }],
+      [{ count: 10 }],
+    );
+
+    const stats = await getDashboardStats();
+
+    expect(stats.animalsByStatus).toContainEqual({ status: "beschikbaar", count: 5 });
+    expect(stats.animalsByStatus).toContainEqual({ status: "niet_ter_adoptie", count: 2 });
+    expect(stats.animalsByStatus).toContainEqual({ status: "geadopteerd", count: 3 });
+    // AC5: totaal blijft kloppen (5+2+3 = 10 matchtmet totalAnimals)
+    const statusSum = stats.animalsByStatus.reduce((s, b) => s + b.count, 0);
+    expect(statusSum).toBe(stats.totalAnimals);
+  });
+
   it("returns empty stats when database query fails (graceful fallback)", async () => {
     // Make the first query reject — Promise.all will reject
     mockResults.length = 0;

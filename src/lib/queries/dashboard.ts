@@ -35,10 +35,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .from(animals)
         .groupBy(animals.species),
 
-      db
-        .select({ status: animals.status, count: sql<number>`count(*)::int` })
-        .from(animals)
-        .groupBy(animals.status),
+      // Story 10.5: splits "beschikbaar" in twee buckets — dieren die publiek
+      // beschikbaar zijn voor adoptie vs. dieren die in asiel zijn maar nog niet
+      // ter adoptie (bv. medische check lopend, quarantaine, gedragsevaluatie).
+      (() => {
+        const statusBucket = sql<string>`CASE
+          WHEN ${animals.status} = 'beschikbaar' AND ${animals.isAvailableForAdoption} = false
+            THEN 'niet_ter_adoptie'
+          ELSE ${animals.status}
+        END`;
+        return db
+          .select({ status: statusBucket, count: sql<number>`count(*)::int` })
+          .from(animals)
+          .groupBy(statusBucket);
+      })(),
 
       db
         .select({
