@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createAdoptionCandidate } from "@/lib/actions/adoption-candidates";
 import AdoptionAnimalSelector from "./AdoptionAnimalSelector";
@@ -10,6 +10,8 @@ interface Props {
   availableAnimals: Pick<Animal, "id" | "name" | "species" | "identificationNr">[];
 }
 
+type SubmitResult = Awaited<ReturnType<typeof createAdoptionCandidate>>;
+
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
   return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
@@ -18,6 +20,16 @@ function FieldError({ errors }: { errors?: string[] }) {
 export default function AdoptionCandidateForm({ availableAnimals }: Props) {
   const router = useRouter();
   const [animalId, setAnimalId] = useState<number>(0);
+  // Alle velden zijn controlled. De form gebruikt onSubmit i.p.v. <form action={...}>
+  // om React 19's post-action DOM-reset op <input>/<select> te vermijden (zie story 10.2).
+  const [personal, setPersonal] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: "",
+  });
   const [questionnaire, setQuestionnaire] = useState({
     woonsituatie: "",
     tuinOmheind: null as boolean | null,
@@ -30,41 +42,56 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
     motivatie: "",
     opmerkingen: "",
   });
+  const [state, setState] = useState<SubmitResult | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const submitAction = async (_prev: Awaited<ReturnType<typeof createAdoptionCandidate>> | null, formData: FormData) => {
-    const payload = {
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string,
-      phone: (formData.get("phone") as string) || undefined,
-      address: (formData.get("address") as string) || undefined,
-      animalId,
-      questionnaireAnswers: questionnaire,
-      notes: (formData.get("notes") as string) || undefined,
-    };
-    const fd = new FormData();
-    fd.append("json", JSON.stringify(payload));
-
-    const result = await createAdoptionCandidate(null, fd);
-    if (result.success) {
-      router.push(`/beheerder/adoptie/${result.data.id}`);
-    }
-    return result;
+  const updateP = <K extends keyof typeof personal>(key: K, value: string) => {
+    setPersonal((prev) => ({ ...prev, [key]: value }));
   };
 
-  const [state, formAction, isPending] = useActionState(submitAction, null);
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    startTransition(async () => {
+      const payload = {
+        firstName: personal.firstName,
+        lastName: personal.lastName,
+        email: personal.email,
+        phone: personal.phone || undefined,
+        address: personal.address || undefined,
+        animalId,
+        questionnaireAnswers: questionnaire,
+        notes: personal.notes || undefined,
+      };
+      const fd = new FormData();
+      fd.append("json", JSON.stringify(payload));
+
+      const result = await createAdoptionCandidate(null, fd);
+      setState(result);
+      if (result.success) {
+        router.push(`/beheerder/adoptie/${result.data.id}`);
+      }
+    });
+  };
+
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
   const hasFieldErrors = fieldErrors && Object.keys(fieldErrors).length > 0;
   const questionnaireErrors = fieldErrors?.questionnaireAnswers as string[] | undefined;
   const animalIdErrors = fieldErrors?.animalId as string[] | undefined;
 
+  // Per-veld foutdetectie voor questionnaire: Zod's flatten() geeft enkel een top-level
+  // questionnaireAnswers-fout, niet per sub-veld. We markeren alleen de verplichte velden
+  // die effectief leeg zijn — correct ingevulde velden blijven groen, ook na een failed submit.
+  const woonsituatieError = Boolean(questionnaireErrors) && !questionnaire.woonsituatie;
+  const werkSituatieError = Boolean(questionnaireErrors) && !questionnaire.werkSituatie;
+  const motivatieError = Boolean(questionnaireErrors) && !questionnaire.motivatie;
+
   const updateQ = <K extends keyof typeof questionnaire>(key: K, value: (typeof questionnaire)[K]) => {
     setQuestionnaire((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
-    <form action={formAction} noValidate className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {globalError && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm font-medium text-red-800">{globalError}</p>
@@ -86,30 +113,30 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
             <label htmlFor="firstName" className={`block text-xs font-medium ${fieldErrors?.firstName ? "text-red-700" : "text-gray-600"}`}>
               Voornaam <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="firstName" name="firstName" required aria-invalid={!!fieldErrors?.firstName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.firstName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
+            <input type="text" id="firstName" name="firstName" value={personal.firstName} onChange={(e) => updateP("firstName", e.target.value)} required aria-invalid={!!fieldErrors?.firstName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.firstName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.firstName} />
           </div>
           <div>
             <label htmlFor="lastName" className={`block text-xs font-medium ${fieldErrors?.lastName ? "text-red-700" : "text-gray-600"}`}>
               Achternaam <span className="text-red-500">*</span>
             </label>
-            <input type="text" id="lastName" name="lastName" required aria-invalid={!!fieldErrors?.lastName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.lastName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
+            <input type="text" id="lastName" name="lastName" value={personal.lastName} onChange={(e) => updateP("lastName", e.target.value)} required aria-invalid={!!fieldErrors?.lastName} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.lastName ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.lastName} />
           </div>
           <div>
             <label htmlFor="email" className={`block text-xs font-medium ${fieldErrors?.email ? "text-red-700" : "text-gray-600"}`}>
               E-mailadres <span className="text-red-500">*</span>
             </label>
-            <input type="email" id="email" name="email" required aria-invalid={!!fieldErrors?.email} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.email ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
+            <input type="email" id="email" name="email" value={personal.email} onChange={(e) => updateP("email", e.target.value)} required aria-invalid={!!fieldErrors?.email} className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.email ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
             <FieldError errors={fieldErrors?.email} />
           </div>
           <div>
             <label htmlFor="phone" className="block text-xs font-medium text-gray-600">Telefoon</label>
-            <input type="tel" id="phone" name="phone" className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <input type="tel" id="phone" name="phone" value={personal.phone} onChange={(e) => updateP("phone", e.target.value)} className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="address" className="block text-xs font-medium text-gray-600">Adres</label>
-            <input type="text" id="address" name="address" className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+            <input type="text" id="address" name="address" value={personal.address} onChange={(e) => updateP("address", e.target.value)} className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
           </div>
         </div>
       </div>
@@ -137,10 +164,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
         )}
         <div className="mt-3 space-y-4">
           <div>
-            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
+            <label className={`block text-xs font-medium ${woonsituatieError ? "text-red-700" : "text-gray-600"}`}>
               Woonsituatie <span className="text-red-500">*</span>
             </label>
-            <select value={questionnaire.woonsituatie} onChange={(e) => updateQ("woonsituatie", e.target.value)} aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
+            <select value={questionnaire.woonsituatie} onChange={(e) => updateQ("woonsituatie", e.target.value)} aria-invalid={woonsituatieError} className={`mt-0.5 block w-full rounded-md border ${woonsituatieError ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
               <option value="">Selecteer...</option>
               <option value="huis_met_tuin">Huis met tuin</option>
               <option value="appartement">Appartement</option>
@@ -183,10 +210,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
           </div>
 
           <div>
-            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
+            <label className={`block text-xs font-medium ${werkSituatieError ? "text-red-700" : "text-gray-600"}`}>
               Werksituatie <span className="text-red-500">*</span>
             </label>
-            <select value={questionnaire.werkSituatie} onChange={(e) => updateQ("werkSituatie", e.target.value)} aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
+            <select value={questionnaire.werkSituatie} onChange={(e) => updateQ("werkSituatie", e.target.value)} aria-invalid={werkSituatieError} className={`mt-0.5 block w-full rounded-md border ${werkSituatieError ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}>
               <option value="">Selecteer...</option>
               <option value="voltijds_thuis">Voltijds thuis</option>
               <option value="deeltijds">Deeltijds</option>
@@ -205,10 +232,10 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
           </div>
 
           <div>
-            <label className={`block text-xs font-medium ${questionnaireErrors ? "text-red-700" : "text-gray-600"}`}>
+            <label className={`block text-xs font-medium ${motivatieError ? "text-red-700" : "text-gray-600"}`}>
               Motivatie <span className="text-red-500">*</span>
             </label>
-            <textarea rows={3} value={questionnaire.motivatie} onChange={(e) => updateQ("motivatie", e.target.value)} placeholder="Waarom wilt u dit dier adopteren?" aria-invalid={!!questionnaireErrors} className={`mt-0.5 block w-full rounded-md border ${questionnaireErrors ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
+            <textarea rows={3} value={questionnaire.motivatie} onChange={(e) => updateQ("motivatie", e.target.value)} placeholder="Waarom wilt u dit dier adopteren?" aria-invalid={motivatieError} className={`mt-0.5 block w-full rounded-md border ${motivatieError ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`} />
           </div>
 
           <div>
@@ -222,7 +249,7 @@ export default function AdoptionCandidateForm({ availableAnimals }: Props) {
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Interne notities</h2>
         <div className="mt-3">
-          <textarea name="notes" rows={3} placeholder="Notities voor het team..." className="block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+          <textarea name="notes" rows={3} value={personal.notes} onChange={(e) => updateP("notes", e.target.value)} placeholder="Notities voor het team..." className="block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
         </div>
       </div>
 
