@@ -506,6 +506,13 @@ export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   index("idx_stray_cat_campaigns_request_date").on(table.requestDate),
 ]);
 
+// Story 10.10: master-lijst van diagnoses voor bezoekrapport-suggesties.
+export const veterinaryDiagnoses = pgTable("veterinary_diagnoses", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Story 10.9: log van alle inspectiebezoeken op een campagne (incl. lege).
 export const strayCatCampaignInspections = pgTable("stray_cat_campaign_inspections", {
   id: serial("id").primaryKey(),

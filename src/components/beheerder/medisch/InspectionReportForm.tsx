@@ -4,11 +4,13 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createVetInspectionReport } from "@/lib/actions/vet-inspection-reports";
 import AnimalSelector from "./AnimalSelector";
+import DiagnosisCombobox from "./DiagnosisCombobox";
 import type { Animal, TreatedAnimalEntry, EuthanizedAnimalEntry, AbnormalBehaviorEntry } from "@/types";
 
 interface Props {
   shelterAnimals: Pick<Animal, "id" | "name" | "species" | "identificationNr">[];
   defaultVetName: string;
+  diagnoses: { id: number; name: string }[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -19,7 +21,7 @@ function FieldError({ errors }: { errors?: string[] }) {
 type WithKey<T> = T & { _key: number };
 let nextKey = 0;
 
-export default function InspectionReportForm({ shelterAnimals, defaultVetName }: Props) {
+export default function InspectionReportForm({ shelterAnimals, defaultVetName, diagnoses }: Props) {
   const router = useRouter();
   const [treated, setTreated] = useState<WithKey<TreatedAnimalEntry>[]>([]);
   const [euthanized, setEuthanized] = useState<WithKey<EuthanizedAnimalEntry>[]>([]);
@@ -127,11 +129,12 @@ export default function InspectionReportForm({ shelterAnimals, defaultVetName }:
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs text-gray-500">Diagnose</label>
-                    <textarea
-                      rows={2}
+                    <DiagnosisCombobox
                       value={entry.diagnosis}
-                      onChange={(e) => setTreated((prev) => prev.map((item, i) => i === idx ? { ...item, diagnosis: e.target.value } : item))}
-                      className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                      onChange={(newValue) =>
+                        setTreated((prev) => prev.map((item, i) => i === idx ? { ...item, diagnosis: newValue } : item))
+                      }
+                      diagnoses={diagnoses}
                     />
                   </div>
                   <div>

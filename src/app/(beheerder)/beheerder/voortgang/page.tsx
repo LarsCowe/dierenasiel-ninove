@@ -144,6 +144,7 @@ const EPICS: Epic[] = [
       { id: "10.7", title: "Kooinummer-picker met uniekheid per actieve zwerfkat-campagne + klikbare rij op overzicht", status: "done" },
       { id: "10.8", title: "Dashboard-widget: lopende zwerfkat-opdrachten", status: "done" },
       { id: "10.9", title: "Inspectie-log: meerdere inspecties per zwerfkat-campagne (incl. lege)", status: "done" },
+      { id: "10.10", title: "Bezoekrapport: diagnose-keuzelijst met uitbreidbare suggesties", status: "done" },
     ],
   },
 ];

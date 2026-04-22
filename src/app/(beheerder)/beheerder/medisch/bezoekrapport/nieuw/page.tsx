@@ -1,11 +1,13 @@
 import { getSession } from "@/lib/auth/session";
 import { getAnimals } from "@/lib/queries/animals";
+import { getAllDiagnoses } from "@/lib/queries/veterinary-diagnoses";
 import InspectionReportForm from "@/components/beheerder/medisch/InspectionReportForm";
 
 export default async function NieuwBezoekrapportPage() {
-  const [session, allAnimals] = await Promise.all([
+  const [session, allAnimals, diagnoses] = await Promise.all([
     getSession(),
     getAnimals(),
+    getAllDiagnoses(),
   ]);
 
   const shelterAnimals = allAnimals.map((a) => ({
@@ -28,6 +30,7 @@ export default async function NieuwBezoekrapportPage() {
         <InspectionReportForm
           shelterAnimals={shelterAnimals}
           defaultVetName={session?.name ?? ""}
+          diagnoses={diagnoses}
         />
       </div>
     </div>
