@@ -18,10 +18,10 @@ export type KennelPosition = {
   h: number;
 };
 
-// Top row — "andere dieren" (A1..A4): 4 bredere kamers in de bovenste strip
+// Top row — "andere dieren": enkel A3 en A4 zijn nog actief (A1+A2
+// gedeactiveerd in DB na visuele herziening — bovenaan zijn er maar
+// 2 kennels nodig).
 const topKennels: KennelPosition[] = [
-  { code: "A1", x: 22, y: 2.5, w: 11, h: 9 },
-  { code: "A2", x: 34, y: 2.5, w: 11, h: 9 },
   { code: "A3", x: 46, y: 2.5, w: 11, h: 9 },
   { code: "A4", x: 58, y: 2.5, w: 11, h: 9 },
 ];
