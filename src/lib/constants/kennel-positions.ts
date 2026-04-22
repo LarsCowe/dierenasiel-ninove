@@ -40,18 +40,18 @@ const leftKennels: KennelPosition[] = [
 
 // Right inner column — honden (H1..H12): 12 gestapelde vakjes op cream-kolom
 const rightKennels: KennelPosition[] = [
-  { code: "H1", x: 75, y: 12, w: 11, h: 5.3 },
-  { code: "H2", x: 75, y: 17.8, w: 11, h: 5.3 },
-  { code: "H3", x: 75, y: 23.6, w: 11, h: 5.3 },
-  { code: "H4", x: 75, y: 29.4, w: 11, h: 5.3 },
-  { code: "H5", x: 75, y: 35.2, w: 11, h: 5.3 },
-  { code: "H6", x: 75, y: 41, w: 11, h: 5.3 },
-  { code: "H7", x: 75, y: 46.8, w: 11, h: 5.3 },
-  { code: "H8", x: 75, y: 52.6, w: 11, h: 5.3 },
-  { code: "H9", x: 75, y: 58.4, w: 11, h: 5.3 },
-  { code: "H10", x: 75, y: 64.2, w: 11, h: 5.3 },
-  { code: "H11", x: 75, y: 70, w: 11, h: 5.3 },
-  { code: "H12", x: 75, y: 75.8, w: 11, h: 5.3 },
+  { code: "H1", x: 82.5, y: 12, w: 11, h: 5.3 },
+  { code: "H2", x: 82.5, y: 17.8, w: 11, h: 5.3 },
+  { code: "H3", x: 82.5, y: 23.6, w: 11, h: 5.3 },
+  { code: "H4", x: 82.5, y: 29.4, w: 11, h: 5.3 },
+  { code: "H5", x: 82.5, y: 35.2, w: 11, h: 5.3 },
+  { code: "H6", x: 82.5, y: 41, w: 11, h: 5.3 },
+  { code: "H7", x: 82.5, y: 46.8, w: 11, h: 5.3 },
+  { code: "H8", x: 82.5, y: 52.6, w: 11, h: 5.3 },
+  { code: "H9", x: 82.5, y: 58.4, w: 11, h: 5.3 },
+  { code: "H10", x: 82.5, y: 64.2, w: 11, h: 5.3 },
+  { code: "H11", x: 82.5, y: 70, w: 11, h: 5.3 },
+  { code: "H12", x: 82.5, y: 75.8, w: 11, h: 5.3 },
 ];
 
 export const KENNEL_POSITIONS: KennelPosition[] = [
