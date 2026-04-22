@@ -6,7 +6,7 @@ const {
   mockSelectWhere, mockSelectFrom, mockSelect,
   mockSelectLimit, mockSelectOrderBy,
   mockGetSession, mockLogAudit, mockRevalidatePath,
-  mockGetWalkingClubThreshold,
+  mockGetWalkingClubThreshold, mockGetWalkDays,
 } = vi.hoisted(() => {
   const mockReturning = vi.fn();
   const mockValues = vi.fn().mockReturnValue({ returning: mockReturning });
@@ -24,13 +24,14 @@ const {
   const mockLogAudit = vi.fn();
   const mockRevalidatePath = vi.fn();
   const mockGetWalkingClubThreshold = vi.fn();
+  const mockGetWalkDays = vi.fn();
   return {
     mockReturning, mockValues, mockInsert,
     mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockSelectWhere, mockSelectFrom, mockSelect,
     mockSelectLimit, mockSelectOrderBy,
     mockGetSession, mockLogAudit, mockRevalidatePath,
-    mockGetWalkingClubThreshold,
+    mockGetWalkingClubThreshold, mockGetWalkDays,
   };
 });
 
@@ -75,6 +76,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/queries/shelter-settings", () => ({
   getWalkingClubThreshold: mockGetWalkingClubThreshold,
+  getWalkDays: mockGetWalkDays,
 }));
 
 import { bookWalk, checkInWalk, checkOutWalk } from "./walks";
@@ -127,6 +129,9 @@ describe("bookWalk", () => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue({ userId: 99, role: "wandelaar", email: "jan@example.com", name: "Jan" });
     mockLogAudit.mockResolvedValue(undefined);
+    // Story 10.13: default — alle dagen toegestaan in tests, individuele tests
+    // overschrijven dit waar nodig.
+    mockGetWalkDays.mockResolvedValue([0, 1, 2, 3, 4, 5, 6]);
 
     // Default mock chain:
     // 1st select: walker lookup by userId
@@ -140,6 +145,27 @@ describe("bookWalk", () => {
     });
 
     mockReturning.mockResolvedValue([mockCreatedWalk]);
+  });
+
+  it("Story 10.13: weigert boeking als dag niet in walk_days", async () => {
+    // 2026-03-15 = zondag (getDay=0); allowed = enkel maandag
+    mockGetWalkDays.mockResolvedValue([1]);
+
+    const result = await bookWalk(null, makeFormData(validFormFields));
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet mogelijk");
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("Story 10.13: slaagt als dag in walk_days zit", async () => {
+    // 2026-03-15 = zondag (getDay=0)
+    mockGetWalkDays.mockResolvedValue([0, 3]);
+
+    const result = await bookWalk(null, makeFormData(validFormFields));
+
+    expect(result.success).toBe(true);
+    expect(mockInsert).toHaveBeenCalled();
   });
 
   it("returns error when not logged in", async () => {

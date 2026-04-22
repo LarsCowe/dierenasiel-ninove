@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getWalkerByUserId, getDogsAvailableForWalking, getWalksByWalkerId } from "@/lib/queries/walks";
+import { getWalkDays } from "@/lib/queries/shelter-settings";
 import WalkerNotApprovedMessage from "@/components/wandelaar/WalkerNotApprovedMessage";
 import AvailableDogsGrid from "@/components/wandelaar/AvailableDogsGrid";
 import MyWalksSection from "@/components/wandelaar/MyWalksSection";
@@ -18,9 +19,10 @@ export default async function WandelaarDashboard() {
     return <WalkerNotApprovedMessage />;
   }
 
-  const [dogs, walks] = await Promise.all([
+  const [dogs, walks, walkDays] = await Promise.all([
     getDogsAvailableForWalking(),
     getWalksByWalkerId(walker.id),
+    getWalkDays(),
   ]);
 
   return (
@@ -37,7 +39,7 @@ export default async function WandelaarDashboard() {
         <h2 className="mb-3 font-heading text-lg font-semibold text-[#1b4332]">
           Beschikbare honden
         </h2>
-        <AvailableDogsGrid dogs={dogs} />
+        <AvailableDogsGrid dogs={dogs} walkDays={walkDays} />
       </section>
 
       {/* My walks */}

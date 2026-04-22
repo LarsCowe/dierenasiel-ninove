@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
-import { getWalkingClubThreshold } from "@/lib/queries/shelter-settings";
+import { getWalkingClubThreshold, getWalkDays } from "@/lib/queries/shelter-settings";
 import type { ActionResult } from "@/types";
 import type { Walk } from "@/types";
 
@@ -82,6 +82,17 @@ export async function bookWalk(
     const animal = animalResults[0];
     if (animal.species !== "hond" || !animal.isInShelter) {
       return { success: false, error: "Dit dier is geen hond in het asiel." };
+    }
+
+    // Story 10.13: enkel boeken op toegestane weekdagen.
+    const allowedDays = await getWalkDays();
+    const dateOnly = parsed.data.date; // YYYY-MM-DD
+    const dayOfWeek = new Date(`${dateOnly}T00:00:00`).getDay();
+    if (!allowedDays.includes(dayOfWeek)) {
+      return {
+        success: false,
+        error: "Op deze dag is wandelen niet mogelijk. Kies een andere datum.",
+      };
     }
 
     // Create walk

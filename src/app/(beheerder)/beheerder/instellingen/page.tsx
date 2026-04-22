@@ -1,14 +1,16 @@
 import { getWorkflowSettings } from "@/lib/queries/shelter-settings";
-import { getWalkingClubThreshold } from "@/lib/queries/shelter-settings";
+import { getWalkingClubThreshold, getWalkDays } from "@/lib/queries/shelter-settings";
 import WorkflowSettingsPanel from "@/components/beheerder/instellingen/WorkflowSettingsPanel";
 import ThresholdSettingPanel from "@/components/beheerder/instellingen/ThresholdSettingPanel";
+import WalkDaysSettingPanel from "@/components/beheerder/instellingen/WalkDaysSettingPanel";
 import DatabaseResetPanel from "@/components/beheerder/instellingen/DatabaseResetPanel";
 import SeedTestDataPanel from "@/components/beheerder/instellingen/SeedTestDataPanel";
 
 export default async function InstellingenPage() {
-  const [workflowSettings, threshold] = await Promise.all([
+  const [workflowSettings, threshold, walkDays] = await Promise.all([
     getWorkflowSettings(),
     getWalkingClubThreshold(),
+    getWalkDays(),
   ]);
 
   return (
@@ -28,6 +30,10 @@ export default async function InstellingenPage() {
 
       <section className="mt-6">
         <ThresholdSettingPanel threshold={threshold} />
+      </section>
+
+      <section className="mt-6">
+        <WalkDaysSettingPanel walkDays={walkDays} />
       </section>
 
       <section className="mt-6">

@@ -147,6 +147,7 @@ const EPICS: Epic[] = [
       { id: "10.10", title: "Bezoekrapport: diagnose-keuzelijst met uitbreidbare suggesties", status: "done" },
       { id: "10.11", title: "Beheerder-intake: link naar publiek adoptie-formulier (balie/telefoon)", status: "done" },
       { id: "10.12", title: "Dierfoto's op kennel-grondplan + demo-backfill", status: "done" },
+      { id: "10.13", title: "Wandeldagen weekpatroon (instelbaar via /instellingen, validatie bij boeking)", status: "done" },
     ],
   },
 ];

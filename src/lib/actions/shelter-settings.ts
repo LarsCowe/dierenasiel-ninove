@@ -137,3 +137,7 @@ export async function updateWalkingClubThreshold(
     return { success: false, error: "Er ging iets mis. Probeer het later opnieuw." };
   }
 }
+
+export async function updateWalkDays(days: number[]): Promise<ActionResult> {
+  return updateShelterSetting("walk_days", days);
+}

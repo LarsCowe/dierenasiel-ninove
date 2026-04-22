@@ -6,6 +6,7 @@ import type { Animal } from "@/types";
 
 interface WalkBookingFormProps {
   dog: Animal;
+  walkDays: number[];
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -15,7 +16,16 @@ interface FieldErrors {
   startTime?: string;
 }
 
-export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookingFormProps) {
+const DAY_NAMES_NL = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+
+function formatAllowedDays(days: number[]): string {
+  if (days.length === 0) return "geen dag (wandelen tijdelijk gesloten)";
+  // Toon in week-volgorde maandag-zondag
+  const weekOrder = [1, 2, 3, 4, 5, 6, 0];
+  return weekOrder.filter((d) => days.includes(d)).map((d) => DAY_NAMES_NL[d]).join(", ");
+}
+
+export default function WalkBookingForm({ dog, walkDays, onCancel, onSuccess }: WalkBookingFormProps) {
   const [state, formAction, isPending] = useActionState(bookWalk, null);
   const hasHandledSuccess = useRef(false);
 
@@ -44,6 +54,12 @@ export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookin
 
     if (!date.trim()) {
       errors.date = "Datum is verplicht.";
+    } else {
+      // Story 10.13: client-side check op weekdag.
+      const dow = new Date(`${date}T00:00:00`).getDay();
+      if (!walkDays.includes(dow)) {
+        errors.date = `Op deze dag is wandelen niet mogelijk. Kies: ${formatAllowedDays(walkDays)}.`;
+      }
     }
     if (!startTime.trim()) {
       errors.startTime = "Starttijd is verplicht.";
@@ -84,6 +100,10 @@ export default function WalkBookingForm({ dog, onCancel, onSuccess }: WalkBookin
                 {state.error}
               </div>
             )}
+
+            <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+              Wandelen is mogelijk op: {formatAllowedDays(walkDays)}.
+            </p>
 
             <div>
               <label

@@ -7,9 +7,10 @@ import type { Animal } from "@/types";
 
 interface AvailableDogsGridProps {
   dogs: Animal[];
+  walkDays: number[];
 }
 
-export default function AvailableDogsGrid({ dogs }: AvailableDogsGridProps) {
+export default function AvailableDogsGrid({ dogs, walkDays }: AvailableDogsGridProps) {
   const [selectedDogId, setSelectedDogId] = useState<number | null>(null);
 
   const selectedDog = dogs.find((d) => d.id === selectedDogId) ?? null;
@@ -35,6 +36,7 @@ export default function AvailableDogsGrid({ dogs }: AvailableDogsGridProps) {
       {selectedDog && (
         <WalkBookingForm
           dog={selectedDog}
+          walkDays={walkDays}
           onCancel={() => setSelectedDogId(null)}
           onSuccess={() => setSelectedDogId(null)}
         />

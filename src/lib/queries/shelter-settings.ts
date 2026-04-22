@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { shelterSettings } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { SHELTER_SETTING_KEYS, type WorkflowSettings } from "@/lib/validations/shelter-settings";
+import { SHELTER_SETTING_KEYS, DEFAULT_WALK_DAYS, type WorkflowSettings } from "@/lib/validations/shelter-settings";
 
 const DEFAULT_WALKING_CLUB_THRESHOLD = 10;
 
@@ -74,5 +74,32 @@ export async function getWorkflowSettings(): Promise<WorkflowSettings> {
   } catch (err) {
     console.error("getWorkflowSettings query failed:", err);
     return DEFAULT_WORKFLOW_SETTINGS;
+  }
+}
+
+/**
+ * Story 10.13: weekdagen waarop wandelaars mogen boeken.
+ * Returns een gesorteerde array van weekdagnummers (0=zondag .. 6=zaterdag).
+ * Default als de setting nog niet bestaat: [1, 3, 5, 6] (ma/wo/vr/za).
+ */
+export async function getWalkDays(): Promise<number[]> {
+  try {
+    const results = await db
+      .select()
+      .from(shelterSettings)
+      .where(eq(shelterSettings.key, SHELTER_SETTING_KEYS.WALK_DAYS))
+      .limit(1);
+
+    if (results.length === 0) return [...DEFAULT_WALK_DAYS];
+
+    const value = results[0].value;
+    if (!Array.isArray(value)) return [...DEFAULT_WALK_DAYS];
+    const filtered = value.filter(
+      (n): n is number => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 6,
+    );
+    return Array.from(new Set(filtered)).sort((a, b) => a - b);
+  } catch (err) {
+    console.error("getWalkDays query failed:", err);
+    return [...DEFAULT_WALK_DAYS];
   }
 }
