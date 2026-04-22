@@ -83,6 +83,11 @@ export default function KennelFloorPlan({
           const count = data?.count ?? 0;
           const capacity = data?.kennel.capacity ?? 2;
           const colorClasses = getOccupancyColor(count, capacity);
+          // Story 10.12: toon foto van eerste bewoner als achtergrond
+          const firstWithPhoto = data
+            ? (animalsByKennel[data.kennel.id] ?? []).find((a) => a.imageUrl)
+            : undefined;
+          const hasPhoto = Boolean(firstWithPhoto?.imageUrl);
 
           return (
             <button
@@ -90,7 +95,9 @@ export default function KennelFloorPlan({
               type="button"
               onClick={() => handleKennelClick(pos.code)}
               aria-label={`Kennel ${pos.code}: ${count} van ${capacity} bezet`}
-              className={`absolute flex flex-col items-center justify-center rounded border-2 text-xs font-bold transition-all ${colorClasses} ${
+              className={`absolute overflow-hidden rounded border-2 text-xs font-bold transition-all ${
+                hasPhoto ? "bg-white" : colorClasses
+              } ${
                 selectedKennel?.code === pos.code ? "ring-2 ring-blue-500 ring-offset-1" : ""
               }`}
               style={{
@@ -98,14 +105,28 @@ export default function KennelFloorPlan({
                 top: `${pos.y}%`,
                 width: `${pos.w}%`,
                 height: `${pos.h}%`,
+                backgroundImage: hasPhoto ? `url(${firstWithPhoto!.imageUrl})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
-              title={`${pos.code} — ${count}/${capacity}`}
+              title={`${pos.code} — ${count}/${capacity}${firstWithPhoto ? ` — ${firstWithPhoto.name}` : ""}`}
             >
-              <span className="text-[10px] leading-tight text-gray-900 drop-shadow-sm sm:text-xs">
-                {pos.code}
-              </span>
-              <span className="text-[9px] leading-tight text-gray-700 sm:text-[10px]">
-                {count}/{capacity}
+              {/* Gradient-overlay onderaan voor leesbaarheid van text */}
+              {hasPhoto && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent"
+                />
+              )}
+              <span
+                className={`absolute inset-x-0 bottom-1 flex flex-col items-center text-[10px] leading-tight sm:text-xs ${
+                  hasPhoto ? "text-white drop-shadow" : "text-gray-900"
+                }`}
+              >
+                <span>{pos.code}</span>
+                <span className={`text-[9px] sm:text-[10px] ${hasPhoto ? "text-white/90" : "text-gray-700"}`}>
+                  {count}/{capacity}
+                </span>
               </span>
             </button>
           );
