@@ -34,7 +34,7 @@ const leftKennels: KennelPosition[] = [
   { code: "K4", x: 20.5, y: 32.3, w: 11, h: 5.3 },
   { code: "K5", x: 20.5, y: 38.1, w: 11, h: 5.3 },
   { code: "K6", x: 20.5, y: 43.7, w: 11, h: 5.3 },
-  { code: "K7", x: 20.5, y: 58.8, w: 11, h: 5.3 },
+  { code: "K7", x: 20.5, y: 50.9, w: 11, h: 5.3 },
   { code: "K8", x: 20.5, y: 66.3, w: 11, h: 5.3 },
 ];
 
