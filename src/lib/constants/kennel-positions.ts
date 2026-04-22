@@ -1,7 +1,14 @@
 // Kennel positions on the floor plan image (percentage-based coordinates)
 // x, y = top-left corner as % of image dimensions
 // w, h = width and height as % of image dimensions
-// Adjust these values to match the exact floor plan layout
+//
+// Herzien in Story 10.12 na visuele analyse van grondplan-kennels.png:
+// - A1..A4 staan in de boven-strip, nu breder en correct gepositioneerd
+// - K1..K8 op de binnenste (cream) kolom links, uitgespreid over volledige hoogte
+// - H1..H12 op de binnenste (cream) kolom rechts, 12 evenredige vakjes
+//
+// Wanneer Sven een nieuw grondplan aanlevert hoeft enkel deze file bij te
+// werken (en eventueel /public/images/grondplan-kennels.png te vervangen).
 
 export type KennelPosition = {
   code: string;
@@ -11,49 +18,44 @@ export type KennelPosition = {
   h: number;
 };
 
-// Right side kennels (east wall) — honden bovenste rij
-const rightTopKennels: KennelPosition[] = [
-  { code: "H1", x: 72, y: 5, w: 13, h: 6 },
-  { code: "H2", x: 72, y: 11.5, w: 13, h: 6 },
-  { code: "H3", x: 72, y: 18, w: 13, h: 6 },
-  { code: "H4", x: 72, y: 24.5, w: 13, h: 6 },
-  { code: "H5", x: 72, y: 31, w: 13, h: 6 },
-  { code: "H6", x: 72, y: 37.5, w: 13, h: 6 },
-];
-
-// Right side kennels (east wall) — honden onderste rij
-const rightBottomKennels: KennelPosition[] = [
-  { code: "H7", x: 72, y: 44, w: 13, h: 6 },
-  { code: "H8", x: 72, y: 50.5, w: 13, h: 6 },
-  { code: "H9", x: 72, y: 57, w: 13, h: 6 },
-  { code: "H10", x: 72, y: 63.5, w: 13, h: 6 },
-  { code: "H11", x: 72, y: 70, w: 13, h: 6 },
-  { code: "H12", x: 72, y: 76.5, w: 13, h: 6 },
-];
-
-// Left side kennels (west wall) — katten
-const leftKennels: KennelPosition[] = [
-  { code: "K1", x: 2, y: 5, w: 13, h: 6 },
-  { code: "K2", x: 2, y: 11.5, w: 13, h: 6 },
-  { code: "K3", x: 2, y: 18, w: 13, h: 6 },
-  { code: "K4", x: 2, y: 24.5, w: 13, h: 6 },
-  { code: "K5", x: 2, y: 31, w: 13, h: 6 },
-  { code: "K6", x: 2, y: 37.5, w: 13, h: 6 },
-  { code: "K7", x: 2, y: 44, w: 13, h: 6 },
-  { code: "K8", x: 2, y: 50.5, w: 13, h: 6 },
-];
-
-// Top kennels — andere dieren
+// Top row — "andere dieren" (A1..A4): 4 bredere kamers in de bovenste strip
 const topKennels: KennelPosition[] = [
-  { code: "A1", x: 30, y: 0, w: 10, h: 4 },
-  { code: "A2", x: 42, y: 0, w: 10, h: 4 },
-  { code: "A3", x: 54, y: 0, w: 10, h: 4 },
-  { code: "A4", x: 66, y: 0, w: 10, h: 4 },
+  { code: "A1", x: 22, y: 2.5, w: 11, h: 9 },
+  { code: "A2", x: 34, y: 2.5, w: 11, h: 9 },
+  { code: "A3", x: 46, y: 2.5, w: 11, h: 9 },
+  { code: "A4", x: 58, y: 2.5, w: 11, h: 9 },
+];
+
+// Left inner column — katten (K1..K8): 8 gestapelde vakjes op cream-kolom
+const leftKennels: KennelPosition[] = [
+  { code: "K1", x: 13, y: 15, w: 11, h: 7 },
+  { code: "K2", x: 13, y: 22.5, w: 11, h: 7 },
+  { code: "K3", x: 13, y: 30, w: 11, h: 7 },
+  { code: "K4", x: 13, y: 37.5, w: 11, h: 7 },
+  { code: "K5", x: 13, y: 45, w: 11, h: 7 },
+  { code: "K6", x: 13, y: 52.5, w: 11, h: 7 },
+  { code: "K7", x: 13, y: 60, w: 11, h: 7 },
+  { code: "K8", x: 13, y: 67.5, w: 11, h: 7 },
+];
+
+// Right inner column — honden (H1..H12): 12 gestapelde vakjes op cream-kolom
+const rightKennels: KennelPosition[] = [
+  { code: "H1", x: 75, y: 12, w: 11, h: 5.3 },
+  { code: "H2", x: 75, y: 17.8, w: 11, h: 5.3 },
+  { code: "H3", x: 75, y: 23.6, w: 11, h: 5.3 },
+  { code: "H4", x: 75, y: 29.4, w: 11, h: 5.3 },
+  { code: "H5", x: 75, y: 35.2, w: 11, h: 5.3 },
+  { code: "H6", x: 75, y: 41, w: 11, h: 5.3 },
+  { code: "H7", x: 75, y: 46.8, w: 11, h: 5.3 },
+  { code: "H8", x: 75, y: 52.6, w: 11, h: 5.3 },
+  { code: "H9", x: 75, y: 58.4, w: 11, h: 5.3 },
+  { code: "H10", x: 75, y: 64.2, w: 11, h: 5.3 },
+  { code: "H11", x: 75, y: 70, w: 11, h: 5.3 },
+  { code: "H12", x: 75, y: 75.8, w: 11, h: 5.3 },
 ];
 
 export const KENNEL_POSITIONS: KennelPosition[] = [
-  ...rightTopKennels,
-  ...rightBottomKennels,
-  ...leftKennels,
   ...topKennels,
+  ...leftKennels,
+  ...rightKennels,
 ];
