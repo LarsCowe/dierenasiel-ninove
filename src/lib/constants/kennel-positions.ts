@@ -51,7 +51,6 @@ const rightKennels: KennelPosition[] = [
   { code: "H9", x: 82.5, y: 58.4, w: 11, h: 5.3 },
   { code: "H10", x: 82.5, y: 64.2, w: 11, h: 5.3 },
   { code: "H11", x: 82.5, y: 70, w: 11, h: 5.3 },
-  { code: "H12", x: 82.5, y: 75.8, w: 11, h: 5.3 },
 ];
 
 export const KENNEL_POSITIONS: KennelPosition[] = [
