@@ -1,40 +1,28 @@
-import { getAnimalsAvailableForAdoption } from "@/lib/queries/animals";
-import AdoptionCandidateForm from "@/components/beheerder/adoptie/AdoptionCandidateForm";
-
 const PUBLIC_FORM_LINKS: { label: string; href: string }[] = [
   { label: "Hond", href: "/adoptie-aanvraag/hond" },
   { label: "Kat", href: "/adoptie-aanvraag/kat" },
   { label: "Andere", href: "/adoptie-aanvraag/andere" },
 ];
 
-export default async function NieuweAdoptieAanvraagPage() {
-  const animals = await getAnimalsAvailableForAdoption();
-
-  const availableAnimals = animals.map((a) => ({
-    id: a.id,
-    name: a.name,
-    species: a.species,
-    identificationNr: a.identificationNr,
-  }));
-
+export default function NieuweAdoptieAanvraagPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
         Nieuwe adoptie-aanvraag
       </h1>
       <p className="mt-1 text-sm text-gray-500">
-        Registreer een kandidaat-adoptant met de verplichte vragenlijst (Bijlage IX).
+        Gebruik het publieke aanvraagformulier — dat bevat alle verplichte velden
+        (vragenlijst Bijlage IX, contact, gewenst dier). De aanvraag verschijnt
+        automatisch in het adoptie-overzicht na submit.
       </p>
 
-      {/* Story 10.11: link naar publiek formulier voor balie/telefoon-intake */}
       <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/50 p-5">
         <h2 className="text-sm font-semibold text-[#1b4332]">
-          Aanvraag namens bezoeker aan de balie of telefoon?
+          Welk dier betreft het?
         </h2>
         <p className="mt-1 text-xs text-gray-600">
-          Gebruik dan het publieke aanvraagformulier. Dit bevat alle velden zoals
-          bezoekers ze online invullen. De aanvraag verschijnt automatisch in dit
-          overzicht na submit.
+          Kies de diersoort en het formulier opent in een nieuw tabblad. Handig
+          wanneer je een aanvraag inneemt aan de balie of telefonisch.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {PUBLIC_FORM_LINKS.map((link) => (
@@ -43,9 +31,9 @@ export default async function NieuweAdoptieAanvraagPage() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-medium text-emerald-800 hover:bg-emerald-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50"
             >
-              Publiek formulier — {link.label}
+              Formulier — {link.label}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
@@ -59,13 +47,6 @@ export default async function NieuweAdoptieAanvraagPage() {
             </a>
           ))}
         </div>
-      </div>
-
-      <div className="mt-6">
-        <p className="mb-3 text-xs uppercase tracking-wider text-gray-500">
-          Of snelle interne registratie hieronder
-        </p>
-        <AdoptionCandidateForm availableAnimals={availableAnimals} />
       </div>
     </div>
   );
