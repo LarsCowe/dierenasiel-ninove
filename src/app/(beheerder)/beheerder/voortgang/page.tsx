@@ -149,6 +149,7 @@ const EPICS: Epic[] = [
       { id: "10.12", title: "Dierfoto's op kennel-grondplan + demo-backfill", status: "done" },
       { id: "10.13", title: "Wandeldagen weekpatroon (instelbaar via /instellingen, validatie bij boeking)", status: "done" },
       { id: "10.14", title: "Admin wandelaar-intake: reglement-checkbox + kinderen-vraag", status: "done" },
+      { id: "10.15", title: "Wandelaar reactiveren na desactivatie", status: "done" },
     ],
   },
 ];

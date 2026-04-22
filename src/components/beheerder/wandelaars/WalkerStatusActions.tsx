@@ -21,7 +21,7 @@ export default function WalkerStatusActions({ walker }: Props) {
     }
   }, [state, router]);
 
-  if (walker.status === "rejected" || walker.status === "inactive") {
+  if (walker.status === "rejected") {
     return null;
   }
 
@@ -121,6 +121,42 @@ export default function WalkerStatusActions({ walker }: Props) {
                 className="rounded-md border border-red-200 px-5 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
               >
                 Afwijzen
+              </button>
+            )}
+          </>
+        )}
+
+        {walker.status === "inactive" && (
+          <>
+            {confirmAction === "approved" ? (
+              <form action={formAction}>
+                <input type="hidden" name="walkerId" value={walker.id} />
+                <input type="hidden" name="status" value="approved" />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Wandelaar terug activeren?</span>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isPending ? "Bezig..." : "Ja, reactiveren"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction(null)}
+                    className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmAction("approved")}
+                className="rounded-md bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                Reactiveren
               </button>
             )}
           </>
