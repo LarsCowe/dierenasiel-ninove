@@ -223,6 +223,9 @@ export async function createWalkerManual(
   const dateOfBirth = (formData.get("dateOfBirth") as string)?.trim();
   const address = (formData.get("address") as string)?.trim();
   const autoApprove = formData.get("autoApprove") === "true";
+  // Story 10.14: expliciete keuzes uit de admin form ipv silent defaults.
+  const regulationsRead = formData.get("regulationsRead") === "true";
+  const childrenWalkAlong = formData.get("childrenWalkAlong") === "true";
 
   if (!firstName || !lastName) {
     return { success: false, error: "Voornaam en achternaam zijn verplicht." };
@@ -238,6 +241,10 @@ export async function createWalkerManual(
   }
   if (!address) {
     return { success: false, error: "Adres is verplicht." };
+  }
+  // Story 10.14: reglement-aanvaarding is verplicht (analoog aan publieke flow).
+  if (!regulationsRead) {
+    return { success: false, error: "Het wandelreglement moet aanvaard zijn om de wandelaar aan te maken." };
   }
 
   try {
@@ -262,7 +269,8 @@ export async function createWalkerManual(
         phone,
         dateOfBirth,
         address,
-        regulationsRead: true,
+        regulationsRead,
+        childrenWalkAlong,
         status,
         isApproved: autoApprove,
       })

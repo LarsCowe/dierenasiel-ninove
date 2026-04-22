@@ -169,18 +169,46 @@ export default function WalkerCreateForm({ onClose }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="wc-autoApprove"
-            name="autoApprove"
-            value="true"
-            defaultChecked
-            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-          />
-          <label htmlFor="wc-autoApprove" className="text-sm text-gray-700">
-            Direct goedkeuren (maakt automatisch een gebruikersaccount aan)
-          </label>
+        <div className="space-y-2 rounded-md border border-gray-100 bg-gray-50 p-3">
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="wc-regulationsRead"
+              name="regulationsRead"
+              value="true"
+              defaultChecked
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <label htmlFor="wc-regulationsRead" className="text-sm text-gray-700">
+              Wandelreglement is met de wandelaar besproken en aanvaard
+              <span className="text-red-500"> *</span>
+            </label>
+          </div>
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="wc-childrenWalkAlong"
+              name="childrenWalkAlong"
+              value="true"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <label htmlFor="wc-childrenWalkAlong" className="text-sm text-gray-700">
+              Wandelaar wil kinderen mee laten wandelen (onder eigen begeleiding)
+            </label>
+          </div>
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="wc-autoApprove"
+              name="autoApprove"
+              value="true"
+              defaultChecked
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <label htmlFor="wc-autoApprove" className="text-sm text-gray-700">
+              Direct goedkeuren (maakt automatisch een gebruikersaccount aan)
+            </label>
+          </div>
         </div>
 
         {state && !state.success && state.error && (
