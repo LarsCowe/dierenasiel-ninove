@@ -35,7 +35,7 @@ const leftKennels: KennelPosition[] = [
   { code: "K5", x: 20.5, y: 38.1, w: 11, h: 5.3 },
   { code: "K6", x: 20.5, y: 43.7, w: 11, h: 5.3 },
   { code: "K7", x: 20.5, y: 49.7, w: 11, h: 5.3 },
-  { code: "K8", x: 20.5, y: 56.8, w: 11, h: 5.3 },
+  { code: "K8", x: 20.5, y: 56.6, w: 11, h: 5.3 },
 ];
 
 // Right inner column — honden (H1..H12): 12 gestapelde vakjes op cream-kolom
