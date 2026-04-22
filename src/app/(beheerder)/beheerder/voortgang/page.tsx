@@ -145,6 +145,7 @@ const EPICS: Epic[] = [
       { id: "10.8", title: "Dashboard-widget: lopende zwerfkat-opdrachten", status: "done" },
       { id: "10.9", title: "Inspectie-log: meerdere inspecties per zwerfkat-campagne (incl. lege)", status: "done" },
       { id: "10.10", title: "Bezoekrapport: diagnose-keuzelijst met uitbreidbare suggesties", status: "done" },
+      { id: "10.11", title: "Beheerder-intake: link naar publiek adoptie-formulier (balie/telefoon)", status: "done" },
     ],
   },
 ];
