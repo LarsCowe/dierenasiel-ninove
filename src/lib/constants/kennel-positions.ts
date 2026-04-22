@@ -29,7 +29,7 @@ const topKennels: KennelPosition[] = [
 // Left inner column — katten (K1..K8): 8 gestapelde vakjes op cream-kolom
 const leftKennels: KennelPosition[] = [
   { code: "K1", x: 20.5, y: 12.9, w: 11, h: 5.3 },
-  { code: "K2", x: 20.5, y: 20.4, w: 11, h: 5.3 },
+  { code: "K2", x: 20.5, y: 20.2, w: 11, h: 5.3 },
   { code: "K3", x: 20.5, y: 26.4, w: 11, h: 5.3 },
   { code: "K4", x: 20.5, y: 32.3, w: 11, h: 5.3 },
   { code: "K5", x: 20.5, y: 38.1, w: 11, h: 5.3 },
