@@ -50,3 +50,5 @@ scrape-wix-images.mjs
 next-env.d.ts
 
 .vercel
+
+.env*.local

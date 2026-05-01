@@ -151,6 +151,7 @@ const EPICS: Epic[] = [
       { id: "10.14", title: "Admin wandelaar-intake: reglement-checkbox + kinderen-vraag", status: "done" },
       { id: "10.15", title: "Wandelaar reactiveren na desactivatie", status: "done" },
       { id: "10.16", title: "Dashboard tile Recente adoptie aanvragen", status: "done" },
+      { id: "10.17", title: "Mails van gemeente uploaden bij zwerfkat-campagne", status: "done" },
     ],
   },
 ];

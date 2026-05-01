@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getCampaignById, getCatsAvailableForLinking, getOccupiedCageNumbers, getInspectionsForCampaign } from "@/lib/queries/stray-cat-campaigns";
+import { getCampaignById, getCatsAvailableForLinking, getOccupiedCageNumbers, getInspectionsForCampaign, getCampaignAttachments } from "@/lib/queries/stray-cat-campaigns";
 import CampaignDetailForm from "@/components/beheerder/zwerfkatten/CampaignDetailForm";
 
 interface Props {
@@ -12,11 +12,12 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaignId = Number(id);
   if (isNaN(campaignId)) notFound();
 
-  const [campaign, availableCats, occupiedCages, inspections] = await Promise.all([
+  const [campaign, availableCats, occupiedCages, inspections, attachments] = await Promise.all([
     getCampaignById(campaignId),
     getCatsAvailableForLinking(),
     getOccupiedCageNumbers(campaignId),
     getInspectionsForCampaign(campaignId),
+    getCampaignAttachments(campaignId),
   ]);
 
   if (!campaign) notFound();
@@ -40,6 +41,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         availableCats={availableCats}
         occupiedCages={occupiedCages}
         inspections={inspections}
+        attachments={attachments}
       />
     </div>
   );

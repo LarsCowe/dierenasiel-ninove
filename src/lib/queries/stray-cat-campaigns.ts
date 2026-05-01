@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { strayCatCampaigns, strayCatCampaignInspections, animals } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignAttachments, animals } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte, sql, isNotNull, ne } from "drizzle-orm";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
 import type { StrayCatCampaign, StrayCatCampaignInspection } from "@/types";
@@ -257,6 +257,34 @@ export async function getInspectionsForCampaign(campaignId: number): Promise<Str
     return rows as StrayCatCampaignInspection[];
   } catch (err) {
     console.error('getInspectionsForCampaign query failed:', err);
+    return [];
+  }
+}
+
+export interface CampaignAttachment {
+  id: number;
+  campaignId: number;
+  blobUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string | null;
+  uploadedBy: string | null;
+  uploadedAt: Date;
+}
+
+/**
+ * .eml-attachments per campagne (Story 10.17), nieuwste eerst.
+ */
+export async function getCampaignAttachments(campaignId: number): Promise<CampaignAttachment[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignAttachments)
+      .where(eq(strayCatCampaignAttachments.campaignId, campaignId))
+      .orderBy(desc(strayCatCampaignAttachments.uploadedAt));
+    return rows as CampaignAttachment[];
+  } catch (err) {
+    console.error('getCampaignAttachments query failed:', err);
     return [];
   }
 }

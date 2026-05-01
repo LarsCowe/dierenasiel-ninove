@@ -513,6 +513,22 @@ export const veterinaryDiagnoses = pgTable("veterinary_diagnoses", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Story 10.17: .eml-uploads van gemeente per campagne.
+export const strayCatCampaignAttachments = pgTable("stray_cat_campaign_attachments", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id")
+    .notNull()
+    .references(() => strayCatCampaigns.id, { onDelete: "cascade" }),
+  blobUrl: varchar("blob_url", { length: 500 }).notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadedBy: varchar("uploaded_by", { length: 200 }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_stray_cat_campaign_attachments_campaign_id").on(table.campaignId),
+]);
+
 // Story 10.9: log van alle inspectiebezoeken op een campagne (incl. lege).
 export const strayCatCampaignInspections = pgTable("stray_cat_campaign_inspections", {
   id: serial("id").primaryKey(),
