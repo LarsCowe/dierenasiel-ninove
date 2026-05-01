@@ -34,6 +34,9 @@ vi.mock("@/lib/db/schema", () => ({
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
+  and: vi.fn((...args: unknown[]) => ({ type: "and", args })),
+  or: vi.fn((...args: unknown[]) => ({ type: "or", args })),
+  isNull: vi.fn((col: unknown) => ({ type: "isNull", col })),
   sql: vi.fn(),
 }));
 
@@ -150,5 +153,17 @@ describe("getAdoptionCandidates with category filter", () => {
     mockSelectLimit.mockRejectedValue(new Error("DB error"));
     const result = await getAdoptionCandidates("niet_weerhouden");
     expect(result).toEqual([]);
+  });
+
+  it("Story 10.16: filters by animalId when provided", async () => {
+    const result = await getAdoptionCandidates(undefined, 42);
+    expect(result.length).toBe(1);
+    expect(mockSelectWhere).toHaveBeenCalled();
+  });
+
+  it("Story 10.16: combines category and animalId filter", async () => {
+    const result = await getAdoptionCandidates("goede_kandidaat", 42);
+    expect(result.length).toBe(1);
+    expect(mockSelectWhere).toHaveBeenCalled();
   });
 });

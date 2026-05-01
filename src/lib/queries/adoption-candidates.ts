@@ -5,9 +5,12 @@ import type { AdoptionCandidate } from "@/types";
 
 export type AdoptionCandidateWithAnimal = AdoptionCandidate & { animalName: string | null };
 
-export async function getAdoptionCandidates(category?: string): Promise<AdoptionCandidateWithAnimal[]> {
+export async function getAdoptionCandidates(
+  category?: string,
+  animalId?: number,
+): Promise<AdoptionCandidateWithAnimal[]> {
   try {
-    const query = db
+    const baseQuery = db
       .select({
         candidate: adoptionCandidates,
         animalName: animals.name,
@@ -15,26 +18,29 @@ export async function getAdoptionCandidates(category?: string): Promise<Adoption
       .from(adoptionCandidates)
       .leftJoin(animals, eq(adoptionCandidates.animalId, animals.id));
 
-    let results;
+    const conditions = [];
+
     if (category === "blanco") {
-      results = await query
-        .where(and(
-          or(isNull(adoptionCandidates.reviewMartine), eq(adoptionCandidates.reviewMartine, "in_beraad")),
-          or(isNull(adoptionCandidates.reviewNathalie), eq(adoptionCandidates.reviewNathalie, "in_beraad")),
-          or(isNull(adoptionCandidates.reviewSven), eq(adoptionCandidates.reviewSven, "in_beraad")),
-        ))
-        .orderBy(desc(adoptionCandidates.createdAt))
-        .limit(100);
+      conditions.push(and(
+        or(isNull(adoptionCandidates.reviewMartine), eq(adoptionCandidates.reviewMartine, "in_beraad")),
+        or(isNull(adoptionCandidates.reviewNathalie), eq(adoptionCandidates.reviewNathalie, "in_beraad")),
+        or(isNull(adoptionCandidates.reviewSven), eq(adoptionCandidates.reviewSven, "in_beraad")),
+      ));
     } else if (category) {
-      results = await query
-        .where(eq(adoptionCandidates.category, category))
-        .orderBy(desc(adoptionCandidates.createdAt))
-        .limit(100);
-    } else {
-      results = await query
-        .orderBy(desc(adoptionCandidates.createdAt))
-        .limit(100);
+      conditions.push(eq(adoptionCandidates.category, category));
     }
+
+    if (typeof animalId === "number") {
+      conditions.push(eq(adoptionCandidates.animalId, animalId));
+    }
+
+    const query = conditions.length
+      ? baseQuery.where(conditions.length === 1 ? conditions[0] : and(...conditions))
+      : baseQuery;
+
+    const results = await query
+      .orderBy(desc(adoptionCandidates.createdAt))
+      .limit(100);
 
     return results.map((r) => ({
       ...r.candidate,
@@ -77,6 +83,20 @@ export async function getAdoptionCandidateById(id: number): Promise<AdoptionCand
     return (results[0] as AdoptionCandidate) ?? null;
   } catch (err) {
     console.error("getAdoptionCandidateById query failed:", err);
+    return null;
+  }
+}
+
+export async function getAnimalNameById(id: number): Promise<string | null> {
+  try {
+    const results = await db
+      .select({ name: animals.name })
+      .from(animals)
+      .where(eq(animals.id, id))
+      .limit(1);
+    return results[0]?.name ?? null;
+  } catch (err) {
+    console.error("getAnimalNameById query failed:", err);
     return null;
   }
 }

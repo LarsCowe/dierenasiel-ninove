@@ -5,12 +5,26 @@ import AlertWidget from "@/components/beheerder/dashboard/AlertWidget";
 import TodoWidget from "@/components/beheerder/dashboard/TodoWidget";
 import DeadlineWidget from "@/components/beheerder/dashboard/DeadlineWidget";
 import RecentAdoptions from "@/components/beheerder/dashboard/RecentAdoptions";
+import RecentAdoptionRequests, {
+  ADOPTION_REQUEST_RANGES,
+  DEFAULT_ADOPTION_REQUEST_RANGE,
+  type AdoptionRequestRange,
+} from "@/components/beheerder/dashboard/RecentAdoptionRequests";
 import StatusOverview from "@/components/beheerder/dashboard/StatusOverview";
 import ActiveStrayCatCampaigns from "@/components/beheerder/dashboard/ActiveStrayCatCampaigns";
 
-export default async function BeheerderDashboard() {
+interface PageProps {
+  searchParams: Promise<{ aanvragen?: string }>;
+}
+
+export default async function BeheerderDashboard({ searchParams }: PageProps) {
+  const { aanvragen } = await searchParams;
+  const matched = ADOPTION_REQUEST_RANGES.find((r) => r.value === aanvragen);
+  const range: AdoptionRequestRange = matched?.value ?? DEFAULT_ADOPTION_REQUEST_RANGE;
+  const days = (matched ?? ADOPTION_REQUEST_RANGES.find((r) => r.value === DEFAULT_ADOPTION_REQUEST_RANGE)!).days;
+
   const [stats, activeStrayCatCampaigns] = await Promise.all([
-    getDashboardStats(),
+    getDashboardStats({ adoptionRequestsDays: days }),
     getActiveStrayCatCampaigns(10),
   ]);
 
@@ -30,6 +44,7 @@ export default async function BeheerderDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <StatusOverview statuses={stats.animalsByStatus} />
         <RecentAdoptions adoptions={stats.recentAdoptions} />
+        <RecentAdoptionRequests requests={stats.recentAdoptionRequests} range={range} />
         <ActiveStrayCatCampaigns campaigns={activeStrayCatCampaigns} />
         <AlertWidget />
         <DeadlineWidget />

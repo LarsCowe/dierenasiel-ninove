@@ -12,17 +12,21 @@ vi.mock("@/lib/db", () => {
 
   const createChain = () => {
     const chain: Record<string, unknown> = {};
+    let resolved = false;
     const resolve = () => {
+      if (resolved) return Promise.resolve(mockResults[callIndex - 1] ?? []);
+      resolved = true;
       const result = mockResults[callIndex] ?? [];
       callIndex++;
       return Promise.resolve(result);
     };
-    // Each method returns chain or resolves
+    // Each method returns chain; await triggers `.then` which resolves once.
     chain.from = vi.fn().mockReturnValue(chain);
+    chain.leftJoin = vi.fn().mockReturnValue(chain);
     chain.where = vi.fn().mockReturnValue(chain);
-    chain.groupBy = vi.fn().mockImplementation(() => resolve());
+    chain.groupBy = vi.fn().mockReturnValue(chain);
     chain.orderBy = vi.fn().mockReturnValue(chain);
-    chain.limit = vi.fn().mockImplementation(() => resolve());
+    chain.limit = vi.fn().mockReturnValue(chain);
     chain.then = vi.fn().mockImplementation((fn: (v: unknown) => unknown) => resolve().then(fn));
     return chain;
   };
@@ -39,9 +43,18 @@ vi.mock("@/lib/db", () => {
 });
 
 vi.mock("@/lib/db/schema", () => ({
-  animals: { species: "species", status: "status", adoptedDate: "adopted_date", id: "id", name: "name" },
+  animals: { species: "species", status: "status", adoptedDate: "adopted_date", id: "id", name: "name", isAvailableForAdoption: "is_available_for_adoption" },
   contactSubmissions: { isRead: "is_read" },
   users: { isActive: "is_active" },
+  adoptionCandidates: {
+    id: "id",
+    animalId: "animal_id",
+    requestedAnimalName: "requested_animal_name",
+    species: "species",
+    status: "status",
+    createdAt: "created_at",
+    anonymisedAt: "anonymised_at",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -52,8 +65,13 @@ vi.mock("drizzle-orm", () => ({
     return fn;
   })(),
   desc: vi.fn((col: unknown) => col),
+  asc: vi.fn((col: unknown) => col),
   isNotNull: vi.fn((col: unknown) => col),
+  isNull: vi.fn((col: unknown) => col),
   and: vi.fn((...args: unknown[]) => args),
+  or: vi.fn((...args: unknown[]) => args),
+  ne: vi.fn((...args: unknown[]) => args),
+  gte: vi.fn((...args: unknown[]) => args),
   count: vi.fn(),
 }));
 
@@ -69,7 +87,7 @@ describe("getDashboardStats", () => {
   });
 
   it("returns correct DashboardStats structure", async () => {
-    // Setup mock results for 6 parallel queries
+    // Setup mock results for 7 parallel queries
     mockResults.push(
       [{ species: "hond", count: 10 }, { species: "kat", count: 5 }], // animalsBySpecies
       [{ status: "beschikbaar", count: 8 }], // animalsByStatus
@@ -77,6 +95,7 @@ describe("getDashboardStats", () => {
       [{ count: 3 }], // unreadMessages
       [{ count: 2 }], // activeUsers
       [{ count: 15 }], // totalAnimals
+      [], // recentAdoptionRequests
     );
 
     const stats = await getDashboardStats();
@@ -87,6 +106,7 @@ describe("getDashboardStats", () => {
     expect(stats).toHaveProperty("unreadMessages");
     expect(stats).toHaveProperty("activeUsers");
     expect(stats).toHaveProperty("totalAnimals");
+    expect(stats).toHaveProperty("recentAdoptionRequests");
   });
 
   it("counts animals per species correctly", async () => {
@@ -97,6 +117,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }],
       [{ count: 1 }],
       [{ count: 17 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -116,6 +137,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }],
       [{ count: 1 }],
       [{ count: 5 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -138,6 +160,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }],
       [{ count: 1 }],
       [{ count: 2 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -154,6 +177,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }], // no unread messages
       [{ count: 0 }], // no active users
       [{ count: 0 }], // no total animals
+      [], // no adoption requests
     );
 
     const stats = await getDashboardStats();
@@ -164,6 +188,7 @@ describe("getDashboardStats", () => {
     expect(stats.unreadMessages).toBe(0);
     expect(stats.activeUsers).toBe(0);
     expect(stats.totalAnimals).toBe(0);
+    expect(stats.recentAdoptionRequests).toEqual([]);
   });
 
   it("counts unread messages correctly", async () => {
@@ -174,6 +199,7 @@ describe("getDashboardStats", () => {
       [{ count: 7 }],
       [{ count: 3 }],
       [{ count: 0 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -198,6 +224,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }],
       [{ count: 1 }],
       [{ count: 1 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -221,6 +248,7 @@ describe("getDashboardStats", () => {
       [{ count: 0 }],
       [{ count: 0 }],
       [{ count: 10 }],
+      [],
     );
 
     const stats = await getDashboardStats();
@@ -231,6 +259,30 @@ describe("getDashboardStats", () => {
     // AC5: totaal blijft kloppen (5+2+3 = 10 matchtmet totalAnimals)
     const statusSum = stats.animalsByStatus.reduce((s, b) => s + b.count, 0);
     expect(statusSum).toBe(stats.totalAnimals);
+  });
+
+  it("Story 10.16: returns recentAdoptionRequests grouped per animal", async () => {
+    // Mock dashboard query 7 = SQL aggregatie van adoption_candidates
+    // grouped by animalId (en requestedAnimalName voor null-rijen).
+    const requests = [
+      { animalId: 5, animalName: "Rex", species: "hond", count: 3 },
+      { animalId: 7, animalName: "Luna", species: "kat", count: 1 },
+      { animalId: null, animalName: "Vrije naam Bobby", species: "hond", count: 2 },
+    ];
+    mockResults.push(
+      [{ species: "hond", count: 5 }],
+      [{ status: "beschikbaar", count: 3 }],
+      [],
+      [{ count: 0 }],
+      [{ count: 1 }],
+      [{ count: 5 }],
+      requests,
+    );
+
+    const stats = await getDashboardStats();
+
+    expect(stats.recentAdoptionRequests).toEqual(requests);
+    expect(stats.recentAdoptionRequests.length).toBeLessThanOrEqual(5);
   });
 
   it("returns empty stats when database query fails (graceful fallback)", async () => {

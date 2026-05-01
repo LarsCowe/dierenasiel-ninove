@@ -1,16 +1,23 @@
 import Link from "next/link";
-import { getAdoptionCandidates } from "@/lib/queries/adoption-candidates";
+import { getAdoptionCandidates, getAnimalNameById } from "@/lib/queries/adoption-candidates";
 import AdoptionCandidateList from "@/components/beheerder/adoptie/AdoptionCandidateList";
 
 interface Props {
-  searchParams: Promise<{ categorie?: string }>;
+  searchParams: Promise<{ categorie?: string; animalId?: string }>;
 }
 
 export default async function AdoptiePage({ searchParams }: Props) {
-  const { categorie } = await searchParams;
+  const { categorie, animalId } = await searchParams;
   const validCategories = ["niet_weerhouden", "mogelijks", "goede_kandidaat", "blanco"];
   const activeCategory = categorie && validCategories.includes(categorie) ? categorie : undefined;
-  const candidates = await getAdoptionCandidates(activeCategory);
+  const parsedAnimalId = animalId && /^\d+$/.test(animalId) ? Number(animalId) : undefined;
+
+  const [candidates, animalName] = await Promise.all([
+    getAdoptionCandidates(activeCategory, parsedAnimalId),
+    parsedAnimalId ? getAnimalNameById(parsedAnimalId) : Promise.resolve(null),
+  ]);
+
+  const filterHref = activeCategory ? `/beheerder/adoptie?categorie=${activeCategory}` : "/beheerder/adoptie";
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -44,6 +51,17 @@ export default async function AdoptiePage({ searchParams }: Props) {
           </Link>
         </div>
       </div>
+
+      {parsedAnimalId && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
+          <span>
+            Aanvragen voor <strong>{animalName ?? `dier #${parsedAnimalId}`}</strong>
+          </span>
+          <Link href={filterHref} className="text-xs font-medium text-emerald-700 underline hover:text-emerald-900">
+            Toon alle aanvragen
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6">
         <AdoptionCandidateList candidates={candidates} activeCategory={activeCategory} />
