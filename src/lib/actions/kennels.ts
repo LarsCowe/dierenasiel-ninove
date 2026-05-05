@@ -119,6 +119,50 @@ export async function createKennel(
   }
 
   try {
+    // Story 10.19+: als de code bestaat maar gedeactiveerd is, reactiveer het
+    // bestaande record met de nieuwe waarden — anders blokkeert de unique-index
+    // de gebruiker zonder duidelijke escape-route (de inactieve kennel staat
+    // niet in de zichtbare lijst).
+    const [existing] = await db
+      .select()
+      .from(kennels)
+      .where(eq(kennels.code, parsed.data.code))
+      .limit(1);
+
+    if (existing && !existing.isActive) {
+      const [reactivated] = await db
+        .update(kennels)
+        .set({
+          isActive: true,
+          zone: parsed.data.zone,
+          capacity: parsed.data.capacity,
+          notes: parsed.data.notes || null,
+          posX: posToNumeric(parsed.data.posX),
+          posY: posToNumeric(parsed.data.posY),
+          posW: posToNumeric(parsed.data.posW),
+          posH: posToNumeric(parsed.data.posH),
+          layer: parsed.data.layer,
+        })
+        .where(eq(kennels.id, existing.id))
+        .returning();
+
+      await logAudit("reactivate_kennel", "kennel", reactivated.id, existing, reactivated);
+      revalidatePath("/beheerder/dieren/kennel");
+
+      return {
+        success: true,
+        data: reactivated,
+        message: `Kennel ${reactivated.code} was inactief — opnieuw geactiveerd met de nieuwe instellingen.`,
+      };
+    }
+
+    if (existing && existing.isActive) {
+      return {
+        success: false,
+        error: `Er bestaat al een actieve kennel met code "${parsed.data.code}". Kies een andere code.`,
+      };
+    }
+
     const [kennel] = await db
       .insert(kennels)
       .values({
@@ -139,9 +183,15 @@ export async function createKennel(
 
     return { success: true, data: kennel, message: `Kennel ${kennel.code} aangemaakt.` };
   } catch (err: unknown) {
-    const pgError = err as { code?: string };
-    if (pgError.code === "23505") {
-      return { success: false, error: "Er bestaat al een kennel met deze code." };
+    console.error("createKennel failed:", err);
+    const pgError = err as { code?: string; cause?: { code?: string }; message?: string };
+    const code = pgError.code ?? pgError.cause?.code;
+    const message = pgError.message ?? "";
+    if (code === "23505" || /duplicate key|unique constraint/i.test(message)) {
+      return {
+        success: false,
+        error: `Er bestaat al een kennel met code "${parsed.data.code}".`,
+      };
     }
     return { success: false, error: "Er ging iets mis bij het aanmaken." };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, startTransition } from "react";
 import { createKennel } from "@/lib/actions/kennels";
 import { KENNEL_ZONES } from "@/lib/validations/kennels";
 
@@ -19,11 +19,49 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Controlled state — voorkomt dat React 19 de DOM reset na een failed action.
+  const [code, setCode] = useState("");
+  const [zone, setZone] = useState("");
+  const [capacity, setCapacity] = useState("2");
+  const [notes, setNotes] = useState("");
+  const [posX, setPosX] = useState("");
+  const [posY, setPosY] = useState("");
+  const [posW, setPosW] = useState("");
+  const [posH, setPosH] = useState("");
+  const [layer, setLayer] = useState(String(defaultLayer));
+
+  useEffect(() => {
+    setLayer(String(defaultLayer));
+  }, [defaultLayer]);
+
   useEffect(() => {
     if (state?.success) {
-      formRef.current?.reset();
+      setCode("");
+      setZone("");
+      setCapacity("2");
+      setNotes("");
+      setPosX("");
+      setPosY("");
+      setPosW("");
+      setPosH("");
+      setLayer(String(defaultLayer));
     }
-  }, [state]);
+  }, [state, defaultLayer]);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append("code", code);
+    fd.append("zone", zone);
+    fd.append("capacity", capacity);
+    if (notes) fd.append("notes", notes);
+    fd.append("posX", posX);
+    fd.append("posY", posY);
+    fd.append("posW", posW);
+    fd.append("posH", posH);
+    fd.append("layer", layer);
+    startTransition(() => action(fd));
+  }
 
   return (
     <div className="rounded-xl border border-sky-200 bg-sky-50/40 shadow-sm">
@@ -38,7 +76,7 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
         <span className="text-xs text-sky-700">{open ? "−" : "+"}</span>
       </button>
       {open && (
-        <form ref={formRef} action={action} className="space-y-3 p-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-3 p-4">
           <div>
             <label htmlFor="new-code" className="block text-[10px] font-medium uppercase text-gray-500">
               Code *
@@ -49,6 +87,8 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
               required
               maxLength={10}
               placeholder="bv. H13"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
               className="mt-0.5 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
@@ -61,7 +101,8 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
                 id="new-zone"
                 name="zone"
                 required
-                defaultValue=""
+                value={zone}
+                onChange={(e) => setZone(e.target.value)}
                 className="mt-0.5 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
               >
                 <option value="" disabled>Kies...</option>
@@ -81,7 +122,8 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
                 required
                 min={1}
                 max={20}
-                defaultValue={2}
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
                 className="mt-0.5 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </div>
@@ -94,6 +136,8 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
               id="new-notes"
               name="notes"
               maxLength={500}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               className="mt-0.5 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </div>
@@ -103,10 +147,10 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
               Positie (% — optioneel, leeg = niet op plan)
             </legend>
             <div className="grid grid-cols-4 gap-2">
-              <PosInput label="X" name="posX" />
-              <PosInput label="Y" name="posY" />
-              <PosInput label="Breedte" name="posW" />
-              <PosInput label="Hoogte" name="posH" />
+              <PosInput label="X" value={posX} onChange={setPosX} />
+              <PosInput label="Y" value={posY} onChange={setPosY} />
+              <PosInput label="Breedte" value={posW} onChange={setPosW} />
+              <PosInput label="Hoogte" value={posH} onChange={setPosH} />
             </div>
             <div className="mt-2">
               <label className="block text-[10px] font-medium text-gray-500">Laag</label>
@@ -115,8 +159,8 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
                 type="number"
                 min={1}
                 max={9}
-                defaultValue={defaultLayer}
-                key={defaultLayer}
+                value={layer}
+                onChange={(e) => setLayer(e.target.value)}
                 className="mt-0.5 block w-20 rounded border border-gray-300 px-1.5 py-1 text-xs"
               />
             </div>
@@ -142,16 +186,25 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
   );
 }
 
-function PosInput({ label, name }: { label: string; name: string }) {
+function PosInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div>
       <label className="block text-[10px] font-medium text-gray-500">{label}</label>
       <input
-        name={name}
         type="number"
         step="0.1"
         min={0}
         max={100}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="mt-0.5 block w-full rounded border border-gray-300 px-1.5 py-1 text-xs"
       />
     </div>

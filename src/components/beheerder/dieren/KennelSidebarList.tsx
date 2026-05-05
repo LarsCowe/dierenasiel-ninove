@@ -15,9 +15,10 @@ interface Props {
   kennels: Kennel[];
   editingId: number | null;
   onEditingChange: (id: number | null) => void;
+  onSelectKennel?: (kennel: Kennel) => void;
 }
 
-export default function KennelSidebarList({ kennels, editingId, onEditingChange }: Props) {
+export default function KennelSidebarList({ kennels, editingId, onEditingChange, onSelectKennel }: Props) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
       <div className="border-b border-gray-100 px-4 py-3">
@@ -31,7 +32,10 @@ export default function KennelSidebarList({ kennels, editingId, onEditingChange 
             key={kennel.id}
             kennel={kennel}
             editing={editingId === kennel.id}
-            onEdit={() => onEditingChange(kennel.id)}
+            onEdit={() => {
+              onEditingChange(kennel.id);
+              onSelectKennel?.(kennel);
+            }}
             onClose={() => onEditingChange(null)}
           />
         ))}

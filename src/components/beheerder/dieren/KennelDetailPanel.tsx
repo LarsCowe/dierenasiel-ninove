@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { assignKennel } from "@/lib/actions/kennels";
 import type { Animal, Kennel } from "@/types";
@@ -71,9 +72,11 @@ export default function KennelDetailPanel({ kennel, animals, allAnimals, onClose
 
 function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string }) {
   const [error, setError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  function handleRemove() {
+  function handleRemove(e: React.MouseEvent) {
+    e.stopPropagation();
     if (!confirm(`${animal.name} verwijderen uit kennel ${kennelCode}?`)) return;
     setError(null);
     startTransition(async () => {
@@ -85,49 +88,163 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
   }
 
   return (
-    <li className="flex items-center gap-3 py-2">
-      {animal.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={animal.imageUrl}
-          alt={animal.name}
-          className="h-10 w-10 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-lg">
-          {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <Link
-          href={`/beheerder/dieren/${animal.id}`}
-          className="text-sm font-medium text-[#1b4332] hover:underline"
+    <>
+      <li>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setPreviewOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setPreviewOpen(true);
+            }
+          }}
+          className="flex w-full cursor-pointer items-center gap-3 rounded-md py-2 px-1 text-left hover:bg-emerald-50/60 focus:outline-none focus:ring-2 focus:ring-emerald-300"
         >
-          {animal.name}
-        </Link>
-        <p className="text-xs text-gray-500">
-          {animal.breed || animal.species} — {animal.gender}
-        </p>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
-      <button
-        type="button"
-        onClick={handleRemove}
-        disabled={isPending}
-        aria-label={`${animal.name} verwijderen uit kennel`}
-        title="Uit kennel verwijderen"
-        className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-      >
-        {isPending ? (
-          <span className="text-[10px]">...</span>
-        ) : (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        )}
-      </button>
-    </li>
+          {animal.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={animal.imageUrl}
+              alt={animal.name}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-lg">
+              {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-[#1b4332]">{animal.name}</span>
+            <p className="text-xs text-gray-500">
+              {animal.breed || animal.species} — {animal.gender}
+            </p>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={isPending}
+            aria-label={`${animal.name} verwijderen uit kennel`}
+            title="Uit kennel verwijderen"
+            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+          >
+            {isPending ? (
+              <span className="text-[10px]">...</span>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </li>
+      {previewOpen && <AnimalPreviewModal animal={animal} onClose={() => setPreviewOpen(false)} />}
+    </>
   );
+}
+
+function AnimalPreviewModal({ animal, onClose }: { animal: Animal; onClose: () => void }) {
+  // Portal naar document.body zodat de modal niet vastzit in het sticky-
+  // stacking-context van de rechterkolom en boven floor-plan elementen rendert.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+
+  const content = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${animal.name} voorvertoning`}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {animal.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={animal.imageUrl}
+            alt={animal.name}
+            className="h-64 w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-64 w-full items-center justify-center bg-gray-100 text-6xl">
+            {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
+          </div>
+        )}
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-heading text-xl font-bold text-[#1b4332]">{animal.name}</h3>
+              <p className="mt-0.5 text-sm text-gray-500">
+                {animal.breed || animal.species} — {animal.gender}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Sluiten"
+              className="text-gray-400 hover:text-gray-700"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {animal.shortDescription && (
+            <p className="mt-3 text-sm text-gray-700">{animal.shortDescription}</p>
+          )}
+
+          <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
+            {animal.color && (
+              <div>
+                <dt className="font-medium uppercase text-gray-500">Kleur</dt>
+                <dd className="text-gray-800">{animal.color}</dd>
+              </div>
+            )}
+            {animal.dateOfBirth && (
+              <div>
+                <dt className="font-medium uppercase text-gray-500">Geboorte</dt>
+                <dd className="text-gray-800">
+                  {new Date(animal.dateOfBirth).toLocaleDateString("nl-BE")}
+                </dd>
+              </div>
+            )}
+            {animal.identificationNr && (
+              <div className="col-span-2">
+                <dt className="font-medium uppercase text-gray-500">Chip</dt>
+                <dd className="text-gray-800">{animal.identificationNr}</dd>
+              </div>
+            )}
+          </dl>
+
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Sluiten
+            </button>
+            <Link
+              href={`/beheerder/dieren/${animal.id}`}
+              className="rounded-md bg-[#1b4332] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+            >
+              Detail info
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return createPortal(content, document.body);
 }
 
 function AddAnimalSection({

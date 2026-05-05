@@ -37,13 +37,15 @@ export default function KennelLayoutManager({
   const filteredOccupancy = occupancy.filter((o) => (o.kennel.layer ?? 1) === activeLayer);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[280px_1fr_320px]">
-      <div className="order-2 space-y-4 lg:order-1">
+    <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr_320px]">
+      {/* Linker kolom: blijft vast in beeld terwijl het grondplan in het midden scrollt. */}
+      <div className="order-2 space-y-4 lg:order-1 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
         <KennelCreateForm defaultLayer={activeLayer} />
         <KennelSidebarList
           kennels={filteredKennels}
           editingId={editingId}
           onEditingChange={setEditingId}
+          onSelectKennel={setSelectedKennel}
         />
       </div>
       <div className="order-1 lg:order-2">
@@ -62,7 +64,8 @@ export default function KennelLayoutManager({
           }}
         />
       </div>
-      <div className="order-3 space-y-4">
+      {/* Rechter kolom: blijft eveneens vast in beeld. */}
+      <div className="order-3 space-y-4 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pl-1">
         {selectedKennel && (
           <KennelDetailPanel
             kennel={selectedKennel}
