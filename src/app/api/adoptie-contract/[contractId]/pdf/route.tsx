@@ -93,12 +93,15 @@ export async function GET(
     <AdoptionContractPdf data={contractData} />,
   );
 
-  const speciesLabel = animal.species === "hond"
+  const filenameSpecies = (contract.snapshotAnimalSpecies ?? animal.species) === "hond"
     ? "hond"
-    : animal.species === "kat"
+    : (contract.snapshotAnimalSpecies ?? animal.species) === "kat"
       ? "kat"
       : "andere";
-  const filename = `adoptiecontract-${speciesLabel}-${animal.name}-${candidate.lastName}.pdf`;
+  const filenameAnimal = contract.snapshotAnimalName ?? animal.name ?? "dier";
+  const filenameAdoptant =
+    contract.snapshotAdoptantLastName ?? candidate?.lastName ?? "adoptant";
+  const filename = `adoptiecontract-${filenameSpecies}-${filenameAnimal}-${filenameAdoptant}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
