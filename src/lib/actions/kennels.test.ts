@@ -68,7 +68,7 @@ vi.mock("drizzle-orm", () => ({
   sql: vi.fn((strings: TemplateStringsArray) => ({ type: "sql", value: strings.join("") })),
 }));
 
-import { assignKennel } from "./kennels";
+import { assignKennel, updateKennelAction } from "./kennels";
 
 const mockAnimal = { id: 1, name: "Rex", kennelId: null, isInShelter: true };
 const mockKennel = { id: 5, code: "H3", zone: "honden", capacity: 2, isActive: true, notes: null };
@@ -172,5 +172,137 @@ describe("assignKennel", () => {
     if (result.success) {
       expect(result.message).toContain("vol");
     }
+  });
+});
+
+describe("updateKennelAction (Story 10.19)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequirePermission.mockResolvedValue(undefined);
+    mockLogAudit.mockResolvedValue(undefined);
+  });
+
+  it("requires kennel:write permission", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+
+    const result = await updateKennelAction(5, {
+      code: "H1",
+      zone: "honden",
+      capacity: 2,
+    });
+
+    expect(mockRequirePermission).toHaveBeenCalledWith("kennel:write");
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toBe("Onvoldoende rechten");
+  });
+
+  it("returns validation errors for invalid input", async () => {
+    const result = await updateKennelAction(5, {
+      code: "",
+      zone: "honden",
+      capacity: 2,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects positions outside 0-100 range", async () => {
+    const result = await updateKennelAction(5, {
+      code: "H1",
+      zone: "honden",
+      capacity: 2,
+      posX: 150,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("returns error when kennel not found", async () => {
+    mockSelectLimit.mockResolvedValueOnce([]);
+
+    const result = await updateKennelAction(999, {
+      code: "H1",
+      zone: "honden",
+      capacity: 2,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("niet gevonden");
+  });
+
+  it("updates kennel with positions and logs audit", async () => {
+    mockSelectLimit.mockResolvedValueOnce([mockKennel]);
+    const updated = { ...mockKennel, posX: "10.50", posY: "20.00", posW: "11.00", posH: "5.30" };
+    mockUpdateReturning.mockResolvedValueOnce([updated]);
+
+    const result = await updateKennelAction(5, {
+      code: "H1",
+      zone: "honden",
+      capacity: 2,
+      posX: 10.5,
+      posY: 20,
+      posW: 11,
+      posH: 5.3,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: "H1",
+        zone: "honden",
+        capacity: 2,
+        posX: "10.5",
+        posY: "20",
+        posW: "11",
+        posH: "5.3",
+      }),
+    );
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "update_kennel",
+      "kennel",
+      5,
+      mockKennel,
+      updated,
+    );
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/kennel");
+  });
+
+  it("allows clearing positions by passing null", async () => {
+    mockSelectLimit.mockResolvedValueOnce([mockKennel]);
+    mockUpdateReturning.mockResolvedValueOnce([{ ...mockKennel, posX: null, posY: null, posW: null, posH: null }]);
+
+    const result = await updateKennelAction(5, {
+      code: "H1",
+      zone: "honden",
+      capacity: 2,
+      posX: undefined,
+      posY: undefined,
+      posW: undefined,
+      posH: undefined,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        posX: null,
+        posY: null,
+        posW: null,
+        posH: null,
+      }),
+    );
+  });
+
+  it("returns conflict error on duplicate code", async () => {
+    mockSelectLimit.mockResolvedValueOnce([mockKennel]);
+    mockUpdateReturning.mockRejectedValueOnce(Object.assign(new Error("dup"), { code: "23505" }));
+
+    const result = await updateKennelAction(5, {
+      code: "H2",
+      zone: "honden",
+      capacity: 2,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("bestaat al");
   });
 });

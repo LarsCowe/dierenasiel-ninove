@@ -6,8 +6,14 @@ import { eq, sql } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
-import { assignKennelSchema, kennelCrudSchema } from "@/lib/validations/kennels";
+import { assignKennelSchema, kennelCrudSchema, type KennelCrudInput } from "@/lib/validations/kennels";
 import type { ActionResult, Kennel } from "@/types";
+
+// Story 10.19: zet decimale percentages om naar Drizzle-numeric (string) of null.
+function posToNumeric(value: number | string | undefined): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  return String(value);
+}
 
 export async function assignKennel(
   animalId: number,
@@ -100,6 +106,11 @@ export async function createKennel(
     zone: (formData.get("zone") as string) || "",
     capacity: formData.get("capacity"),
     notes: (formData.get("notes") as string)?.trim() || undefined,
+    posX: (formData.get("posX") as string) || undefined,
+    posY: (formData.get("posY") as string) || undefined,
+    posW: (formData.get("posW") as string) || undefined,
+    posH: (formData.get("posH") as string) || undefined,
+    layer: (formData.get("layer") as string) || 1,
   };
 
   const parsed = kennelCrudSchema.safeParse(raw);
@@ -115,6 +126,11 @@ export async function createKennel(
         zone: parsed.data.zone,
         capacity: parsed.data.capacity,
         notes: parsed.data.notes || null,
+        posX: posToNumeric(parsed.data.posX),
+        posY: posToNumeric(parsed.data.posY),
+        posW: posToNumeric(parsed.data.posW),
+        posH: posToNumeric(parsed.data.posH),
+        layer: parsed.data.layer,
       })
       .returning();
 
@@ -173,5 +189,63 @@ export async function deleteKennel(
     return { success: true, data: undefined, message: `Kennel ${existing.code} verwijderd.` };
   } catch {
     return { success: false, error: "Er ging iets mis bij het verwijderen." };
+  }
+}
+
+// Story 10.19: bewerken van een bestaande kennel inclusief positie-velden.
+export async function updateKennelAction(
+  id: number,
+  data: KennelCrudInput,
+): Promise<ActionResult<Kennel>> {
+  const permCheck = await requirePermission("kennel:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  const parsed = kennelCrudSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(kennels)
+      .where(eq(kennels.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return { success: false, error: "Kennel niet gevonden." };
+    }
+
+    const [updated] = await db
+      .update(kennels)
+      .set({
+        code: parsed.data.code,
+        zone: parsed.data.zone,
+        capacity: parsed.data.capacity,
+        notes: parsed.data.notes || null,
+        posX: posToNumeric(parsed.data.posX),
+        posY: posToNumeric(parsed.data.posY),
+        posW: posToNumeric(parsed.data.posW),
+        posH: posToNumeric(parsed.data.posH),
+        layer: parsed.data.layer,
+      })
+      .where(eq(kennels.id, id))
+      .returning();
+
+    await logAudit("update_kennel", "kennel", id, existing, updated);
+    revalidatePath("/beheerder/dieren/kennel");
+
+    return { success: true, data: updated, message: `Kennel ${updated.code} bijgewerkt.` };
+  } catch (err: unknown) {
+    const pgError = err as { code?: string };
+    if (pgError.code === "23505") {
+      return { success: false, error: "Er bestaat al een kennel met deze code." };
+    }
+    return { success: false, error: "Er ging iets mis bij het bijwerken." };
   }
 }

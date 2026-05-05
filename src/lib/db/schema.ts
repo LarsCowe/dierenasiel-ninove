@@ -7,6 +7,7 @@ import {
   date,
   timestamp,
   integer,
+  numeric,
   jsonb,
   index,
   unique,
@@ -19,6 +20,13 @@ export const kennels = pgTable("kennels", {
   capacity: integer("capacity").notNull().default(2),
   isActive: boolean("is_active").default(true).notNull(),
   notes: text("notes"),
+  // Story 10.19: positie op grondplan (percentages 0-100). NULL = niet renderen.
+  posX: numeric("pos_x", { precision: 5, scale: 2 }),
+  posY: numeric("pos_y", { precision: 5, scale: 2 }),
+  posW: numeric("pos_w", { precision: 5, scale: 2 }),
+  posH: numeric("pos_h", { precision: 5, scale: 2 }),
+  // Story 10.19+: laagnummer voor gestapelde hokken (default 1).
+  layer: integer("layer").notNull().default(1),
 });
 
 export const animals = pgTable("animals", {
@@ -481,6 +489,15 @@ export const mailingSendRecipients = pgTable("mailing_send_recipients", {
   index("idx_mailing_send_recipients_send_id").on(table.sendId),
 ]);
 
+// Story 10.18: bibliotheek met logo's per gemeente.
+export const municipalityLogos = pgTable("municipality_logos", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull().unique(),
+  logoUrl: varchar("logo_url", { length: 500 }).notNull(),
+  uploadedBy: varchar("uploaded_by", { length: 200 }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   id: serial("id").primaryKey(),
   requestDate: date("request_date").notNull(),
@@ -498,6 +515,7 @@ export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   outcome: varchar("outcome", { length: 30 }),
   status: varchar("status", { length: 20 }).default("open").notNull(),
   photoUrl: varchar("photo_url", { length: 500 }),
+  municipalityLogoId: integer("municipality_logo_id").references(() => municipalityLogos.id, { onDelete: "set null" }),
   linkedAnimalId: integer("linked_animal_id").references(() => animals.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [

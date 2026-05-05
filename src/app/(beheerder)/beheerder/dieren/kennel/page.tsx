@@ -5,8 +5,8 @@ import {
   getKennelOccupancy,
   getAnimalsInKennels,
 } from "@/lib/queries/kennels";
-import KennelFloorPlan from "@/components/beheerder/dieren/KennelFloorPlan";
-import KennelManager from "@/components/beheerder/dieren/KennelManager";
+import { getAnimalsInShelter } from "@/lib/queries/animals";
+import KennelLayoutManager from "@/components/beheerder/dieren/KennelLayoutManager";
 
 export default async function KennelOverviewPage() {
   const permCheck = await requirePermission("kennel:read");
@@ -14,29 +14,30 @@ export default async function KennelOverviewPage() {
     redirect("/beheerder");
   }
 
-  const [kennelsList, occupancy, animalsByKennel] = await Promise.all([
+  const [kennelsList, occupancy, animalsByKennel, allAnimals] = await Promise.all([
     getKennels(),
     getKennelOccupancy(),
     getAnimalsInKennels(),
+    getAnimalsInShelter(),
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
           Kennel Overzicht
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Klik op een kennel om de bewoners te bekijken.
+          Klik op een vak in het grondplan voor de bewoners. Klik in de linkse lijst om positie en eigenschappen aan te passen — wijzigingen gebeuren via x/y/breedte/hoogte (in %).
         </p>
       </div>
 
-      <KennelFloorPlan
+      <KennelLayoutManager
+        kennels={kennelsList}
         occupancy={occupancy}
         animalsByKennel={animalsByKennel}
+        allAnimals={allAnimals}
       />
-
-      <KennelManager kennels={kennelsList} />
     </div>
   );
 }

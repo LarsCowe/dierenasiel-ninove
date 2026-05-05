@@ -140,6 +140,24 @@ export async function getAnimalsForAdmin(
 }
 
 /**
+ * Story 10.19: alle dieren die in het asiel verblijven (kennel-toewijzing modal).
+ * Gebruikt om in de "Dier toevoegen aan kennel"-dropdown te tonen.
+ */
+export async function getAnimalsInShelter(): Promise<Animal[]> {
+  try {
+    const results = await db
+      .select()
+      .from(animals)
+      .where(eq(animals.isInShelter, true))
+      .orderBy(asc(animals.name));
+    return results as Animal[];
+  } catch (err) {
+    console.error("getAnimalsInShelter query failed:", err);
+    return [];
+  }
+}
+
+/**
  * Returns animals available for adoption (FR-07).
  * Only shows animals that are marked as available AND still in the shelter.
  */

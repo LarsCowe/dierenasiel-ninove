@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { KENNEL_POSITIONS } from "@/lib/constants/kennel-positions";
+import { useEffect, useState } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 
 interface KennelFloorPlanProps {
   occupancy: KennelWithOccupancy[];
   animalsByKennel: Record<number, Animal[]>;
+  // Story 10.19: kennel die in de zijbalk wordt bewerkt → blauwe ring.
+  editingKennelId?: number | null;
+  // Geselecteerde kennel (voor detail-paneel rechts) — gelift naar parent.
+  selectedKennelId?: number | null;
+  onSelectKennel?: (kennel: Kennel) => void;
+  // Story 10.19+: laag-filter linksboven op grondplan.
+  activeLayer?: number;
+  availableLayers?: number[];
+  onLayerChange?: (layer: number) => void;
 }
 
 function getOccupancyColor(count: number, capacity: number): string {
@@ -17,37 +24,37 @@ function getOccupancyColor(count: number, capacity: number): string {
   return "bg-red-400/60 border-red-600 hover:bg-red-400/80";
 }
 
-function getZoneLabel(zone: string): string {
-  switch (zone) {
-    case "honden": return "Honden";
-    case "katten": return "Katten";
-    case "andere": return "Andere";
-    default: return zone;
-  }
+// numeric kolommen komen als string uit pg/Drizzle; converteer naar number.
+function num(v: string | null): number | null {
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
 }
 
 export default function KennelFloorPlan({
   occupancy,
   animalsByKennel,
+  editingKennelId = null,
+  selectedKennelId = null,
+  onSelectKennel,
+  activeLayer,
+  availableLayers,
+  onLayerChange,
 }: KennelFloorPlanProps) {
-  const [selectedKennel, setSelectedKennel] = useState<Kennel | null>(null);
-  const [selectedAnimals, setSelectedAnimals] = useState<Animal[]>([]);
-
-  // Map kennel code to occupancy data
-  const occupancyMap = new Map(
-    occupancy.map((o) => [o.kennel.code, o]),
+  const positioned = occupancy.filter(
+    (o) => o.kennel.posX !== null && o.kennel.posY !== null && o.kennel.posW !== null && o.kennel.posH !== null,
   );
 
-  function handleKennelClick(code: string) {
-    const data = occupancyMap.get(code);
-    if (!data) return;
-    setSelectedKennel(data.kennel);
-    setSelectedAnimals(animalsByKennel[data.kennel.id] ?? []);
-  }
+  // Sven heeft soms hokken die op een hogere laag staan — toon altijd minstens
+  // de gangbare set 1/2/3 zodat hij snel een nieuwe laag kan activeren.
+  const layersToShow = (() => {
+    const set = new Set<number>(availableLayers ?? []);
+    [1, 2, 3].forEach((n) => set.add(n));
+    return Array.from(set).sort((a, b) => a - b);
+  })();
 
   return (
-    <div className="space-y-6">
-      {/* Legend */}
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <span className="inline-block h-4 w-4 rounded border border-emerald-600 bg-emerald-400/60" />
@@ -63,12 +70,7 @@ export default function KennelFloorPlan({
         </div>
       </div>
 
-      {/* Floor plan + detail panel side by side on desktop */}
-      <div className="flex flex-col gap-6 lg:flex-row">
-
-      {/* Floor plan with overlay */}
-      <div className="relative mx-auto w-full max-w-2xl lg:flex-1">
-        {/* Background image */}
+      <div className="relative w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/grondplan-kennels.png"
@@ -77,129 +79,136 @@ export default function KennelFloorPlan({
           draggable={false}
         />
 
-        {/* Kennel overlays */}
-        {KENNEL_POSITIONS.map((pos) => {
-          const data = occupancyMap.get(pos.code);
-          const count = data?.count ?? 0;
-          const capacity = data?.kennel.capacity ?? 2;
-          const colorClasses = getOccupancyColor(count, capacity);
-          // Story 10.12: toon foto van eerste bewoner als achtergrond
-          const firstWithPhoto = data
-            ? (animalsByKennel[data.kennel.id] ?? []).find((a) => a.imageUrl)
-            : undefined;
-          const hasPhoto = Boolean(firstWithPhoto?.imageUrl);
+        {/* Story 10.19+: laag-keuze linksboven (klikbare nummers). */}
+        {onLayerChange && (
+          <div className="absolute left-2 top-2 z-20 flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-xs shadow-sm backdrop-blur">
+            <span className="font-medium text-gray-500">Laag:</span>
+            {layersToShow.map((layer, idx) => (
+              <span key={layer} className="flex items-center">
+                {idx > 0 && <span className="px-0.5 text-gray-300">/</span>}
+                <button
+                  type="button"
+                  onClick={() => onLayerChange(layer)}
+                  aria-pressed={activeLayer === layer}
+                  className={`rounded px-1.5 py-0.5 transition-colors ${
+                    activeLayer === layer
+                      ? "bg-[#1b4332] font-semibold text-white"
+                      : "text-[#1b4332] hover:bg-emerald-100"
+                  }`}
+                >
+                  {layer}
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
-          return (
-            <button
-              key={pos.code}
-              type="button"
-              onClick={() => handleKennelClick(pos.code)}
-              aria-label={`Kennel ${pos.code}: ${count} van ${capacity} bezet`}
-              className={`absolute overflow-hidden rounded border-2 text-xs font-bold transition-all ${
-                hasPhoto ? "bg-white" : colorClasses
-              } ${
-                selectedKennel?.code === pos.code ? "ring-2 ring-blue-500 ring-offset-1" : ""
-              }`}
+        {positioned.map(({ kennel, count }) => (
+          <KennelTile
+            key={kennel.id}
+            kennel={kennel}
+            count={count}
+            animals={animalsByKennel[kennel.id] ?? []}
+            isEditing={editingKennelId === kennel.id}
+            isSelected={selectedKennelId === kennel.id}
+            onSelect={onSelectKennel}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface KennelTileProps {
+  kennel: Kennel;
+  count: number;
+  animals: Animal[];
+  isEditing: boolean;
+  isSelected: boolean;
+  onSelect?: (kennel: Kennel) => void;
+}
+
+function KennelTile({ kennel, count, animals, isEditing, isSelected, onSelect }: KennelTileProps) {
+  const x = num(kennel.posX)!;
+  const y = num(kennel.posY)!;
+  const w = num(kennel.posW)!;
+  const h = num(kennel.posH)!;
+  const colorClasses = getOccupancyColor(count, kennel.capacity);
+
+  // Foto's van dieren in dit hok — voor de carrousel.
+  const photos = animals.filter((a) => a.imageUrl);
+  const [photoIndex, setPhotoIndex] = useState(0);
+
+  // Story 10.19+: bij meerdere dieren in 1 hok → cycle elke 3.5s tussen foto's.
+  useEffect(() => {
+    if (photos.length <= 1) return;
+    const id = setInterval(() => {
+      setPhotoIndex((i) => (i + 1) % photos.length);
+    }, 3500);
+    return () => clearInterval(id);
+  }, [photos.length]);
+
+  // Reset bij animals-array wijziging om out-of-bounds te vermijden.
+  useEffect(() => {
+    if (photoIndex >= photos.length) setPhotoIndex(0);
+  }, [photos.length, photoIndex]);
+
+  const hasPhoto = photos.length > 0;
+  const currentPhoto = photos[photoIndex];
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect?.(kennel)}
+      aria-label={`Kennel ${kennel.code}: ${count} van ${kennel.capacity} bezet`}
+      className={`absolute overflow-hidden rounded border-2 text-xs font-bold transition-all ${
+        hasPhoto ? "bg-white" : colorClasses
+      } ${
+        isEditing
+          ? "ring-2 ring-blue-500 ring-offset-1 animate-pulse"
+          : isSelected
+            ? "ring-2 ring-blue-500 ring-offset-1"
+            : ""
+      }`}
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        width: `${w}%`,
+        height: `${h}%`,
+      }}
+      title={`${kennel.code} — ${count}/${kennel.capacity} — x:${x.toFixed(1)} y:${y.toFixed(1)} w:${w.toFixed(1)} h:${h.toFixed(1)}${currentPhoto ? ` — ${currentPhoto.name}` : ""}`}
+    >
+      {hasPhoto && (
+        <div className="absolute inset-0 overflow-hidden">
+          {photos.map((photo, idx) => (
+            <div
+              key={photo.id}
+              className="absolute inset-0 transition-transform duration-700 ease-in-out"
               style={{
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-                width: `${pos.w}%`,
-                height: `${pos.h}%`,
-                backgroundImage: hasPhoto ? `url(${firstWithPhoto!.imageUrl})` : undefined,
+                backgroundImage: `url(${photo.imageUrl})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                transform: `translateX(${(idx - photoIndex) * 100}%)`,
               }}
-              title={`${pos.code} — ${count}/${capacity}${firstWithPhoto ? ` — ${firstWithPhoto.name}` : ""}`}
-            >
-              {/* Gradient-overlay onderaan voor leesbaarheid van text */}
-              {hasPhoto && (
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent"
-                />
-              )}
-              <span
-                className={`absolute inset-x-0 bottom-1 flex flex-col items-center text-[10px] leading-tight sm:text-xs ${
-                  hasPhoto ? "text-white drop-shadow" : "text-gray-900"
-                }`}
-              >
-                <span>{pos.code}</span>
-                <span className={`text-[9px] sm:text-[10px] ${hasPhoto ? "text-white/90" : "text-gray-700"}`}>
-                  {count}/{capacity}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Detail panel (beside on desktop, below on mobile) */}
-      {selectedKennel && (
-        <div className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:w-80 lg:flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h3 className="font-heading text-lg font-bold text-[#1b4332]">
-              Kennel {selectedKennel.code}
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                ({getZoneLabel(selectedKennel.zone)})
-              </span>
-            </h3>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedKennel(null);
-                setSelectedAnimals([]);
-              }}
-              aria-label="Detail paneel sluiten"
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Sluiten
-            </button>
-          </div>
-
-          <p className="mt-1 text-sm text-gray-600">
-            Bezetting: {selectedAnimals.length} / {selectedKennel.capacity}
-            {selectedKennel.notes && (
-              <span className="ml-2 italic text-gray-400">— {selectedKennel.notes}</span>
-            )}
-          </p>
-
-          {selectedAnimals.length > 0 ? (
-            <ul className="mt-3 divide-y divide-gray-100">
-              {selectedAnimals.map((animal) => (
-                <li key={animal.id} className="flex items-center gap-3 py-2">
-                  {animal.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={animal.imageUrl}
-                      alt={animal.name}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-lg">
-                      {animal.species === "hond" ? "🐕" : animal.species === "kat" ? "🐈" : "🐾"}
-                    </div>
-                  )}
-                  <div>
-                    <Link
-                      href={`/beheerder/dieren/${animal.id}`}
-                      className="text-sm font-medium text-[#1b4332] hover:underline"
-                    >
-                      {animal.name}
-                    </Link>
-                    <p className="text-xs text-gray-500">
-                      {animal.breed || animal.species} — {animal.gender}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-gray-400">Deze kennel is leeg.</p>
-          )}
+              aria-hidden="true"
+            />
+          ))}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent"
+          />
         </div>
       )}
-
-      </div>{/* end flex row */}
-    </div>
+      <span
+        className={`absolute inset-x-0 bottom-1 z-10 flex flex-col items-center text-[10px] leading-tight sm:text-xs ${
+          hasPhoto ? "text-white drop-shadow" : "text-gray-900"
+        }`}
+      >
+        <span>{kennel.code}</span>
+        <span className={`text-[9px] sm:text-[10px] ${hasPhoto ? "text-white/90" : "text-gray-700"}`}>
+          {count}/{kennel.capacity}
+        </span>
+      </span>
+    </button>
   );
 }
