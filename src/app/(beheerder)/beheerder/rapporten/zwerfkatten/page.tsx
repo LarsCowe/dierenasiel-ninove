@@ -58,10 +58,9 @@ export default async function ZwerfkattenRapportPage({ searchParams }: Props) {
 
       {/* Filters */}
       <Suspense fallback={<div className="h-16 animate-pulse rounded-lg bg-gray-100" />}>
-        <div className="flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 bg-white p-4">
-          <DateRangeFilter />
+        <DateRangeFilter>
           <GemeenteFilter municipalities={municipalities} />
-        </div>
+        </DateRangeFilter>
       </Suspense>
 
       {/* Statistieken */}

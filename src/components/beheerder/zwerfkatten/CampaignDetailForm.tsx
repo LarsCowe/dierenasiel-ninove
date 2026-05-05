@@ -20,8 +20,10 @@ import {
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoUpload from "./CampaignPhotoUpload";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
+import MunicipalityLogoPicker from "./MunicipalityLogoPicker";
 import InspectionLogSection from "./InspectionLogSection";
 import type { CampaignAttachment } from "@/lib/queries/stray-cat-campaigns";
+import type { MunicipalityLogo } from "@/types";
 
 interface Props {
   campaign: StrayCatCampaign;
@@ -29,6 +31,7 @@ interface Props {
   occupiedCages: Record<string, number>;
   inspections: StrayCatCampaignInspection[];
   attachments?: CampaignAttachment[];
+  logos?: MunicipalityLogo[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -388,7 +391,7 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
 }
 
 // --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [] }: Props) {
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], logos = [] }: Props) {
   const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
   const currentIndex = statusOrder.indexOf(campaign.status);
 
@@ -432,6 +435,13 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
           </div>
         )}
       </div>
+
+      {/* Logo gemeente (Story 10.18) */}
+      <MunicipalityLogoPicker
+        campaignId={campaign.id}
+        currentLogoId={campaign.municipalityLogoId}
+        logos={logos}
+      />
 
       {/* Foto */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

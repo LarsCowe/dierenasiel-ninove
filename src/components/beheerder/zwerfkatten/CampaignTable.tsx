@@ -1,15 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { StrayCatCampaign } from "@/types";
+import type { StrayCatCampaign, MunicipalityLogo } from "@/types";
 import { CAMPAIGN_OUTCOME_LABELS } from "@/lib/constants";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 
 interface Props {
   campaigns: StrayCatCampaign[];
+  logoById?: Record<number, MunicipalityLogo>;
 }
 
-export default function CampaignTable({ campaigns }: Props) {
+export default function CampaignTable({ campaigns, logoById = {} }: Props) {
   const router = useRouter();
 
   if (campaigns.length === 0) {
@@ -65,7 +67,21 @@ export default function CampaignTable({ campaigns }: Props) {
                 <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-[#1b4332]">
                   {campaign.requestDate}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-700">{campaign.municipality}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-2">
+                    {campaign.municipalityLogoId && logoById[campaign.municipalityLogoId] && (
+                      <Image
+                        src={logoById[campaign.municipalityLogoId].logoUrl}
+                        alt={logoById[campaign.municipalityLogoId].name}
+                        width={24}
+                        height={24}
+                        unoptimized
+                        className="h-6 w-6 shrink-0 rounded object-contain"
+                      />
+                    )}
+                    <span>{campaign.municipality}</span>
+                  </div>
+                </td>
                 <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">{campaign.address}</td>
                 <td className="px-4 py-3 text-sm">
                   <CampaignStatusBadge status={campaign.status} />

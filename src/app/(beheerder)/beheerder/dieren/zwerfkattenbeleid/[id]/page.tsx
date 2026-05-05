@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getCampaignById, getCatsAvailableForLinking, getOccupiedCageNumbers, getInspectionsForCampaign, getCampaignAttachments } from "@/lib/queries/stray-cat-campaigns";
+import { getMunicipalityLogos, getMunicipalityLogoById } from "@/lib/queries/municipality-logos";
 import CampaignDetailForm from "@/components/beheerder/zwerfkatten/CampaignDetailForm";
 
 interface Props {
@@ -12,22 +14,39 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaignId = Number(id);
   if (isNaN(campaignId)) notFound();
 
-  const [campaign, availableCats, occupiedCages, inspections, attachments] = await Promise.all([
+  const [campaign, availableCats, occupiedCages, inspections, attachments, logos] = await Promise.all([
     getCampaignById(campaignId),
     getCatsAvailableForLinking(),
     getOccupiedCageNumbers(campaignId),
     getInspectionsForCampaign(campaignId),
     getCampaignAttachments(campaignId),
+    getMunicipalityLogos(),
   ]);
 
   if (!campaign) notFound();
 
+  const currentLogo = campaign.municipalityLogoId
+    ? await getMunicipalityLogoById(campaign.municipalityLogoId)
+    : null;
+
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
-          Campagne — {campaign.municipality}
-        </h1>
+        <div className="flex items-center gap-3">
+          {currentLogo && (
+            <Image
+              src={currentLogo.logoUrl}
+              alt={currentLogo.name}
+              width={48}
+              height={48}
+              unoptimized
+              className="h-12 w-12 rounded border border-gray-200 object-contain"
+            />
+          )}
+          <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
+            Campagne — {campaign.municipality}
+          </h1>
+        </div>
         <Link
           href="/beheerder/dieren/zwerfkattenbeleid"
           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -42,6 +61,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         occupiedCages={occupiedCages}
         inspections={inspections}
         attachments={attachments}
+        logos={logos}
       />
     </div>
   );

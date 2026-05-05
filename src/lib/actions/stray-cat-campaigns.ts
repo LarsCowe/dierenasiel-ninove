@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { strayCatCampaigns, strayCatCampaignInspections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getCampaignById, getOccupiedCageNumbers } from "@/lib/queries/stray-cat-campaigns";
+import { getMunicipalityLogoByName } from "@/lib/queries/municipality-logos";
 import {
   createCampaignSchema,
   deployCagesSchema,
@@ -43,6 +44,9 @@ export async function createCampaignAction(
   }
 
   try {
+    // Story 10.18: auto-link logo waar naam (case-insensitive) overeenkomt met gemeente.
+    const matchedLogo = await getMunicipalityLogoByName(parsed.data.municipality);
+
     const rows = await db
       .insert(strayCatCampaigns)
       .values({
@@ -51,6 +55,7 @@ export async function createCampaignAction(
         address: parsed.data.address,
         remarks: parsed.data.remarks || null,
         status: "open",
+        municipalityLogoId: matchedLogo?.id ?? null,
       })
       .returning({ id: strayCatCampaigns.id });
 
@@ -69,6 +74,47 @@ export async function createCampaignAction(
   } catch (error) {
     console.error("createCampaignAction failed:", error);
     return { success: false, error: "Campagne aanmaken mislukt. Probeer opnieuw." };
+  }
+}
+
+// Story 10.18: koppel een gemeente-logo aan een campagne (of ontkoppel met null).
+export async function setCampaignLogoAction(
+  campaignId: number,
+  logoId: number | null,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  if (!Number.isInteger(campaignId) || campaignId <= 0) {
+    return { success: false, error: "Ongeldig campagne-ID" };
+  }
+  if (logoId !== null && (!Number.isInteger(logoId) || logoId <= 0)) {
+    return { success: false, error: "Ongeldig logo-ID" };
+  }
+
+  try {
+    const campaign = await getCampaignById(campaignId);
+    if (!campaign) return { success: false, error: "Campagne niet gevonden" };
+
+    await db
+      .update(strayCatCampaigns)
+      .set({ municipalityLogoId: logoId })
+      .where(eq(strayCatCampaigns.id, campaignId));
+
+    await logAudit(
+      "stray_cat_campaign.updated",
+      "stray_cat_campaign",
+      campaignId,
+      { municipalityLogoId: campaign.municipalityLogoId },
+      { municipalityLogoId: logoId },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${campaignId}`);
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("setCampaignLogoAction failed:", error);
+    return { success: false, error: "Logo koppelen mislukt. Probeer opnieuw." };
   }
 }
 

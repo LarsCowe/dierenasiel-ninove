@@ -290,9 +290,11 @@ function campaignToCsvRow(campaign: import("@/types").StrayCatCampaign): string 
     escapeCsvField(campaign.municipality),
     escapeCsvField(campaign.address),
     escapeCsvField(statusLbl),
+    escapeCsvField(campaign.cageDeploymentDate ?? ""),
     escapeCsvField(campaign.cageNumbers ?? ""),
     escapeCsvField(campaign.inspectionDate ?? ""),
     escapeCsvField(campaign.catDescription ?? ""),
+    escapeCsvField(campaign.vetName ?? ""),
     escapeCsvField(fivLabel),
     escapeCsvField(felvLabel),
     escapeCsvField(outcomeLabel),
@@ -314,7 +316,7 @@ export async function exportStrayCatCampaignsCsv(
 
   const { campaigns } = await getCampaignReport(filters);
 
-  const header = "Datum verzoek,Gemeente,Adres,Status,Kooi nummers,Inspectiedatum,Kat beschrijving,FIV,FeLV,Uitkomst,Opmerkingen";
+  const header = "Datum verzoek,Gemeente,Adres,Status,Datum kooi-uitzetting,Kooi nummers,Inspectiedatum,Kat beschrijving,Dierenarts,FIV,FeLV,Uitkomst,Opmerkingen";
   const rows = campaigns.map(campaignToCsvRow);
   const csv = [header, ...rows].join("\n");
 

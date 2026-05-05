@@ -1,13 +1,14 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 
 interface DateRangeFilterProps {
   locationFilter?: boolean;
+  children?: ReactNode;
 }
 
-export default function DateRangeFilter({ locationFilter }: DateRangeFilterProps) {
+export default function DateRangeFilter({ locationFilter, children }: DateRangeFilterProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -73,6 +74,7 @@ export default function DateRangeFilter({ locationFilter }: DateRangeFilterProps
           </select>
         </div>
       )}
+      {children}
       {(van || tot || locatie) && (
         <button
           onClick={() => router.push(pathname)}
