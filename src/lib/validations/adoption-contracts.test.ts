@@ -8,6 +8,10 @@ const validContract = {
   paymentAmount: "150.00",
   paymentMethod: "payconiq",
   notes: "",
+  // Story 10.20+: snapshot-velden voor adoptant en dier (firstName/lastName/animalName verplicht).
+  adoptantFirstName: "Jan",
+  adoptantLastName: "Janssens",
+  animalName: "Buddy",
 };
 
 describe("adoptionContractSchema", () => {
@@ -21,9 +25,9 @@ describe("adoptionContractSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires candidateId", () => {
+  it("allows missing candidateId (rechtstreeks contract zonder aanvraag)", () => {
     const result = adoptionContractSchema.safeParse({ ...validContract, candidateId: undefined });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("requires contractDate", () => {

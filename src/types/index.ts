@@ -5,7 +5,7 @@ import { BACKOFFICE_ROLES } from "@/lib/constants";
 // Standard return type for all Server Actions
 export type ActionResult<T = void> =
   | { success: true; data: T; message?: string }
-  | { success: false; error?: string; fieldErrors?: Record<string, string[]> };
+  | { success: false; error?: string; fieldErrors?: Record<string, string[]>; warning?: string };
 
 // Backoffice roles — derived from BACKOFFICE_ROLES constant (single source of truth)
 export type BackofficeRole = (typeof BACKOFFICE_ROLES)[number];

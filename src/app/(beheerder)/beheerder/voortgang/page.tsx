@@ -154,6 +154,7 @@ const EPICS: Epic[] = [
       { id: "10.17", title: "Mails van gemeente uploaden bij zwerfkat-campagne", status: "done" },
       { id: "10.18", title: "Gemeente-logo bibliotheek voor zwerfkat-module", status: "done" },
       { id: "10.19", title: "Kennel positie-beheer met live trial & error", status: "done" },
+      { id: "10.20", title: "Adoptiecontracten — tabbladen, status-workflow, upload + digitaal handtekenen", status: "done" },
     ],
   },
 ];

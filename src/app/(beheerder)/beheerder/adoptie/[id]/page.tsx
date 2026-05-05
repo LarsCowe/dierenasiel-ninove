@@ -43,12 +43,24 @@ export default async function AdoptieKandidaatDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
-        {candidate.firstName} {candidate.lastName}
-      </h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Adoptie-aanvraag op {new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })} om {new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
+            {candidate.firstName} {candidate.lastName}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Adoptie-aanvraag op {new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })} om {new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+        {!contract && candidate.animalId && (
+          <Link
+            href={`/beheerder/adoptie/${candidate.id}/contract`}
+            className="rounded-md bg-[#1b4332] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2d6a4f]"
+          >
+            Contract opmaken
+          </Link>
+        )}
+      </div>
 
       <div className="mt-6">
         <ReviewPanel

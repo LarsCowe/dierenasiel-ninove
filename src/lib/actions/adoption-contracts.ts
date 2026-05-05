@@ -39,29 +39,31 @@ export async function createAdoptionContract(
     return { success: false, fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  // Check candidate exists and is approved
-  let candidate;
-  try {
-    const [found] = await db
-      .select()
-      .from(adoptionCandidates)
-      .where(eq(adoptionCandidates.id, parsed.data.candidateId))
-      .limit(1);
-    if (!found) return { success: false, error: "Kandidaat niet gevonden" };
-    if (found.status !== "approved") {
-      return { success: false, error: "Alleen een goedgekeurde kandidaat kan een contract krijgen" };
+  // Story 10.20+: candidate is nu optioneel — alleen bestaan-check, geen status-check.
+  // De beheerder bepaalt zelf wanneer een contract gemaakt mag worden.
+  let candidate: typeof adoptionCandidates.$inferSelect | undefined;
+  if (parsed.data.candidateId) {
+    try {
+      const [found] = await db
+        .select()
+        .from(adoptionCandidates)
+        .where(eq(adoptionCandidates.id, parsed.data.candidateId))
+        .limit(1);
+      if (!found) return { success: false, error: "Kandidaat niet gevonden" };
+      candidate = found;
+    } catch {
+      return { success: false, error: "Fout bij ophalen kandidaat" };
     }
-    candidate = found;
-  } catch {
-    return { success: false, error: "Fout bij ophalen kandidaat" };
   }
 
   // Check animal exists
   const animal = await getAnimalById(parsed.data.animalId);
   if (!animal) return { success: false, error: "Dier niet gevonden" };
 
-  // AC2: Kattenvalidatie (FR-02, SC-5)
-  if (animal.species === "kat") {
+  // AC2: Kattenvalidatie (FR-02, SC-5) — Story 10.20+: van harde fout naar
+  // overruleerbare waarschuwing. De client toont een confirm-popup; bij
+  // bevestiging wordt opnieuw gesubmit met overrideCatWarnings=true.
+  if (animal.species === "kat" && !parsed.data.overrideCatWarnings) {
     const errors: string[] = [];
     if (!animal.identificationNr) errors.push("gechipt");
     const vaccinations = await getVaccinationsByAnimalId(animal.id);
@@ -71,14 +73,18 @@ export async function createAdoptionContract(
       return {
         success: false,
         error: `Katten moeten ${errors.join(", ")} zijn vóór adoptie`,
+        warning: "cat-prerequisites",
       };
     }
   }
 
-  // AC3: Chipwaarschuwing voor niet-katten
-  let warning: string | undefined;
+  // Story 10.20+: chipregistratie is wettelijk verplicht — blokkerende validatie
+  // (zelfde look & feel als ontbrekend bedrag, blijft op het form staan).
   if (animal.species !== "kat" && !animal.identificationNr) {
-    warning = "Chipregistratie ontbreekt — wettelijk verplicht bij adoptie";
+    return {
+      success: false,
+      error: "Chipregistratie ontbreekt — wettelijk verplicht bij adoptie",
+    };
   }
 
   // AC4: Deadline berekening
@@ -89,21 +95,42 @@ export async function createAdoptionContract(
       .insert(adoptionContracts)
       .values({
         animalId: parsed.data.animalId,
-        candidateId: parsed.data.candidateId,
+        candidateId: parsed.data.candidateId ?? null,
         contractDate: parsed.data.contractDate,
         paymentAmount: parsed.data.paymentAmount,
         paymentMethod: parsed.data.paymentMethod,
         dogidCatidTransferDeadline: deadline,
         dogidCatidTransferred: false,
         notes: parsed.data.notes || null,
+        status: "klaar_voor_handtekening",
+        // Snapshot-velden: bevriezen de adoptant/dier-data nu.
+        snapshotAdoptantFirstName: parsed.data.adoptantFirstName,
+        snapshotAdoptantLastName: parsed.data.adoptantLastName,
+        snapshotAdoptantEmail: parsed.data.adoptantEmail || null,
+        snapshotAdoptantPhone: parsed.data.adoptantPhone || null,
+        snapshotAdoptantAddress: parsed.data.adoptantAddress || null,
+        snapshotAdoptantBirthDate: parsed.data.adoptantBirthDate || null,
+        snapshotAdoptantIdNumber: parsed.data.adoptantIdNumber || null,
+        snapshotAnimalName: parsed.data.animalName,
+        snapshotAnimalSpecies: parsed.data.animalSpecies || null,
+        snapshotAnimalBreed: parsed.data.animalBreed || null,
+        snapshotAnimalBirthDate: parsed.data.animalBirthDate || null,
+        snapshotAnimalGender: parsed.data.animalGender || null,
+        snapshotAnimalColor: parsed.data.animalColor || null,
+        snapshotAnimalChipNr: parsed.data.animalChipNr || null,
+        snapshotAnimalPassportNr: parsed.data.animalPassportNr || null,
+        snapshotAnimalDescription: parsed.data.animalDescription || null,
+        snapshotAnimalNeutered: parsed.data.animalNeutered ?? null,
       })
       .returning();
 
-    // AC5: Update candidate status to adopted
-    await db
-      .update(adoptionCandidates)
-      .set({ status: "adopted" })
-      .where(eq(adoptionCandidates.id, candidate.id));
+    // AC5: Update candidate status to adopted (alleen wanneer een kandidaat gekoppeld is)
+    if (candidate) {
+      await db
+        .update(adoptionCandidates)
+        .set({ status: "adopted" })
+        .where(eq(adoptionCandidates.id, candidate.id));
+    }
 
     // AC5: Update animal
     await db
@@ -144,12 +171,175 @@ export async function createAdoptionContract(
     await logAudit("create_adoption_contract", "adoption_contract", record.id, null, record);
     revalidatePath("/beheerder/adoptie");
 
-    return { success: true, data: record as AdoptionContract, message: warning };
+    return { success: true, data: record as AdoptionContract };
   } catch {
     return {
       success: false,
       error: "Er ging iets mis bij het opslaan. Probeer het later opnieuw.",
     };
+  }
+}
+
+// Story 10.20: status-updates voor contract-workflow.
+const ALLOWED_STATUSES = [
+  "draft",
+  "klaar_voor_handtekening",
+  "verzonden_voor_digitale_handtekening",
+  "getekend",
+  "geannuleerd",
+] as const;
+type ContractStatus = (typeof ALLOWED_STATUSES)[number];
+
+export async function updateContractStatusAction(
+  contractId: number,
+  newStatus: ContractStatus,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  if (!ALLOWED_STATUSES.includes(newStatus)) {
+    return { success: false, error: "Ongeldige status" };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionContracts)
+      .where(eq(adoptionContracts.id, contractId))
+      .limit(1);
+    if (!existing) return { success: false, error: "Contract niet gevonden" };
+
+    await db
+      .update(adoptionContracts)
+      .set({ status: newStatus })
+      .where(eq(adoptionContracts.id, contractId));
+
+    await logAudit(
+      "update_contract_status",
+      "adoption_contract",
+      contractId,
+      { status: existing.status },
+      { status: newStatus },
+    );
+    revalidatePath("/beheerder/adoptie");
+    revalidatePath(`/beheerder/adoptie/contracten/${contractId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("updateContractStatusAction failed:", err);
+    return { success: false, error: "Status-wijziging mislukt" };
+  }
+}
+
+export async function sendContractForDigitalSigningAction(
+  contractId: number,
+): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionContracts)
+      .where(eq(adoptionContracts.id, contractId))
+      .limit(1);
+    if (!existing) return { success: false, error: "Contract niet gevonden" };
+    if (existing.status === "getekend") {
+      return { success: false, error: "Contract is al getekend" };
+    }
+
+    await db
+      .update(adoptionContracts)
+      .set({ status: "verzonden_voor_digitale_handtekening" })
+      .where(eq(adoptionContracts.id, contractId));
+
+    await logAudit(
+      "send_for_digital_signing",
+      "adoption_contract",
+      contractId,
+      { status: existing.status },
+      { status: "verzonden_voor_digitale_handtekening" },
+    );
+    revalidatePath("/beheerder/adoptie");
+    revalidatePath(`/beheerder/adoptie/contracten/${contractId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("sendContractForDigitalSigningAction failed:", err);
+    return { success: false, error: "Versturen mislukt" };
+  }
+}
+
+export async function cancelContractAction(contractId: number): Promise<ActionResult> {
+  const permCheck = await requirePermission("adoption:write");
+  if (permCheck && !permCheck.success) {
+    return { success: false, error: permCheck.error };
+  }
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(adoptionContracts)
+      .where(eq(adoptionContracts.id, contractId))
+      .limit(1);
+    if (!existing) return { success: false, error: "Contract niet gevonden" };
+    if (existing.status === "getekend") {
+      return { success: false, error: "Een getekend contract kan niet meer geannuleerd worden" };
+    }
+
+    await db
+      .update(adoptionContracts)
+      .set({ status: "geannuleerd" })
+      .where(eq(adoptionContracts.id, contractId));
+
+    // Story 10.20+: bij annulering ook de side-effects op kandidaat + dier ongedaan maken,
+    // anders blijft de aanvraag op 'adopted' staan en het dier op 'geadopteerd' terwijl
+    // er functioneel geen adoptie heeft plaatsgevonden.
+    if (existing.candidateId) {
+      await db
+        .update(adoptionCandidates)
+        .set({ status: "approved" })
+        .where(eq(adoptionCandidates.id, existing.candidateId));
+    }
+
+    const [animalRow] = await db
+      .select()
+      .from(animals)
+      .where(eq(animals.id, existing.animalId))
+      .limit(1);
+
+    if (animalRow && animalRow.status === "geadopteerd") {
+      await db
+        .update(animals)
+        .set({
+          status: "beschikbaar",
+          isInShelter: true,
+          adoptedDate: null,
+          outtakeDate: null,
+          outtakeReason: null,
+        })
+        .where(eq(animals.id, existing.animalId));
+    }
+
+    await logAudit(
+      "cancel_contract",
+      "adoption_contract",
+      contractId,
+      { status: existing.status },
+      { status: "geannuleerd" },
+    );
+    revalidatePath("/beheerder/adoptie");
+    revalidatePath("/beheerder/dieren");
+    revalidatePath(`/beheerder/dieren/${existing.animalId}`);
+    if (existing.candidateId) {
+      revalidatePath(`/beheerder/adoptie/${existing.candidateId}`);
+    }
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("cancelContractAction failed:", err);
+    return { success: false, error: "Annuleren mislukt" };
   }
 }
 

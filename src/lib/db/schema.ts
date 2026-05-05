@@ -333,6 +333,7 @@ export const adoptionCandidates = pgTable("adoption_candidates", {
   index("idx_adoption_candidates_status").on(table.status),
 ]);
 
+
 export const kennismakingen = pgTable("kennismakingen", {
   id: serial("id").primaryKey(),
   adoptionCandidateId: integer("adoption_candidate_id").notNull().references(() => adoptionCandidates.id),
@@ -351,7 +352,9 @@ export const kennismakingen = pgTable("kennismakingen", {
 export const adoptionContracts = pgTable("adoption_contracts", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").notNull().references(() => animals.id),
-  candidateId: integer("candidate_id").notNull().references(() => adoptionCandidates.id),
+  // Story 10.20+: candidateId is nu nullable — contracten kunnen ook rechtstreeks
+  // (zonder gekoppelde aanvraag) aangemaakt worden.
+  candidateId: integer("candidate_id").references(() => adoptionCandidates.id),
   contractDate: date("contract_date").notNull(),
   paymentAmount: varchar("payment_amount", { length: 20 }).notNull(), // stored as string for decimal precision
   paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // cash, payconiq, overschrijving
@@ -359,10 +362,37 @@ export const adoptionContracts = pgTable("adoption_contracts", {
   dogidCatidTransferDeadline: date("dogid_catid_transfer_deadline"),
   dogidCatidTransferred: boolean("dogid_catid_transferred").default(false),
   notes: text("notes"),
+  // Story 10.20: workflow status + signing.
+  status: varchar("status", { length: 40 }).notNull().default("getekend"),
+  // draft | klaar_voor_handtekening | verzonden_voor_digitale_handtekening | getekend | geannuleerd
+  signedDocumentUrl: varchar("signed_document_url", { length: 500 }),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+  signingMethod: varchar("signing_method", { length: 20 }), // 'papier' | 'digitaal'
+  // Story 10.20+: snapshot-velden — bevriezen de adoptant/dier-data op het moment
+  // van contract-aanmaak. Latere wijzigingen aan candidate of animal raken niet aan
+  // het contract. NULL voor oude contracten (PDF-route fallt terug op candidate/animal).
+  snapshotAdoptantFirstName: varchar("snapshot_adoptant_first_name", { length: 100 }),
+  snapshotAdoptantLastName: varchar("snapshot_adoptant_last_name", { length: 100 }),
+  snapshotAdoptantEmail: varchar("snapshot_adoptant_email", { length: 200 }),
+  snapshotAdoptantPhone: varchar("snapshot_adoptant_phone", { length: 30 }),
+  snapshotAdoptantAddress: varchar("snapshot_adoptant_address", { length: 300 }),
+  snapshotAdoptantBirthDate: varchar("snapshot_adoptant_birth_date", { length: 30 }),
+  snapshotAdoptantIdNumber: varchar("snapshot_adoptant_id_number", { length: 50 }),
+  snapshotAnimalName: varchar("snapshot_animal_name", { length: 100 }),
+  snapshotAnimalSpecies: varchar("snapshot_animal_species", { length: 50 }),
+  snapshotAnimalBreed: varchar("snapshot_animal_breed", { length: 100 }),
+  snapshotAnimalBirthDate: varchar("snapshot_animal_birth_date", { length: 30 }),
+  snapshotAnimalGender: varchar("snapshot_animal_gender", { length: 20 }),
+  snapshotAnimalColor: varchar("snapshot_animal_color", { length: 100 }),
+  snapshotAnimalChipNr: varchar("snapshot_animal_chip_nr", { length: 50 }),
+  snapshotAnimalPassportNr: varchar("snapshot_animal_passport_nr", { length: 50 }),
+  snapshotAnimalDescription: text("snapshot_animal_description"),
+  snapshotAnimalNeutered: boolean("snapshot_animal_neutered"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_adoption_contracts_candidate_id").on(table.candidateId),
   index("idx_adoption_contracts_animal_id").on(table.animalId),
+  index("idx_adoption_contracts_status").on(table.status),
 ]);
 
 export const postAdoptionFollowups = pgTable("post_adoption_followups", {

@@ -131,19 +131,6 @@ export default function AdoptionCandidateView({ candidate, animalName, kennismak
         </div>
       )}
 
-      {!hasContract && candidate.animalId && (
-        <div className="rounded-xl border border-purple-100 bg-purple-50 p-5 shadow-sm">
-          <h2 className="font-heading text-sm font-bold text-purple-800">Adoptiecontract</h2>
-          <p className="mt-1 text-sm text-purple-700">Maak het adoptiecontract op voor deze kandidaat.</p>
-          <Link
-            href={`/beheerder/adoptie/${candidate.id}/contract`}
-            className="mt-3 inline-block rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-          >
-            Contract opmaken
-          </Link>
-        </div>
-      )}
-
       {/* Persoonlijke gegevens */}
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h2 className="font-heading text-sm font-bold text-[#1b4332]">Persoonlijke gegevens</h2>

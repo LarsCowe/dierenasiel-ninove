@@ -69,6 +69,10 @@ const validData = {
   paymentAmount: "150.00",
   paymentMethod: "payconiq",
   notes: "",
+  // Story 10.20+: snapshot-velden zijn verplicht (firstName/lastName/animalName).
+  adoptantFirstName: "Jan",
+  adoptantLastName: "Janssens",
+  animalName: "Buddy",
 };
 
 const mockAnimalDog = {
@@ -141,11 +145,14 @@ describe("createAdoptionContract", () => {
     if (!result.success) expect(result.error).toBe("Kandidaat niet gevonden");
   });
 
-  it("returns error when candidate is not approved", async () => {
-    mockSelectLimit.mockResolvedValue([{ ...mockCandidate, status: "screening" }]);
+  it("allows contract for non-approved candidate (beheerder beslist zelf)", async () => {
+    // Story 10.20+: status-check op kandidaat is verwijderd.
+    mockSelectLimit.mockResolvedValueOnce([{ ...mockCandidate, status: "screening" }]);
+    mockGetAnimalById.mockResolvedValue(mockAnimalDog);
+    mockReturning.mockResolvedValue([{ id: 99 }]);
+    mockUpdateSetWhere.mockResolvedValue(undefined);
     const result = await createAdoptionContract(null, makeFormData(validData));
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("goedgekeurd");
+    expect(result.success).toBe(true);
   });
 
   it("returns error when animal not found", async () => {
@@ -155,27 +162,46 @@ describe("createAdoptionContract", () => {
     if (!result.success) expect(result.error).toBe("Dier niet gevonden");
   });
 
-  // AC2: Kattenvalidatie
-  it("blocks contract for unneutered cat", async () => {
+  // AC2: Kattenvalidatie — Story 10.20+: nu overruleerbare waarschuwing met
+  // warning marker "cat-prerequisites" i.p.v. harde fout.
+  it("warns (not blocks) for unneutered cat", async () => {
     mockGetAnimalById.mockResolvedValue({ ...mockAnimalCat, isNeutered: false });
     const result = await createAdoptionContract(null, makeFormData({ ...validData, animalId: 6 }));
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("gesteriliseerd");
+    if (!result.success) {
+      expect(result.error).toContain("gesteriliseerd");
+      expect(result.warning).toBe("cat-prerequisites");
+    }
   });
 
-  it("blocks contract for cat without chip", async () => {
+  it("warns (not blocks) for cat without chip", async () => {
     mockGetAnimalById.mockResolvedValue({ ...mockAnimalCat, identificationNr: null });
     const result = await createAdoptionContract(null, makeFormData({ ...validData, animalId: 6 }));
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("gechipt");
+    if (!result.success) {
+      expect(result.error).toContain("gechipt");
+      expect(result.warning).toBe("cat-prerequisites");
+    }
   });
 
-  it("blocks contract for cat without vaccination", async () => {
+  it("warns (not blocks) for cat without vaccination", async () => {
     mockGetAnimalById.mockResolvedValue(mockAnimalCat);
     mockGetVaccinationsByAnimalId.mockResolvedValue([]);
     const result = await createAdoptionContract(null, makeFormData({ ...validData, animalId: 6 }));
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error).toContain("gevaccineerd");
+    if (!result.success) {
+      expect(result.error).toContain("gevaccineerd");
+      expect(result.warning).toBe("cat-prerequisites");
+    }
+  });
+
+  it("allows contract for unneutered cat when overrideCatWarnings=true", async () => {
+    mockGetAnimalById.mockResolvedValue({ ...mockAnimalCat, isNeutered: false });
+    const result = await createAdoptionContract(
+      null,
+      makeFormData({ ...validData, animalId: 6, overrideCatWarnings: true }),
+    );
+    expect(result.success).toBe(true);
   });
 
   it("allows contract for valid cat (chipped + vaccinated + neutered)", async () => {
@@ -185,12 +211,12 @@ describe("createAdoptionContract", () => {
     expect(result.success).toBe(true);
   });
 
-  // AC3: Chipwaarschuwing (for dogs)
-  it("returns warning when dog has no chip but still creates contract", async () => {
+  // Story 10.20+: chipregistratie is nu een blokkerende validatie (geen waarschuwing meer).
+  it("blocks contract when dog has no chip", async () => {
     mockGetAnimalById.mockResolvedValue({ ...mockAnimalDog, identificationNr: null });
     const result = await createAdoptionContract(null, makeFormData(validData));
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.message).toContain("Chipregistratie ontbreekt");
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toContain("Chipregistratie ontbreekt");
   });
 
   // AC4: Deadline berekening
