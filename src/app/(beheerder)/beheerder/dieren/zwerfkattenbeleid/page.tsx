@@ -71,7 +71,7 @@ export default async function ZwerfkattenbeleidPage({ searchParams }: Props) {
             href="/beheerder/dieren/zwerfkattenbeleid/nieuw"
             className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
           >
-            + Nieuw verzoek
+            + Nieuwe campagne
           </Link>
         </div>
       </div>

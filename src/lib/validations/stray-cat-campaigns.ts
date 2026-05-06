@@ -22,6 +22,16 @@ export const createCampaignSchema = z.object({
 
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;
 
+export const updateCampaignBasicsSchema = z.object({
+  campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
+  requestDate: dateString,
+  municipality: z.string().trim().min(1, "Gemeente is verplicht").max(200, "Gemeente mag max 200 tekens zijn"),
+  address: z.string().trim().min(1, "Adres is verplicht"),
+  remarks: z.string().optional().default(""),
+});
+
+export type UpdateCampaignBasicsInput = z.infer<typeof updateCampaignBasicsSchema>;
+
 export const deployCagesSchema = z.object({
   campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
   cageDeploymentDate: dateString,

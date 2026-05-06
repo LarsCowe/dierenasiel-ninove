@@ -11,6 +11,7 @@ import { getCampaignById, getOccupiedCageNumbers } from "@/lib/queries/stray-cat
 import { getMunicipalityLogoByName } from "@/lib/queries/municipality-logos";
 import {
   createCampaignSchema,
+  updateCampaignBasicsSchema,
   deployCagesSchema,
   registerInspectionSchema,
   completeCampaignSchema,
@@ -74,6 +75,64 @@ export async function createCampaignAction(
   } catch (error) {
     console.error("createCampaignAction failed:", error);
     return { success: false, error: "Campagne aanmaken mislukt. Probeer opnieuw." };
+  }
+}
+
+export async function updateCampaignBasicsAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = updateCampaignBasicsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige invoer", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const existing = await getCampaignById(parsed.data.campaignId);
+    if (!existing) return { success: false, error: "Campagne niet gevonden" };
+
+    // Auto-link logo via naam-match (consistent met createCampaignAction).
+    const matchedLogo = await getMunicipalityLogoByName(parsed.data.municipality);
+
+    await db
+      .update(strayCatCampaigns)
+      .set({
+        requestDate: parsed.data.requestDate,
+        municipality: parsed.data.municipality,
+        address: parsed.data.address,
+        remarks: parsed.data.remarks || null,
+        municipalityLogoId: matchedLogo?.id ?? null,
+      })
+      .where(eq(strayCatCampaigns.id, parsed.data.campaignId));
+
+    await logAudit(
+      "stray_cat_campaign.updated",
+      "stray_cat_campaign",
+      parsed.data.campaignId,
+      {
+        requestDate: existing.requestDate,
+        municipality: existing.municipality,
+        address: existing.address,
+        remarks: existing.remarks,
+        municipalityLogoId: existing.municipalityLogoId,
+      },
+      {
+        requestDate: parsed.data.requestDate,
+        municipality: parsed.data.municipality,
+        address: parsed.data.address,
+        remarks: parsed.data.remarks,
+        municipalityLogoId: matchedLogo?.id ?? null,
+      },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${parsed.data.campaignId}`);
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("updateCampaignBasicsAction failed:", error);
+    return { success: false, error: "Verzoekgegevens bijwerken mislukt. Probeer opnieuw." };
   }
 }
 

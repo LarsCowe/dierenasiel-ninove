@@ -8,6 +8,7 @@ import {
   registerInspectionAction,
   completeCampaignAction,
   linkAnimalAction,
+  updateCampaignBasicsAction,
 } from "@/lib/actions/stray-cat-campaigns";
 import {
   CAMPAIGN_STATUS_LABELS,
@@ -20,7 +21,6 @@ import {
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoUpload from "./CampaignPhotoUpload";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
-import MunicipalityLogoPicker from "./MunicipalityLogoPicker";
 import InspectionLogSection from "./InspectionLogSection";
 import type { CampaignAttachment } from "@/lib/queries/stray-cat-campaigns";
 import type { MunicipalityLogo } from "@/types";
@@ -31,7 +31,7 @@ interface Props {
   occupiedCages: Record<string, number>;
   inspections: StrayCatCampaignInspection[];
   attachments?: CampaignAttachment[];
-  logos?: MunicipalityLogo[];
+  opdrachtgevers?: MunicipalityLogo[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -45,6 +45,133 @@ function ReadonlyField({ label, value }: { label: string; value: string | null |
       <dt className="text-sm font-medium text-gray-500">{label}</dt>
       <dd className="mt-1 text-sm text-gray-900">{value || "—"}</dd>
     </div>
+  );
+}
+
+// --- Verzoekgegevens (editbaar) sectie ---
+async function handleUpdateBasics(_prev: ActionResult | null, formData: FormData) {
+  return updateCampaignBasicsAction({
+    campaignId: Number(formData.get("campaignId")),
+    requestDate: formData.get("requestDate") as string,
+    municipality: formData.get("municipality") as string,
+    address: formData.get("address") as string,
+    remarks: (formData.get("remarks") as string) || "",
+  });
+}
+
+function BasicsSection({
+  campaign,
+  opdrachtgevers,
+}: {
+  campaign: StrayCatCampaign;
+  opdrachtgevers: MunicipalityLogo[];
+}) {
+  const [state, formAction, isPending] = useActionState(handleUpdateBasics, null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success) router.refresh();
+  }, [state, router]);
+
+  // Als de huidige gemeente niet voorkomt in de actieve opdrachtgevers-lijst
+  // (bv. legacy- of soft-deleted naam), tonen we hem toch als optie zodat de
+  // dropdown een geldige waarde heeft.
+  const optionNames = new Set(opdrachtgevers.map((o) => o.name));
+  const showLegacyOption =
+    !!campaign.municipality && !optionNames.has(campaign.municipality);
+
+  const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="campaignId" value={campaign.id} />
+      {state?.success && (
+        <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
+          Verzoekgegevens bijgewerkt.
+        </div>
+      )}
+      {state && !state.success && state.error && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor="basics-requestDate" className="block text-sm font-medium text-gray-700">
+            Datum verzoek *
+          </label>
+          <input
+            type="date"
+            id="basics-requestDate"
+            name="requestDate"
+            defaultValue={campaign.requestDate}
+            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          />
+          <FieldError errors={fieldErrors?.requestDate as string[] | undefined} />
+        </div>
+
+        <div>
+          <label htmlFor="basics-municipality" className="block text-sm font-medium text-gray-700">
+            Gemeente / Opdrachtgever *
+          </label>
+          <select
+            id="basics-municipality"
+            name="municipality"
+            defaultValue={campaign.municipality ?? ""}
+            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          >
+            {opdrachtgevers.length === 0 && !showLegacyOption && (
+              <option value="" disabled>— Geen opdrachtgevers in bibliotheek —</option>
+            )}
+            {showLegacyOption && (
+              <option value={campaign.municipality}>
+                {campaign.municipality} (niet in bibliotheek)
+              </option>
+            )}
+            {opdrachtgevers.map((o) => (
+              <option key={o.id} value={o.name}>{o.name}</option>
+            ))}
+          </select>
+          <FieldError errors={fieldErrors?.municipality as string[] | undefined} />
+        </div>
+
+        <div>
+          <label htmlFor="basics-address" className="block text-sm font-medium text-gray-700">
+            Adres / locatie *
+          </label>
+          <input
+            type="text"
+            id="basics-address"
+            name="address"
+            defaultValue={campaign.address}
+            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          />
+          <FieldError errors={fieldErrors?.address as string[] | undefined} />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="basics-remarks" className="block text-sm font-medium text-gray-700">
+          Opmerkingen
+        </label>
+        <textarea
+          id="basics-remarks"
+          name="remarks"
+          rows={2}
+          defaultValue={campaign.remarks ?? ""}
+          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+        />
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
+        >
+          {isPending ? "Bezig..." : "Verzoekgegevens opslaan"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -391,7 +518,7 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
 }
 
 // --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], logos = [] }: Props) {
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], opdrachtgevers = [] }: Props) {
   const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
   const currentIndex = statusOrder.indexOf(campaign.status);
 
@@ -421,27 +548,11 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
         </div>
       </div>
 
-      {/* Basisgegevens (altijd zichtbaar, readonly) */}
+      {/* Verzoekgegevens (editbaar) */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Verzoekgegevens</h3>
-        <dl className="grid gap-4 sm:grid-cols-3">
-          <ReadonlyField label="Datum verzoek" value={campaign.requestDate} />
-          <ReadonlyField label="Gemeente" value={campaign.municipality} />
-          <ReadonlyField label="Adres" value={campaign.address} />
-        </dl>
-        {campaign.remarks && (
-          <div className="mt-4">
-            <ReadonlyField label="Opmerkingen" value={campaign.remarks} />
-          </div>
-        )}
+        <BasicsSection campaign={campaign} opdrachtgevers={opdrachtgevers} />
       </div>
-
-      {/* Logo gemeente (Story 10.18) */}
-      <MunicipalityLogoPicker
-        campaignId={campaign.id}
-        currentLogoId={campaign.municipalityLogoId}
-        logos={logos}
-      />
 
       {/* Foto */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

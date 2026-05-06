@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useActionState, useRef, useEffect } from "react";
 import { createCampaignAction } from "@/lib/actions/stray-cat-campaigns";
 import type { ActionResult, MunicipalityLogo } from "@/types";
@@ -24,14 +25,15 @@ interface Props {
 }
 
 export default function CampaignCreateForm({ opdrachtgevers }: Props) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(handleCreate, null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state?.success) {
-      formRef.current?.reset();
+      router.push("/beheerder/dieren/zwerfkattenbeleid");
     }
-  }, [state]);
+  }, [state, router]);
 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
 

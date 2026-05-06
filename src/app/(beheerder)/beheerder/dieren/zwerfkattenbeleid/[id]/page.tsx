@@ -14,7 +14,7 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaignId = Number(id);
   if (isNaN(campaignId)) notFound();
 
-  const [campaign, availableCats, occupiedCages, inspections, attachments, logos] = await Promise.all([
+  const [campaign, availableCats, occupiedCages, inspections, attachments, opdrachtgevers] = await Promise.all([
     getCampaignById(campaignId),
     getCatsAvailableForLinking(),
     getOccupiedCageNumbers(campaignId),
@@ -28,12 +28,6 @@ export default async function CampaignDetailPage({ params }: Props) {
   const currentLogo = campaign.municipalityLogoId
     ? await getMunicipalityLogoById(campaign.municipalityLogoId)
     : null;
-
-  // Als de gekoppelde opdrachtgever soft-deleted is, voeg hem toe aan de
-  // picker-opties zodat hij zichtbaar blijft als geselecteerde waarde.
-  const logosForPicker = currentLogo && currentLogo.deletedAt
-    ? [...logos, currentLogo].sort((a, b) => a.name.localeCompare(b.name))
-    : logos;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -67,7 +61,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         occupiedCages={occupiedCages}
         inspections={inspections}
         attachments={attachments}
-        logos={logosForPicker}
+        opdrachtgevers={opdrachtgevers}
       />
     </div>
   );
