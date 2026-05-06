@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useRef, useEffect } from "react";
 import { createCampaignAction } from "@/lib/actions/stray-cat-campaigns";
-import type { ActionResult } from "@/types";
+import type { ActionResult, MunicipalityLogo } from "@/types";
 
 async function handleCreate(_prev: ActionResult<{ id: number }> | null, formData: FormData) {
   return createCampaignAction({
@@ -18,7 +19,11 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
-export default function CampaignCreateForm() {
+interface Props {
+  opdrachtgevers: MunicipalityLogo[];
+}
+
+export default function CampaignCreateForm({ opdrachtgevers }: Props) {
   const [state, formAction, isPending] = useActionState(handleCreate, null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -63,15 +68,34 @@ export default function CampaignCreateForm() {
 
           <div>
             <label htmlFor="municipality" className="block text-sm font-medium text-gray-700">
-              Gemeente *
+              Gemeente / Opdrachtgever *
             </label>
-            <input
-              type="text"
-              id="municipality"
-              name="municipality"
-              placeholder="Bijv. Ninove"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-            />
+            {opdrachtgevers.length === 0 ? (
+              <div className="mt-1">
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Nog geen opdrachtgevers in de bibliotheek.{" "}
+                  <Link
+                    href="/beheerder/dieren/zwerfkattenbeleid/opdrachtgevers"
+                    className="font-medium underline hover:text-amber-900"
+                  >
+                    Voeg er eerst één toe
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : (
+              <select
+                id="municipality"
+                name="municipality"
+                defaultValue=""
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              >
+                <option value="" disabled>— Kies een opdrachtgever —</option>
+                {opdrachtgevers.map((o) => (
+                  <option key={o.id} value={o.name}>{o.name}</option>
+                ))}
+              </select>
+            )}
             <FieldError errors={fieldErrors?.municipality} />
           </div>
         </div>

@@ -44,7 +44,7 @@ export async function PATCH(
   }
 
   const existing = await getMunicipalityLogoById(logoId);
-  if (!existing) {
+  if (!existing || existing.deletedAt) {
     return NextResponse.json({ error: "Logo niet gevonden" }, { status: 404 });
   }
 
@@ -133,17 +133,16 @@ export async function DELETE(
   }
 
   const existing = await getMunicipalityLogoById(logoId);
-  if (!existing) {
+  if (!existing || existing.deletedAt) {
     return NextResponse.json({ error: "Logo niet gevonden" }, { status: 404 });
   }
 
-  try {
-    await del(existing.logoUrl);
-  } catch {
-    // best-effort
-  }
-
-  await db.delete(municipalityLogos).where(eq(municipalityLogos.id, logoId));
+  // Soft-delete: deletedAt zetten zodat historische campagnes het logo
+  // blijven tonen. Blob NIET verwijderen (zou old image breken in PDF/list).
+  await db
+    .update(municipalityLogos)
+    .set({ deletedAt: new Date() })
+    .where(eq(municipalityLogos.id, logoId));
 
   await logAudit(
     "municipality_logo.deleted",

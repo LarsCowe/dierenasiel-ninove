@@ -1,16 +1,33 @@
 import { db } from "@/lib/db";
 import { municipalityLogos } from "@/lib/db/schema";
-import { eq, sql, asc } from "drizzle-orm";
+import { eq, sql, asc, isNull } from "drizzle-orm";
 import type { MunicipalityLogo } from "@/types";
 
+// Actieve (niet soft-deleted) opdrachtgevers — voor de bibliotheek-pagina
+// en dropdowns bij het aanmaken van campagnes.
 export async function getMunicipalityLogos(): Promise<MunicipalityLogo[]> {
+  try {
+    return (await db
+      .select()
+      .from(municipalityLogos)
+      .where(isNull(municipalityLogos.deletedAt))
+      .orderBy(asc(municipalityLogos.name))) as MunicipalityLogo[];
+  } catch (err) {
+    console.error("getMunicipalityLogos query failed:", err);
+    return [];
+  }
+}
+
+// Inclusief soft-deleted: gebruikt om historische campagnes hun
+// opdrachtgever-logo te laten resolven, ook na verwijdering uit de bibliotheek.
+export async function getAllMunicipalityLogosIncludingDeleted(): Promise<MunicipalityLogo[]> {
   try {
     return (await db
       .select()
       .from(municipalityLogos)
       .orderBy(asc(municipalityLogos.name))) as MunicipalityLogo[];
   } catch (err) {
-    console.error("getMunicipalityLogos query failed:", err);
+    console.error("getAllMunicipalityLogosIncludingDeleted query failed:", err);
     return [];
   }
 }

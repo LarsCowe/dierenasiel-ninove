@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { getCampaignsForAdmin, getDistinctMunicipalities } from "@/lib/queries/stray-cat-campaigns";
-import { getMunicipalityLogos } from "@/lib/queries/municipality-logos";
+import { getAllMunicipalityLogosIncludingDeleted } from "@/lib/queries/municipality-logos";
 import CampaignFilters from "@/components/beheerder/zwerfkatten/CampaignFilters";
 import CampaignTable from "@/components/beheerder/zwerfkatten/CampaignTable";
 import Pagination from "@/components/beheerder/dieren/Pagination";
@@ -32,7 +32,7 @@ export default async function ZwerfkattenbeleidPage({ searchParams }: Props) {
       pageSize: PAGE_SIZE,
     }),
     getDistinctMunicipalities(),
-    getMunicipalityLogos(),
+    getAllMunicipalityLogosIncludingDeleted(),
   ]);
 
   const logoById = new Map(logos.map((l) => [l.id, l]));
@@ -62,10 +62,10 @@ export default async function ZwerfkattenbeleidPage({ searchParams }: Props) {
             R14 — Rapport
           </Link>
           <Link
-            href="/beheerder/dieren/zwerfkattenbeleid/logos"
+            href="/beheerder/dieren/zwerfkattenbeleid/opdrachtgevers"
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Gemeente-logo's
+            Beheer Opdrachtgevers
           </Link>
           <Link
             href="/beheerder/dieren/zwerfkattenbeleid/nieuw"

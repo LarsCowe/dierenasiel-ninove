@@ -1,7 +1,10 @@
 import Link from "next/link";
 import CampaignCreateForm from "@/components/beheerder/zwerfkatten/CampaignCreateForm";
+import { getMunicipalityLogos } from "@/lib/queries/municipality-logos";
 
-export default function NieuweCampagnePage() {
+export default async function NieuweCampagnePage() {
+  const opdrachtgevers = await getMunicipalityLogos();
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
@@ -16,9 +19,9 @@ export default function NieuweCampagnePage() {
         </Link>
       </div>
       <p className="mb-6 text-sm text-gray-500">
-        Registreer een nieuw zwerfkat-verzoek van een gemeente. Velden met * zijn verplicht.
+        Registreer een nieuw zwerfkat-verzoek. Velden met * zijn verplicht.
       </p>
-      <CampaignCreateForm />
+      <CampaignCreateForm opdrachtgevers={opdrachtgevers} />
     </div>
   );
 }

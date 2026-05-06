@@ -43,10 +43,10 @@ export default function MunicipalityLogoPicker({ campaignId, currentLogoId, logo
           Logo gemeente
         </h3>
         <Link
-          href="/beheerder/dieren/zwerfkattenbeleid/logos"
+          href="/beheerder/dieren/zwerfkattenbeleid/opdrachtgevers"
           className="text-xs text-emerald-700 hover:underline"
         >
-          Logo's beheren →
+          Opdrachtgevers beheren →
         </Link>
       </div>
       {error && <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
@@ -64,7 +64,9 @@ export default function MunicipalityLogoPicker({ campaignId, currentLogoId, logo
           >
             <option value="">— Geen logo —</option>
             {logos.map((logo) => (
-              <option key={logo.id} value={logo.id}>{logo.name}</option>
+              <option key={logo.id} value={logo.id}>
+                {logo.name}{logo.deletedAt ? " (verwijderd)" : ""}
+              </option>
             ))}
           </select>
           {selected && (

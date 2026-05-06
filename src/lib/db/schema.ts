@@ -520,12 +520,15 @@ export const mailingSendRecipients = pgTable("mailing_send_recipients", {
 ]);
 
 // Story 10.18: bibliotheek met logo's per gemeente.
+// deletedAt: soft-delete zodat historische campagnes hun opdrachtgever-logo
+// blijven tonen wanneer een opdrachtgever uit de bibliotheek wordt verwijderd.
 export const municipalityLogos = pgTable("municipality_logos", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 200 }).notNull().unique(),
   logoUrl: varchar("logo_url", { length: 500 }).notNull(),
   uploadedBy: varchar("uploaded_by", { length: 200 }),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export const strayCatCampaigns = pgTable("stray_cat_campaigns", {

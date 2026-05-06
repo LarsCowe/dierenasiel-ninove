@@ -58,22 +58,28 @@ export default function CampaignFilters({ municipalities }: Props) {
       </select>
 
       {/* Periode van */}
-      <input
-        type="date"
-        value={searchParams.get("van") ?? ""}
-        onChange={(e) => updateParam("van", e.target.value)}
-        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-        aria-label="Periode van"
-      />
+      <label className="flex items-center gap-1.5 text-sm text-gray-700">
+        <span className="font-medium">van</span>
+        <input
+          type="date"
+          value={searchParams.get("van") ?? ""}
+          onChange={(e) => updateParam("van", e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-label="Periode van"
+        />
+      </label>
 
       {/* Periode tot */}
-      <input
-        type="date"
-        value={searchParams.get("tot") ?? ""}
-        onChange={(e) => updateParam("tot", e.target.value)}
-        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-        aria-label="Periode tot"
-      />
+      <label className="flex items-center gap-1.5 text-sm text-gray-700">
+        <span className="font-medium">tot</span>
+        <input
+          type="date"
+          value={searchParams.get("tot") ?? ""}
+          onChange={(e) => updateParam("tot", e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          aria-label="Periode tot"
+        />
+      </label>
 
       {/* Reset knop */}
       {hasFilters && (

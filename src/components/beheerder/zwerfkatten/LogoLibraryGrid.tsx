@@ -105,7 +105,7 @@ export default function LogoLibraryGrid({ logos }: Props) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">
-          {logos.length} logo{logos.length !== 1 ? "'s" : ""}
+          {logos.length} opdrachtgever{logos.length !== 1 ? "s" : ""}
         </p>
         {!showAdd && (
           <button
@@ -114,9 +114,9 @@ export default function LogoLibraryGrid({ logos }: Props) {
             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-700 transition hover:bg-emerald-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            Logo uploaden
+            Nieuwe opdrachtgever
           </button>
         )}
       </div>
@@ -125,19 +125,19 @@ export default function LogoLibraryGrid({ logos }: Props) {
 
       {showAdd && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 text-sm font-semibold text-[#1b4332]">Logo toevoegen</h3>
+          <h3 className="mb-3 text-sm font-semibold text-[#1b4332]">Nieuwe opdrachtgever</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Gemeentenaam *</label>
+              <label className="block text-sm font-medium text-gray-700">Naam *</label>
               <input
                 ref={addNameRef}
                 type="text"
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-                placeholder="bv. Ninove"
+                placeholder="bv. Gemeente Ninove"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Bestand *</label>
+              <label className="block text-sm font-medium text-gray-700">Logo *</label>
               <div className="mt-1 flex items-center gap-2">
                 <label
                   htmlFor="logo-add-file"
@@ -188,7 +188,7 @@ export default function LogoLibraryGrid({ logos }: Props) {
           <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
           </svg>
-          <p className="mt-3 text-sm text-gray-500">Nog geen logo's in de bibliotheek.</p>
+          <p className="mt-3 text-sm text-gray-500">Nog geen opdrachtgevers in de bibliotheek.</p>
           {!showAdd && (
             <button
               type="button"
@@ -196,9 +196,9 @@ export default function LogoLibraryGrid({ logos }: Props) {
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-emerald-700 transition hover:bg-emerald-700 hover:shadow-md"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Eerste logo uploaden
+              Eerste opdrachtgever toevoegen
             </button>
           )}
         </div>

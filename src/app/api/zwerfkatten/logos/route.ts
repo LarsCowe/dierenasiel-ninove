@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob";
 import { db } from "@/lib/db";
 import { municipalityLogos } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
@@ -46,9 +47,9 @@ export async function POST(request: Request) {
   }
 
   const existing = await getMunicipalityLogoByName(rawName);
-  if (existing) {
+  if (existing && !existing.deletedAt) {
     return NextResponse.json(
-      { error: "Een logo voor deze gemeente bestaat al" },
+      { error: "Een opdrachtgever met deze naam bestaat al" },
       { status: 400 },
     );
   }
@@ -58,6 +59,33 @@ export async function POST(request: Request) {
 
   try {
     const blob = await put(path, file, { access: "public" });
+
+    // Soft-deleted opdrachtgever met dezelfde naam? Reactiveer in plaats van
+    // een conflict te geven (de unique-constraint op name verhindert insert).
+    if (existing && existing.deletedAt) {
+      await db
+        .update(municipalityLogos)
+        .set({
+          logoUrl: blob.url,
+          uploadedBy: session.email ?? null,
+          uploadedAt: new Date(),
+          deletedAt: null,
+        })
+        .where(eq(municipalityLogos.id, existing.id));
+
+      await logAudit(
+        "municipality_logo.reactivated",
+        "municipality_logo",
+        existing.id,
+        { name: existing.name, logoUrl: existing.logoUrl, deletedAt: existing.deletedAt },
+        { name: rawName, logoUrl: blob.url, deletedAt: null },
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: { id: existing.id, name: rawName, logoUrl: blob.url },
+      });
+    }
 
     const inserted = await db
       .insert(municipalityLogos)
@@ -82,7 +110,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("upload-logo failed:", err);
     return NextResponse.json(
-      { error: "Logo uploaden mislukt. Probeer opnieuw." },
+      { error: "Opdrachtgever aanmaken mislukt. Probeer opnieuw." },
       { status: 500 },
     );
   }

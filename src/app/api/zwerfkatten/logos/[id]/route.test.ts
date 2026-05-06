@@ -131,15 +131,19 @@ describe("DELETE /api/zwerfkatten/logos/[id]", () => {
     mockGetSession.mockResolvedValue({ userId: 1, email: "sven@asiel.be", role: "beheerder" });
     mockHasPermission.mockReturnValue(true);
     mockGetById.mockResolvedValue(existingLogo);
-    mockDeleteWhere.mockResolvedValue({});
+    mockUpdateWhere.mockResolvedValue({});
   });
 
-  it("deletes blob + db row + audit", async () => {
+  it("soft-deletes (sets deletedAt) without removing blob, plus audit", async () => {
     const req = new Request("http://localhost/api/zwerfkatten/logos/7", { method: "DELETE" });
     const res = await DELETE(req, paramsFor(7));
     expect(res.status).toBe(200);
-    expect(mockDel).toHaveBeenCalledWith("https://blob.com/old.png");
-    expect(mockDelete).toHaveBeenCalled();
+    // Blob blijft staan zodat historische campagnes het logo blijven tonen.
+    expect(mockDel).not.toHaveBeenCalled();
+    expect(mockUpdate).toHaveBeenCalled();
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toHaveProperty("deletedAt");
+    expect(setArg.deletedAt).toBeInstanceOf(Date);
     expect(mockLogAudit).toHaveBeenCalledWith(
       "municipality_logo.deleted",
       "municipality_logo",
@@ -154,6 +158,14 @@ describe("DELETE /api/zwerfkatten/logos/[id]", () => {
     const req = new Request("http://localhost/api/zwerfkatten/logos/999", { method: "DELETE" });
     const res = await DELETE(req, paramsFor(999));
     expect(res.status).toBe(404);
+  });
+
+  it("returns 404 when already soft-deleted", async () => {
+    mockGetById.mockResolvedValue({ ...existingLogo, deletedAt: new Date() });
+    const req = new Request("http://localhost/api/zwerfkatten/logos/7", { method: "DELETE" });
+    const res = await DELETE(req, paramsFor(7));
+    expect(res.status).toBe(404);
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it("rejects without permission", async () => {

@@ -3,17 +3,28 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const {
   mockSelectLimit,
   mockSelectWhere,
+  mockSelectWhereOrderBy,
   mockSelectOrderBy,
   mockSelectFrom,
 } = vi.hoisted(() => {
   const mockSelectLimit = vi.fn();
   const mockSelectOrderBy = vi.fn();
-  const mockSelectWhere = vi.fn().mockReturnValue({ limit: mockSelectLimit });
+  const mockSelectWhereOrderBy = vi.fn();
+  const mockSelectWhere = vi.fn().mockReturnValue({
+    limit: mockSelectLimit,
+    orderBy: mockSelectWhereOrderBy,
+  });
   const mockSelectFrom = vi.fn().mockReturnValue({
     where: mockSelectWhere,
     orderBy: mockSelectOrderBy,
   });
-  return { mockSelectLimit, mockSelectWhere, mockSelectOrderBy, mockSelectFrom };
+  return {
+    mockSelectLimit,
+    mockSelectWhere,
+    mockSelectWhereOrderBy,
+    mockSelectOrderBy,
+    mockSelectFrom,
+  };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -23,16 +34,19 @@ vi.mock("@/lib/db/schema", () => ({
   municipalityLogos: {
     id: Symbol("municipalityLogos.id"),
     name: Symbol("municipalityLogos.name"),
+    deletedAt: Symbol("municipalityLogos.deletedAt"),
   },
 }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
   asc: vi.fn((col: unknown) => ({ type: "asc", col })),
+  isNull: vi.fn((col: unknown) => ({ type: "isNull", col })),
   sql: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ type: "sql", strings, values })),
 }));
 
 import {
   getMunicipalityLogos,
+  getAllMunicipalityLogosIncludingDeleted,
   getMunicipalityLogoById,
   getMunicipalityLogoByName,
 } from "./municipality-logos";
@@ -48,18 +62,39 @@ const mockLogo = {
 describe("getMunicipalityLogos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSelectWhereOrderBy.mockResolvedValue([mockLogo]);
+  });
+
+  it("returns active logos sorted by name asc, filtering out soft-deleted", async () => {
+    const result = await getMunicipalityLogos();
+    expect(result).toEqual([mockLogo]);
+    expect(mockSelectWhere).toHaveBeenCalled();
+    expect(mockSelectWhereOrderBy).toHaveBeenCalled();
+  });
+
+  it("returns [] on error", async () => {
+    mockSelectWhereOrderBy.mockRejectedValue(new Error("DB error"));
+    const result = await getMunicipalityLogos();
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getAllMunicipalityLogosIncludingDeleted", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
     mockSelectOrderBy.mockResolvedValue([mockLogo]);
   });
 
-  it("returns logos sorted by name asc", async () => {
-    const result = await getMunicipalityLogos();
+  it("returns logos including soft-deleted, sorted by name asc", async () => {
+    const result = await getAllMunicipalityLogosIncludingDeleted();
     expect(result).toEqual([mockLogo]);
+    expect(mockSelectWhere).not.toHaveBeenCalled();
     expect(mockSelectOrderBy).toHaveBeenCalled();
   });
 
   it("returns [] on error", async () => {
     mockSelectOrderBy.mockRejectedValue(new Error("DB error"));
-    const result = await getMunicipalityLogos();
+    const result = await getAllMunicipalityLogosIncludingDeleted();
     expect(result).toEqual([]);
   });
 });

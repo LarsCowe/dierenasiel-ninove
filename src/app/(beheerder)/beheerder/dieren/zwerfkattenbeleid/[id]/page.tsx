@@ -29,6 +29,12 @@ export default async function CampaignDetailPage({ params }: Props) {
     ? await getMunicipalityLogoById(campaign.municipalityLogoId)
     : null;
 
+  // Als de gekoppelde opdrachtgever soft-deleted is, voeg hem toe aan de
+  // picker-opties zodat hij zichtbaar blijft als geselecteerde waarde.
+  const logosForPicker = currentLogo && currentLogo.deletedAt
+    ? [...logos, currentLogo].sort((a, b) => a.name.localeCompare(b.name))
+    : logos;
+
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex items-center justify-between">
@@ -61,7 +67,7 @@ export default async function CampaignDetailPage({ params }: Props) {
         occupiedCages={occupiedCages}
         inspections={inspections}
         attachments={attachments}
-        logos={logos}
+        logos={logosForPicker}
       />
     </div>
   );

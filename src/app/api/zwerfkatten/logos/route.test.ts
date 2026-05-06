@@ -7,12 +7,18 @@ const {
   mockInsertReturning,
   mockInsertValues,
   mockInsert,
+  mockUpdateWhere,
+  mockUpdateSet,
+  mockUpdate,
   mockLogAudit,
   mockGetByName,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn().mockReturnValue({ returning: mockInsertReturning });
   const mockInsert = vi.fn().mockReturnValue({ values: mockInsertValues });
+  const mockUpdateWhere = vi.fn();
+  const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
+  const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
   return {
     mockGetSession: vi.fn(),
     mockHasPermission: vi.fn(),
@@ -20,6 +26,9 @@ const {
     mockInsertReturning,
     mockInsertValues,
     mockInsert,
+    mockUpdateWhere,
+    mockUpdateSet,
+    mockUpdate,
     mockLogAudit: vi.fn(),
     mockGetByName: vi.fn(),
   };
@@ -28,9 +37,12 @@ const {
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/permissions", () => ({ hasPermission: mockHasPermission }));
 vi.mock("@vercel/blob", () => ({ put: mockPut }));
-vi.mock("@/lib/db", () => ({ db: { insert: mockInsert } }));
+vi.mock("@/lib/db", () => ({ db: { insert: mockInsert, update: mockUpdate } }));
 vi.mock("@/lib/db/schema", () => ({
   municipalityLogos: { id: Symbol("municipalityLogos.id") },
+}));
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
 }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("@/lib/queries/municipality-logos", () => ({
@@ -78,12 +90,38 @@ describe("POST /api/zwerfkatten/logos", () => {
     );
   });
 
-  it("rejects duplicate name", async () => {
-    mockGetByName.mockResolvedValue({ id: 5, name: "Ninove" });
+  it("rejects duplicate name (active)", async () => {
+    mockGetByName.mockResolvedValue({ id: 5, name: "Ninove", deletedAt: null });
     const res = await POST(req(file(), "Ninove"));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toContain("bestaat al");
+  });
+
+  it("reactivates soft-deleted opdrachtgever with same name", async () => {
+    mockGetByName.mockResolvedValue({
+      id: 5,
+      name: "Ninove",
+      logoUrl: "https://blob.com/old.png",
+      deletedAt: new Date(),
+    });
+    mockUpdateWhere.mockResolvedValue({});
+    const res = await POST(req(file(), "Ninove"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.id).toBe(5);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockInsert).not.toHaveBeenCalled();
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toHaveProperty("deletedAt", null);
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "municipality_logo.reactivated",
+      "municipality_logo",
+      5,
+      expect.any(Object),
+      expect.any(Object),
+    );
   });
 
   it("accepts svg", async () => {

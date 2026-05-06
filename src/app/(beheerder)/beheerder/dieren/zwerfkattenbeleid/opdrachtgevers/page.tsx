@@ -10,10 +10,10 @@ export default async function LogoLibraryPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-heading text-2xl font-bold text-[#1b4332]">
-            Gemeente-logo's
+            Opdrachtgevers
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Bibliotheek van gemeente-logo's voor zwerfkat-campagnes.
+            Bibliotheek van opdrachtgever-logo's voor zwerfkat-campagnes.
           </p>
         </div>
         <Link
