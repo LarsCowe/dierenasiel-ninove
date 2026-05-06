@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getCampaignById, getCatsAvailableForLinking, getOccupiedCageNumbers, getInspectionsForCampaign, getCampaignAttachments } from "@/lib/queries/stray-cat-campaigns";
+import { getCampaignById, getCatsAvailableForLinking, getOccupiedCageNumbers, getInspectionsForCampaign, getMedicalInspectionsForCampaign, getCampaignAttachments, getCampaignPhotos } from "@/lib/queries/stray-cat-campaigns";
 import { getMunicipalityLogos, getMunicipalityLogoById } from "@/lib/queries/municipality-logos";
 import { getCages } from "@/lib/queries/cages";
 import CampaignDetailForm from "@/components/beheerder/zwerfkatten/CampaignDetailForm";
@@ -15,14 +15,16 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaignId = Number(id);
   if (isNaN(campaignId)) notFound();
 
-  const [campaign, availableCats, occupiedCages, inspections, attachments, opdrachtgevers, cages] = await Promise.all([
+  const [campaign, availableCats, occupiedCages, inspections, medicalInspections, attachments, opdrachtgevers, cages, photos] = await Promise.all([
     getCampaignById(campaignId),
     getCatsAvailableForLinking(),
     getOccupiedCageNumbers(campaignId),
     getInspectionsForCampaign(campaignId),
+    getMedicalInspectionsForCampaign(campaignId),
     getCampaignAttachments(campaignId),
     getMunicipalityLogos(),
     getCages(),
+    getCampaignPhotos(campaignId),
   ]);
 
   if (!campaign) notFound();
@@ -62,9 +64,11 @@ export default async function CampaignDetailPage({ params }: Props) {
         availableCats={availableCats}
         occupiedCages={occupiedCages}
         inspections={inspections}
+        medicalInspections={medicalInspections}
         attachments={attachments}
         opdrachtgevers={opdrachtgevers}
         cages={cages}
+        photos={photos}
       />
     </div>
   );

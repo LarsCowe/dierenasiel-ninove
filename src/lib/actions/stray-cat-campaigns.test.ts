@@ -73,6 +73,7 @@ import {
   completeCampaignAction,
   linkAnimalAction,
   addInspectionAction,
+  setCampaignStatusAction,
 } from "./stray-cat-campaigns";
 
 // Default: logged in beheerder with permission
@@ -152,7 +153,7 @@ describe("deployCagesAction", () => {
     mockGetOccupiedCageNumbers.mockResolvedValue({});
   });
 
-  it("deploys cages and updates status to kooien_geplaatst", async () => {
+  it("slaat kooi-uitzetting op zonder status te wijzigen (manueel beheer)", async () => {
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "open" });
 
     const result = await deployCagesAction({
@@ -163,17 +164,19 @@ describe("deployCagesAction", () => {
 
     expect(result).toEqual({ success: true, data: undefined });
     expect(mockUpdate).toHaveBeenCalled();
-    expect(mockUpdateSet).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cageDeploymentDate: "2026-03-05",
-        cageNumbers: "K1, K2",
-        status: "kooien_geplaatst",
-      }),
-    );
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toMatchObject({
+      cageDeploymentDate: "2026-03-05",
+      cageNumbers: "K1, K2",
+    });
+    // Status mag NIET automatisch gewijzigd worden — dat is nu een
+    // expliciete keuze via setCampaignStatusAction.
+    expect(setArg).not.toHaveProperty("status");
     expect(mockLogAudit).toHaveBeenCalled();
   });
 
-  it("rejects if campaign not in open status", async () => {
+  it("staat kooi-uitzetting toe ongeacht de huidige status", async () => {
+    // Voorheen werd dit geweigerd — nu zijn alle secties altijd editable.
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "kooien_geplaatst" });
 
     const result = await deployCagesAction({
@@ -182,7 +185,7 @@ describe("deployCagesAction", () => {
       cageNumbers: "K1",
     });
 
-    expect(result).toEqual({ success: false, error: "Campagne moet status 'open' hebben" });
+    expect(result).toEqual({ success: true, data: undefined });
   });
 
   it("rejects if campaign not found", async () => {
@@ -237,7 +240,7 @@ describe("registerInspectionAction", () => {
     setupAuth();
   });
 
-  it("registers inspection and updates status to in_behandeling", async () => {
+  it("slaat inspectie op zonder status te wijzigen (manueel beheer)", async () => {
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "kooien_geplaatst" });
 
     const result = await registerInspectionAction({
@@ -248,17 +251,16 @@ describe("registerInspectionAction", () => {
     });
 
     expect(result).toEqual({ success: true, data: undefined });
-    expect(mockUpdateSet).toHaveBeenCalledWith(
-      expect.objectContaining({
-        inspectionDate: "2026-03-10",
-        catDescription: "Cyperse kater",
-        vetName: "Dr. Nadia",
-        status: "in_behandeling",
-      }),
-    );
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toMatchObject({
+      inspectionDate: "2026-03-10",
+      catDescription: "Cyperse kater",
+      vetName: "Dr. Nadia",
+    });
+    expect(setArg).not.toHaveProperty("status");
   });
 
-  it("rejects if campaign not in kooien_geplaatst status", async () => {
+  it("staat inspectie-update toe ongeacht de huidige status", async () => {
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "open" });
 
     const result = await registerInspectionAction({
@@ -268,7 +270,7 @@ describe("registerInspectionAction", () => {
       vetName: "Dr. Nadia",
     });
 
-    expect(result).toEqual({ success: false, error: "Campagne moet status 'kooien_geplaatst' hebben" });
+    expect(result).toEqual({ success: true, data: undefined });
   });
 });
 
@@ -278,7 +280,7 @@ describe("completeCampaignAction", () => {
     setupAuth();
   });
 
-  it("completes campaign and updates status to afgerond", async () => {
+  it("slaat medische resultaten op zonder status te wijzigen (manueel beheer)", async () => {
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "in_behandeling" });
 
     const result = await completeCampaignAction({
@@ -289,17 +291,16 @@ describe("completeCampaignAction", () => {
     });
 
     expect(result).toEqual({ success: true, data: undefined });
-    expect(mockUpdateSet).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fivStatus: "negatief",
-        felvStatus: "negatief",
-        outcome: "gecastreerd_uitgezet",
-        status: "afgerond",
-      }),
-    );
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toMatchObject({
+      fivStatus: "negatief",
+      felvStatus: "negatief",
+      outcome: "gecastreerd_uitgezet",
+    });
+    expect(setArg).not.toHaveProperty("status");
   });
 
-  it("rejects if campaign not in in_behandeling status", async () => {
+  it("staat completion-update toe ongeacht de huidige status", async () => {
     mockGetCampaignById.mockResolvedValue({ id: 1, status: "kooien_geplaatst" });
 
     const result = await completeCampaignAction({
@@ -309,7 +310,7 @@ describe("completeCampaignAction", () => {
       outcome: "gecastreerd_uitgezet",
     });
 
-    expect(result).toEqual({ success: false, error: "Campagne moet status 'in_behandeling' hebben" });
+    expect(result).toEqual({ success: true, data: undefined });
   });
 
   it("rejects invalid fivStatus", async () => {
@@ -323,6 +324,61 @@ describe("completeCampaignAction", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("setCampaignStatusAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupAuth();
+  });
+
+  it("zet de status naar de gekozen waarde", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, status: "open" });
+
+    const result = await setCampaignStatusAction(1, "afgerond");
+
+    expect(result).toEqual({ success: true, data: undefined });
+    const setArg = mockUpdateSet.mock.calls[0]?.[0];
+    expect(setArg).toEqual({ status: "afgerond" });
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "stray_cat_campaign.status_changed",
+      "stray_cat_campaign",
+      1,
+      { status: "open" },
+      { status: "afgerond" },
+    );
+  });
+
+  it("doet niks als status al gelijk is", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, status: "open" });
+
+    const result = await setCampaignStatusAction(1, "open");
+
+    expect(result).toEqual({ success: true, data: undefined });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockLogAudit).not.toHaveBeenCalled();
+  });
+
+  it("weigert ongeldige status", async () => {
+    const result = await setCampaignStatusAction(1, "ongeldig");
+
+    expect(result).toEqual({ success: false, error: "Ongeldige status" });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("weigert ongeldig campagne-ID", async () => {
+    const result = await setCampaignStatusAction(0, "open");
+
+    expect(result).toEqual({ success: false, error: "Ongeldig campagne-ID" });
+  });
+
+  it("weigert wanneer campagne niet bestaat", async () => {
+    mockGetCampaignById.mockResolvedValue(null);
+
+    const result = await setCampaignStatusAction(99, "afgerond");
+
+    expect(result).toEqual({ success: false, error: "Campagne niet gevonden" });
   });
 });
 

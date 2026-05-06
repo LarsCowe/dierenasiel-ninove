@@ -33,9 +33,9 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
-          Inspectie-log
+          Kooi-inspecties
           <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
             {inspections.length}
           </span>
@@ -46,36 +46,40 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
             onClick={() => setShowForm(true)}
             className="rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
           >
-            + Inspectie toevoegen
+            + Kooi-inspectie toevoegen
           </button>
         )}
       </div>
+      <p className="mb-4 text-xs italic text-gray-500">
+        Log van kooi-rondes: medewerkers van het asiel lopen alle uitgezette kooien af om te kijken of er katten gevangen zijn.
+      </p>
 
       {inspections.length === 0 && !showForm && (
         <p className="py-4 text-center text-sm text-gray-400">
-          Nog geen inspecties geregistreerd.
+          Nog geen kooi-inspecties geregistreerd.
         </p>
       )}
 
       {inspections.length > 0 && (
         <ul className="mb-4 divide-y divide-gray-100">
           {inspections.map((entry) => (
-            <li key={entry.id} className="flex items-start gap-3 py-2.5 text-sm">
+            <li
+              key={entry.id}
+              className="grid grid-cols-[7rem_5.5rem_1fr] items-center gap-3 py-2.5 text-sm"
+            >
+              <span className="font-medium text-gray-700 tabular-nums">
+                {entry.inspectionDate}
+              </span>
               <span
-                className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                className={`inline-flex w-fit items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
                   entry.wasSuccessful
                     ? "bg-emerald-100 text-emerald-800"
                     : "bg-gray-100 text-gray-600"
                 }`}
               >
-                {entry.wasSuccessful ? "✓ succesvol" : "— leeg"}
+                {entry.wasSuccessful ? "✓ vangst" : "— leeg"}
               </span>
-              <span className="shrink-0 font-medium text-gray-700">
-                {entry.inspectionDate}
-              </span>
-              {entry.notes && (
-                <span className="flex-1 text-gray-600">{entry.notes}</span>
-              )}
+              <span className="text-gray-600">{entry.notes ?? ""}</span>
             </li>
           ))}
         </ul>
@@ -107,7 +111,7 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
                   name="wasSuccessful"
                   className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                Succesvol (kat in kooi)
+                Vangst (kat in kooi)
               </label>
             </div>
           </div>
@@ -129,7 +133,7 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
               disabled={isPending}
               className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
-              {isPending ? "Bezig..." : "Inspectie opslaan"}
+              {isPending ? "Bezig..." : "Kooi-inspectie opslaan"}
             </button>
             <button
               type="button"

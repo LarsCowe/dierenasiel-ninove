@@ -1,27 +1,21 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { StrayCatCampaign, StrayCatCampaignInspection, ActionResult } from "@/types";
+import type { StrayCatCampaign, StrayCatCampaignInspection, StrayCatCampaignMedicalInspection, ActionResult } from "@/types";
 import {
   deployCagesAction,
-  registerInspectionAction,
-  completeCampaignAction,
   linkAnimalAction,
   updateCampaignBasicsAction,
+  setCampaignStatusAction,
 } from "@/lib/actions/stray-cat-campaigns";
-import {
-  CAMPAIGN_STATUS_LABELS,
-  FIV_FELV_STATUSES,
-  FIV_FELV_STATUS_LABELS,
-  CAMPAIGN_OUTCOMES,
-  CAMPAIGN_OUTCOME_LABELS,
-} from "@/lib/constants";
+import { CAMPAIGN_STATUS_LABELS } from "@/lib/constants";
 import CampaignStatusBadge from "./CampaignStatusBadge";
-import CampaignPhotoUpload from "./CampaignPhotoUpload";
+import CampaignPhotoGallery from "./CampaignPhotoGallery";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
 import InspectionLogSection from "./InspectionLogSection";
-import type { CampaignAttachment } from "@/lib/queries/stray-cat-campaigns";
+import MedicalInspectionsSection from "./MedicalInspectionsSection";
+import type { CampaignAttachment, CampaignPhoto } from "@/lib/queries/stray-cat-campaigns";
 import type { MunicipalityLogo, Cage } from "@/types";
 
 interface Props {
@@ -29,23 +23,16 @@ interface Props {
   availableCats: { id: number; name: string }[];
   occupiedCages: Record<string, number>;
   inspections: StrayCatCampaignInspection[];
+  medicalInspections: StrayCatCampaignMedicalInspection[];
   attachments?: CampaignAttachment[];
   opdrachtgevers?: MunicipalityLogo[];
   cages?: Cage[];
+  photos?: CampaignPhoto[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
   return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
-}
-
-function ReadonlyField({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <dt className="text-sm font-medium text-gray-500">{label}</dt>
-      <dd className="mt-1 text-sm text-gray-900">{value || "—"}</dd>
-    </div>
-  );
 }
 
 // --- Verzoekgegevens (editbaar) sectie ---
@@ -175,61 +162,82 @@ function BasicsSection({
   );
 }
 
-// --- Kooi-uitzetting sectie ---
-async function handleDeployCages(prev: ActionResult | null, formData: FormData) {
-  return deployCagesAction({
-    campaignId: Number(formData.get("campaignId")),
-    cageDeploymentDate: formData.get("cageDeploymentDate") as string,
-    cageNumbers: formData.get("cageNumbers") as string,
-  });
-}
-
+// --- Kooi-uitzetting sectie (auto-save bij elke onChange) ---
 function DeployCagesSection({
   campaignId,
   occupiedCages,
   cages,
+  initialDeploymentDate,
+  initialCageNumbers,
 }: {
   campaignId: number;
   occupiedCages: Record<string, number>;
   cages: Cage[];
+  initialDeploymentDate: string | null;
+  initialCageNumbers: string | null;
 }) {
-  const [state, formAction, isPending] = useActionState(handleDeployCages, null);
-  const [selectedCages, setSelectedCages] = useState<string[]>([]);
   const router = useRouter();
+  const initialList = (initialCageNumbers ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const [selectedCages, setSelectedCages] = useState<string[]>(initialList);
+  const [deploymentDate, setDeploymentDate] = useState<string>(initialDeploymentDate ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state, router]);
+  function persist(nextDate: string, nextCages: string[]) {
+    setError(null);
+    startTransition(async () => {
+      const result = await deployCagesAction({
+        campaignId,
+        cageDeploymentDate: nextDate,
+        cageNumbers: nextCages.join(","),
+      });
+      if (!result.success) {
+        setError(result.error || "Opslaan mislukt");
+      } else {
+        setSavedAt(new Date());
+        router.refresh();
+      }
+    });
+  }
 
-  const toggleCage = (num: string) => {
-    setSelectedCages((prev) =>
-      prev.includes(num) ? prev.filter((x) => x !== num) : [...prev, num],
-    );
-  };
+  function toggleCage(num: string) {
+    const next = selectedCages.includes(num)
+      ? selectedCages.filter((x) => x !== num)
+      : [...selectedCages, num];
+    setSelectedCages(next);
+    persist(deploymentDate, next);
+  }
+
+  function onDateChange(value: string) {
+    setDeploymentDate(value);
+    persist(value, selectedCages);
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="campaignId" value={campaignId} />
-      <input type="hidden" name="cageNumbers" value={selectedCages.join(",")} />
-      {state && !state.success && state.error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</div>
+    <div className="space-y-4">
+      {error && (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>
       )}
       <div>
         <label htmlFor="cageDeploymentDate" className="block text-sm font-medium text-gray-700">
-          Datum kooi-uitzetting *
+          Datum kooi-uitzetting
         </label>
         <input
           type="date"
           id="cageDeploymentDate"
-          name="cageDeploymentDate"
+          value={deploymentDate}
+          onChange={(e) => onDateChange(e.target.value)}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 sm:w-64"
         />
-        <FieldError errors={(state && !state.success ? state.fieldErrors?.cageDeploymentDate : undefined) as string[] | undefined} />
       </div>
       <div>
         <div className="flex items-baseline justify-between">
           <label className="block text-sm font-medium text-gray-700">
-            Kooiennummers * <span className="text-xs font-normal text-gray-500">(meerdere mogelijk)</span>
+            Kooiennummers <span className="text-xs font-normal text-gray-500">(meerdere mogelijk)</span>
           </label>
           <span className="text-xs text-gray-500">
             {selectedCages.length > 0 ? `${selectedCages.length} geselecteerd` : "Geen geselecteerd"}
@@ -244,8 +252,11 @@ function DeployCagesSection({
           {cages.map((cage) => {
             const num = cage.code;
             const occupiedBy = occupiedCages[num];
-            const isOccupied = occupiedBy !== undefined;
             const isSelected = selectedCages.includes(num);
+            // De eigen campagne staat niet in de occupiedCages-map (we filteren
+            // hem uit in getOccupiedCageNumbers), dus we hoeven niet expliciet
+            // te checken of occupiedBy === campaignId.
+            const isOccupied = occupiedBy !== undefined;
             return (
               <label
                 key={cage.id}
@@ -271,199 +282,15 @@ function DeployCagesSection({
             );
           })}
         </div>
-        <FieldError errors={(state && !state.success ? state.fieldErrors?.cageNumbers : undefined) as string[] | undefined} />
       </div>
-      <button
-        type="submit"
-        disabled={isPending || selectedCages.length === 0}
-        className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-      >
-        {isPending ? "Bezig..." : "Kooien uitzetten"}
-      </button>
-    </form>
-  );
-}
-
-// --- Inspectie sectie ---
-async function handleInspection(prev: ActionResult | null, formData: FormData) {
-  return registerInspectionAction({
-    campaignId: Number(formData.get("campaignId")),
-    inspectionDate: formData.get("inspectionDate") as string,
-    catDescription: formData.get("catDescription") as string,
-    vetName: formData.get("vetName") as string,
-    cageAtVet: (formData.get("cageAtVet") as string) || "",
-  });
-}
-
-function InspectionSection({ campaignId }: { campaignId: number }) {
-  const [state, formAction, isPending] = useActionState(handleInspection, null);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state, router]);
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="campaignId" value={campaignId} />
-      {state && !state.success && state.error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</div>
-      )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="inspectionDate" className="block text-sm font-medium text-gray-700">
-            Inspectiedatum *
-          </label>
-          <input
-            type="date"
-            id="inspectionDate"
-            name="inspectionDate"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          />
-          <FieldError errors={(state && !state.success ? state.fieldErrors?.inspectionDate : undefined) as string[] | undefined} />
-        </div>
-        <div>
-          <label htmlFor="vetName" className="block text-sm font-medium text-gray-700">
-            Dierenarts *
-          </label>
-          <input
-            type="text"
-            id="vetName"
-            name="vetName"
-            placeholder="Naam dierenarts"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          />
-          <FieldError errors={(state && !state.success ? state.fieldErrors?.vetName : undefined) as string[] | undefined} />
-        </div>
-      </div>
-      <div>
-        <label htmlFor="catDescription" className="block text-sm font-medium text-gray-700">
-          Katbeschrijving *
-        </label>
-        <textarea
-          id="catDescription"
-          name="catDescription"
-          rows={2}
-          placeholder="Bijv. Cyperse kater, ~2 jaar, geen chip"
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-        />
-        <FieldError errors={(state && !state.success ? state.fieldErrors?.catDescription : undefined) as string[] | undefined} />
-      </div>
-      <div>
-        <label htmlFor="cageAtVet" className="block text-sm font-medium text-gray-700">
-          Kooi bij dierenarts
-        </label>
-        <input
-          type="text"
-          id="cageAtVet"
-          name="cageAtVet"
-          placeholder="Kooiennummer"
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-        />
-        <FieldError errors={(state && !state.success ? state.fieldErrors?.cageAtVet : undefined) as string[] | undefined} />
-      </div>
-      <button
-        type="submit"
-        disabled={isPending}
-        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
-      >
-        {isPending ? "Bezig..." : "Inspectie registreren"}
-      </button>
-    </form>
-  );
-}
-
-// --- Afronding sectie ---
-async function handleComplete(prev: ActionResult | null, formData: FormData) {
-  return completeCampaignAction({
-    campaignId: Number(formData.get("campaignId")),
-    fivStatus: formData.get("fivStatus") as "positief" | "negatief" | "niet_getest",
-    felvStatus: formData.get("felvStatus") as "positief" | "negatief" | "niet_getest",
-    outcome: formData.get("outcome") as "gecastreerd_uitgezet" | "gesteriliseerd_uitgezet" | "geadopteerd",
-    remarks: (formData.get("remarks") as string) || "",
-  });
-}
-
-function CompletionSection({ campaignId }: { campaignId: number }) {
-  const [state, formAction, isPending] = useActionState(handleComplete, null);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state, router]);
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="campaignId" value={campaignId} />
-      {state && !state.success && state.error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</div>
-      )}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label htmlFor="fivStatus" className="block text-sm font-medium text-gray-700">
-            FIV-status *
-          </label>
-          <select
-            id="fivStatus"
-            name="fivStatus"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          >
-            <option value="">Selecteer...</option>
-            {FIV_FELV_STATUSES.map((s) => (
-              <option key={s} value={s}>{FIV_FELV_STATUS_LABELS[s]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="felvStatus" className="block text-sm font-medium text-gray-700">
-            FeLV-status *
-          </label>
-          <select
-            id="felvStatus"
-            name="felvStatus"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          >
-            <option value="">Selecteer...</option>
-            {FIV_FELV_STATUSES.map((s) => (
-              <option key={s} value={s}>{FIV_FELV_STATUS_LABELS[s]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="outcome" className="block text-sm font-medium text-gray-700">
-            Uitkomst *
-          </label>
-          <select
-            id="outcome"
-            name="outcome"
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-          >
-            <option value="">Selecteer...</option>
-            {CAMPAIGN_OUTCOMES.map((o) => (
-              <option key={o} value={o}>{CAMPAIGN_OUTCOME_LABELS[o]}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div>
-        <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">
-          Opmerkingen
-        </label>
-        <textarea
-          id="remarks"
-          name="remarks"
-          rows={2}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-        />
-      </div>
-      <button
-        type="submit"
-        disabled={isPending}
-        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-      >
-        {isPending ? "Bezig..." : "Campagne afronden"}
-      </button>
-    </form>
+      <p className="text-xs italic text-gray-500">
+        {isPending
+          ? "Opslaan..."
+          : savedAt
+            ? `Automatisch bewaard om ${savedAt.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}`
+            : "Wijzigingen worden automatisch bewaard."}
+      </p>
+    </div>
   );
 }
 
@@ -525,23 +352,69 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
   );
 }
 
-// Korte uitleg hoe een campagne in elke status terechtkomt — getoond
-// in een hover-popup naast het status-label.
-const STATUS_HOW_TO_REACH: Record<string, string> = {
-  open: "Initiële status zodra de campagne wordt aangemaakt via 'Nieuwe campagne'.",
-  kooien_geplaatst: "Vul de sectie 'Kooi-uitzetting' in (datum + kooien) en klik op 'Kooien uitzetten'.",
-  in_behandeling: "Vul de sectie 'Inspectie' in (datum, dierenarts, katbeschrijving) en klik op 'Inspectie registreren'.",
-  afgerond: "Vul de sectie 'Medische resultaten & uitkomst' in (FIV/FeLV-status + uitkomst) en klik op 'Campagne afronden'.",
+// --- Status-keuze sectie ---
+// Korte beschrijving van wat elke status betekent (informatief).
+const STATUS_DESCRIPTIONS: Record<string, string> = {
+  open: "Campagne is aangemaakt, nog geen kooien uitgezet.",
+  kooien_geplaatst: "Kooien zijn uitgezet en wachten op vangst.",
+  in_behandeling: "Eén of meer katten gevangen, in opvolging bij dierenarts.",
+  afgerond: "Alle kooien opgehaald en campagne afgesloten.",
 };
 
-// --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], opdrachtgevers = [], cages = [] }: Props) {
-  const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
-  const currentIndex = statusOrder.indexOf(campaign.status);
+const STATUS_OPTIONS = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"] as const;
+
+function StatusSelector({ campaignId, currentStatus }: { campaignId: number; currentStatus: string }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleChange(next: string) {
+    if (next === currentStatus) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await setCampaignStatusAction(campaignId, next);
+      if (!result.success) {
+        setError(result.error || "Status wijzigen mislukt");
+      } else {
+        router.refresh();
+      }
+    });
+  }
 
   return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <label htmlFor="campaign-status" className="text-sm font-medium text-gray-700">
+          Status
+        </label>
+        <select
+          id="campaign-status"
+          value={currentStatus}
+          onChange={(e) => handleChange(e.target.value)}
+          disabled={isPending}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:opacity-50"
+        >
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {CAMPAIGN_STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs italic text-gray-500">
+          {STATUS_DESCRIPTIONS[currentStatus]}
+        </span>
+        {isPending && <span className="text-xs text-gray-400">opslaan...</span>}
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+// --- Hoofd component ---
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, medicalInspections, attachments = [], opdrachtgevers = [], cages = [], photos = [] }: Props) {
+  return (
     <div className="space-y-6">
-      {/* Status stappenbalk */}
+      {/* Header + manuele status-keuze */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[#1b4332]">
@@ -549,41 +422,7 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
           </h2>
           <CampaignStatusBadge status={campaign.status} />
         </div>
-        <div className="flex gap-1">
-          {statusOrder.map((s, i) => {
-            const reached = i <= currentIndex;
-            return (
-              <div
-                key={s}
-                className={`group relative flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
-                  reached
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                <span>{CAMPAIGN_STATUS_LABELS[s as keyof typeof CAMPAIGN_STATUS_LABELS]}</span>
-                <button
-                  type="button"
-                  aria-label={`Hoe bereik je status ${CAMPAIGN_STATUS_LABELS[s as keyof typeof CAMPAIGN_STATUS_LABELS]}?`}
-                  className={`flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[10px] font-bold ${
-                    reached
-                      ? "bg-emerald-200 text-emerald-900 hover:bg-emerald-300"
-                      : "bg-gray-200 text-gray-500 hover:bg-gray-300"
-                  }`}
-                >
-                  i
-                </button>
-                <span
-                  role="tooltip"
-                  className="pointer-events-none invisible absolute top-full z-20 mt-2 w-64 rounded-md bg-gray-900 px-3 py-2 text-left text-xs font-normal leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100"
-                >
-                  {STATUS_HOW_TO_REACH[s]}
-                  <span className="absolute -top-1 left-1/2 -ml-1 h-2 w-2 rotate-45 bg-gray-900" />
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <StatusSelector campaignId={campaign.id} currentStatus={campaign.status} />
       </div>
 
       {/* Verzoekgegevens (editbaar) */}
@@ -592,65 +431,34 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
         <BasicsSection campaign={campaign} opdrachtgevers={opdrachtgevers} />
       </div>
 
-      {/* Foto */}
+      {/* Foto's */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Foto</h3>
-        <CampaignPhotoUpload campaignId={campaign.id} currentPhotoUrl={campaign.photoUrl} />
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+          Foto&apos;s {photos.length > 0 && <span className="ml-1 text-gray-400">({photos.length})</span>}
+        </h3>
+        <CampaignPhotoGallery campaignId={campaign.id} photos={photos} />
       </div>
 
       {/* Mails van gemeente (Story 10.17) */}
       <CampaignEmailAttachments campaignId={campaign.id} attachments={attachments} />
 
-      {/* Kooi-uitzetting */}
+      {/* Kooi-uitzetting — altijd editable */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Kooi-uitzetting</h3>
-        {campaign.status === "open" ? (
-          <DeployCagesSection campaignId={campaign.id} occupiedCages={occupiedCages} cages={cages} />
-        ) : (
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <ReadonlyField label="Datum kooi-uitzetting" value={campaign.cageDeploymentDate} />
-            <ReadonlyField label="Kooiennummers" value={campaign.cageNumbers} />
-          </dl>
-        )}
+        <DeployCagesSection
+          campaignId={campaign.id}
+          occupiedCages={occupiedCages}
+          cages={cages}
+          initialDeploymentDate={campaign.cageDeploymentDate}
+          initialCageNumbers={campaign.cageNumbers}
+        />
       </div>
 
-      {/* Inspectie-log (Story 10.9) — zichtbaar vanaf kooien_geplaatst, onafhankelijk van status-flow */}
-      {currentIndex >= 1 && (
-        <InspectionLogSection campaignId={campaign.id} inspections={inspections} />
-      )}
+      {/* Kooi-inspecties — log van rondes om kooien te controleren */}
+      <InspectionLogSection campaignId={campaign.id} inspections={inspections} />
 
-      {/* Inspectie (alleen zichtbaar vanaf kooien_geplaatst) */}
-      {currentIndex >= 1 && (
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Inspectie</h3>
-          {campaign.status === "kooien_geplaatst" ? (
-            <InspectionSection campaignId={campaign.id} />
-          ) : (
-            <dl className="grid gap-4 sm:grid-cols-2">
-              <ReadonlyField label="Inspectiedatum" value={campaign.inspectionDate} />
-              <ReadonlyField label="Dierenarts" value={campaign.vetName} />
-              <ReadonlyField label="Katbeschrijving" value={campaign.catDescription} />
-              <ReadonlyField label="Kooi bij dierenarts" value={campaign.cageAtVet} />
-            </dl>
-          )}
-        </div>
-      )}
-
-      {/* Medische resultaten & uitkomst (alleen zichtbaar vanaf in_behandeling) */}
-      {currentIndex >= 2 && (
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Medische resultaten & uitkomst</h3>
-          {campaign.status === "in_behandeling" ? (
-            <CompletionSection campaignId={campaign.id} />
-          ) : (
-            <dl className="grid gap-4 sm:grid-cols-3">
-              <ReadonlyField label="FIV-status" value={campaign.fivStatus ? FIV_FELV_STATUS_LABELS[campaign.fivStatus as keyof typeof FIV_FELV_STATUS_LABELS] : null} />
-              <ReadonlyField label="FeLV-status" value={campaign.felvStatus ? FIV_FELV_STATUS_LABELS[campaign.felvStatus as keyof typeof FIV_FELV_STATUS_LABELS] : null} />
-              <ReadonlyField label="Uitkomst" value={campaign.outcome ? CAMPAIGN_OUTCOME_LABELS[campaign.outcome as keyof typeof CAMPAIGN_OUTCOME_LABELS] : null} />
-            </dl>
-          )}
-        </div>
-      )}
+      {/* Medische inspecties — 1 rij per kat naar de dierenarts (CRUD) */}
+      <MedicalInspectionsSection campaignId={campaign.id} inspections={medicalInspections} />
 
       {/* Dier koppelen (alleen bij afgerond + uitkomst = geadopteerd) */}
       {campaign.status === "afgerond" && campaign.outcome === "geadopteerd" && (

@@ -576,6 +576,23 @@ export const cages = pgTable("cages", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
+// Meerdere foto's per zwerfkat-campagne (vervangt het single-photo
+// strayCatCampaigns.photoUrl veld; dat blijft staan voor backwards-compat).
+export const strayCatCampaignPhotos = pgTable("stray_cat_campaign_photos", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id")
+    .notNull()
+    .references(() => strayCatCampaigns.id, { onDelete: "cascade" }),
+  blobUrl: varchar("blob_url", { length: 500 }).notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  uploadedBy: varchar("uploaded_by", { length: 200 }),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_stray_cat_campaign_photos_campaign_id").on(table.campaignId),
+]);
+
 // Story 10.17: .eml-uploads van gemeente per campagne.
 export const strayCatCampaignAttachments = pgTable("stray_cat_campaign_attachments", {
   id: serial("id").primaryKey(),
@@ -590,6 +607,28 @@ export const strayCatCampaignAttachments = pgTable("stray_cat_campaign_attachmen
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_stray_cat_campaign_attachments_campaign_id").on(table.campaignId),
+]);
+
+// Medische inspecties: 1 rij per kat die naar dierenarts gebracht is binnen
+// een campagne. Vervangt de single-cat campaign-level fields (inspectionDate,
+// vetName, catDescription, cageAtVet, fivStatus, felvStatus, outcome).
+// Cascade delete bij verwijderen van de campagne.
+export const strayCatCampaignMedicalInspections = pgTable("stray_cat_campaign_medical_inspections", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id")
+    .notNull()
+    .references(() => strayCatCampaigns.id, { onDelete: "cascade" }),
+  inspectionDate: date("inspection_date").notNull(),
+  vetName: varchar("vet_name", { length: 200 }),
+  catDescription: text("cat_description"),
+  cageAtVet: varchar("cage_at_vet", { length: 100 }),
+  fivStatus: varchar("fiv_status", { length: 20 }),
+  felvStatus: varchar("felv_status", { length: 20 }),
+  outcome: varchar("outcome", { length: 30 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_stray_cat_campaign_medical_inspections_campaign_id").on(table.campaignId),
 ]);
 
 // Story 10.9: log van alle inspectiebezoeken op een campagne (incl. lege).

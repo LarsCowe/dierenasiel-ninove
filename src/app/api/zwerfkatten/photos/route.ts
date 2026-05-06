@@ -1,7 +1,6 @@
-import { put, del } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import { db } from "@/lib/db";
-import { strayCatCampaigns } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { strayCatCampaignPhotos } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
@@ -64,29 +63,34 @@ export async function POST(request: Request) {
   try {
     const blob = await put(path, file, { access: "public" });
 
-    await db
-      .update(strayCatCampaigns)
-      .set({ photoUrl: blob.url })
-      .where(eq(strayCatCampaigns.id, campaignId));
+    const inserted = await db
+      .insert(strayCatCampaignPhotos)
+      .values({
+        campaignId,
+        blobUrl: blob.url,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        uploadedBy: session.email ?? null,
+      })
+      .returning({ id: strayCatCampaignPhotos.id });
 
-    if (campaign.photoUrl) {
-      try {
-        await del(campaign.photoUrl);
-      } catch {
-        // Old blob cleanup is best-effort
-      }
-    }
+    const id = inserted[0]?.id;
 
     await logAudit(
-      "stray_cat_campaign.photo_uploaded",
-      "stray_cat_campaign",
-      campaignId,
+      "stray_cat_campaign.photo_added",
+      "stray_cat_campaign_photo",
+      id,
       null,
-      { photoUrl: blob.url },
+      { campaignId, blobUrl: blob.url, fileName: file.name },
     );
 
-    return NextResponse.json({ success: true, data: { photoUrl: blob.url } });
-  } catch {
+    return NextResponse.json({
+      success: true,
+      data: { id, blobUrl: blob.url, fileName: file.name },
+    });
+  } catch (err) {
+    console.error("upload-photo failed:", err);
     return NextResponse.json(
       { error: "Foto uploaden mislukt. Probeer opnieuw." },
       { status: 500 },

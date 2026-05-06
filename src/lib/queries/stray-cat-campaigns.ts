@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
-import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignAttachments, animals } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignAttachments, strayCatCampaignPhotos, strayCatCampaignMedicalInspections, animals } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte, sql, isNotNull, ne } from "drizzle-orm";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
-import type { StrayCatCampaign, StrayCatCampaignInspection } from "@/types";
+import type { StrayCatCampaign, StrayCatCampaignInspection, StrayCatCampaignMedicalInspection } from "@/types";
 import type { SQL } from "drizzle-orm";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -290,5 +290,82 @@ export async function getCampaignAttachments(campaignId: number): Promise<Campai
   } catch (err) {
     console.error('getCampaignAttachments query failed:', err);
     return [];
+  }
+}
+
+export interface CampaignPhoto {
+  id: number;
+  campaignId: number;
+  blobUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string | null;
+  uploadedBy: string | null;
+  uploadedAt: Date;
+}
+
+/**
+ * Foto's per zwerfkat-campagne (meervoud), nieuwste eerst.
+ */
+export async function getCampaignPhotos(campaignId: number): Promise<CampaignPhoto[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignPhotos)
+      .where(eq(strayCatCampaignPhotos.campaignId, campaignId))
+      .orderBy(desc(strayCatCampaignPhotos.uploadedAt));
+    return rows as CampaignPhoto[];
+  } catch (err) {
+    console.error('getCampaignPhotos query failed:', err);
+    return [];
+  }
+}
+
+export async function getCampaignPhotoById(id: number): Promise<CampaignPhoto | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignPhotos)
+      .where(eq(strayCatCampaignPhotos.id, id))
+      .limit(1);
+    return (rows[0] as CampaignPhoto) ?? null;
+  } catch (err) {
+    console.error('getCampaignPhotoById query failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Medische inspecties per campagne (1 rij per kat), nieuwste eerst.
+ */
+export async function getMedicalInspectionsForCampaign(
+  campaignId: number,
+): Promise<StrayCatCampaignMedicalInspection[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignMedicalInspections)
+      .where(eq(strayCatCampaignMedicalInspections.campaignId, campaignId))
+      .orderBy(desc(strayCatCampaignMedicalInspections.inspectionDate), desc(strayCatCampaignMedicalInspections.id));
+    return rows as StrayCatCampaignMedicalInspection[];
+  } catch (err) {
+    console.error('getMedicalInspectionsForCampaign query failed:', err);
+    return [];
+  }
+}
+
+export async function getMedicalInspectionById(
+  id: number,
+): Promise<StrayCatCampaignMedicalInspection | null> {
+  try {
+    const rows = await db
+      .select()
+      .from(strayCatCampaignMedicalInspections)
+      .where(eq(strayCatCampaignMedicalInspections.id, id))
+      .limit(1);
+    return (rows[0] as StrayCatCampaignMedicalInspection) ?? null;
+  } catch (err) {
+    console.error('getMedicalInspectionById query failed:', err);
+    return null;
   }
 }

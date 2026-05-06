@@ -32,10 +32,25 @@ export const updateCampaignBasicsSchema = z.object({
 
 export type UpdateCampaignBasicsInput = z.infer<typeof updateCampaignBasicsSchema>;
 
+// Auto-save semantiek: zowel datum als kooien-lijst zijn optioneel zodat
+// elke onchange (incl. leeg laten) bewaard kan worden zonder klassieke
+// 'verplicht'-validatie. Datum mag leeg of een geldig JJJJ-MM-DD zijn.
 export const deployCagesSchema = z.object({
   campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
-  cageDeploymentDate: dateString,
-  cageNumbers: z.string().trim().min(1, "Kooiennummers zijn verplicht").max(100, "Kooiennummers mag max 100 tekens zijn"),
+  cageDeploymentDate: z
+    .string()
+    .optional()
+    .default("")
+    .refine(
+      (v) => v === "" || (dateRegex.test(v) && isValidDate(v)),
+      "Ongeldige datumnotatie",
+    ),
+  cageNumbers: z
+    .string()
+    .trim()
+    .max(100, "Kooiennummers mag max 100 tekens zijn")
+    .optional()
+    .default(""),
 });
 
 export type DeployCagesInput = z.infer<typeof deployCagesSchema>;
@@ -76,3 +91,24 @@ export const addInspectionSchema = z.object({
 });
 
 export type AddInspectionInput = z.infer<typeof addInspectionSchema>;
+
+// Medische inspecties (1 per kat) — CRUD.
+export const createMedicalInspectionSchema = z.object({
+  campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
+  inspectionDate: dateString,
+  vetName: z.string().trim().max(200, "Dierenarts mag max 200 tekens zijn").optional().default(""),
+  catDescription: z.string().trim().max(2000, "Katbeschrijving mag max 2000 tekens zijn").optional().default(""),
+  cageAtVet: z.string().trim().max(100, "Kooi bij dierenarts mag max 100 tekens zijn").optional().default(""),
+  fivStatus: z.enum(FIV_FELV_STATUSES).optional().nullable(),
+  felvStatus: z.enum(FIV_FELV_STATUSES).optional().nullable(),
+  outcome: z.enum(CAMPAIGN_OUTCOMES).optional().nullable(),
+  notes: z.string().trim().max(2000, "Notities mag max 2000 tekens zijn").optional().default(""),
+});
+
+export type CreateMedicalInspectionInput = z.infer<typeof createMedicalInspectionSchema>;
+
+export const updateMedicalInspectionSchema = createMedicalInspectionSchema
+  .omit({ campaignId: true })
+  .extend({ id: z.coerce.number().positive("Ongeldig ID") });
+
+export type UpdateMedicalInspectionInput = z.infer<typeof updateMedicalInspectionSchema>;

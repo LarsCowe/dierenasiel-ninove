@@ -14,6 +14,7 @@
     "db:migrate-positions": "tsx src/seed/migrate-kennel-positions.ts",
     "db:cleanup-inactive-kennels": "tsx src/lib/db/backfill/hard-delete-inactive-kennels.ts",
     "db:seed-cages": "tsx src/lib/db/backfill/run-seed-cages.ts",
+    "db:backfill-campaign-photos": "tsx src/lib/db/backfill/run-backfill-campaign-photos.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",

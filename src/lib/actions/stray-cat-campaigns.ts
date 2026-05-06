@@ -5,10 +5,11 @@ import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { strayCatCampaigns, strayCatCampaignInspections } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { getCampaignById, getOccupiedCageNumbers } from "@/lib/queries/stray-cat-campaigns";
+import { getCampaignById, getOccupiedCageNumbers, getMedicalInspectionById } from "@/lib/queries/stray-cat-campaigns";
 import { getMunicipalityLogoByName } from "@/lib/queries/municipality-logos";
+import { CAMPAIGN_STATUSES } from "@/lib/constants";
 import {
   createCampaignSchema,
   updateCampaignBasicsSchema,
@@ -17,6 +18,8 @@ import {
   completeCampaignSchema,
   linkAnimalSchema,
   addInspectionSchema,
+  createMedicalInspectionSchema,
+  updateMedicalInspectionSchema,
 } from "@/lib/validations/stray-cat-campaigns";
 import type { ActionResult } from "@/types";
 
@@ -191,8 +194,6 @@ export async function deployCagesAction(
   try {
     const campaign = await getCampaignById(parsed.data.campaignId);
     if (!campaign) return { success: false, error: "Campagne niet gevonden" };
-    if (campaign.status !== "open")
-      return { success: false, error: "Campagne moet status 'open' hebben" };
 
     // Story 10.7: kooinummers mogen niet reeds in een andere lopende campagne gebruikt worden.
     const requestedCages = parsed.data.cageNumbers
@@ -209,12 +210,14 @@ export async function deployCagesAction(
       }
     }
 
+    const nextDeploymentDate = parsed.data.cageDeploymentDate || null;
+    const nextCageNumbers = parsed.data.cageNumbers || null;
+
     await db
       .update(strayCatCampaigns)
       .set({
-        cageDeploymentDate: parsed.data.cageDeploymentDate,
-        cageNumbers: parsed.data.cageNumbers,
-        status: "kooien_geplaatst",
+        cageDeploymentDate: nextDeploymentDate,
+        cageNumbers: nextCageNumbers,
       })
       .where(eq(strayCatCampaigns.id, parsed.data.campaignId));
 
@@ -222,8 +225,14 @@ export async function deployCagesAction(
       "stray_cat_campaign.cages_deployed",
       "stray_cat_campaign",
       parsed.data.campaignId,
-      { status: "open" },
-      { status: "kooien_geplaatst", cageNumbers: parsed.data.cageNumbers },
+      {
+        cageDeploymentDate: campaign.cageDeploymentDate,
+        cageNumbers: campaign.cageNumbers,
+      },
+      {
+        cageDeploymentDate: nextDeploymentDate,
+        cageNumbers: nextCageNumbers,
+      },
     );
 
     revalidatePath(REVALIDATE_PATH);
@@ -248,8 +257,6 @@ export async function registerInspectionAction(
   try {
     const campaign = await getCampaignById(parsed.data.campaignId);
     if (!campaign) return { success: false, error: "Campagne niet gevonden" };
-    if (campaign.status !== "kooien_geplaatst")
-      return { success: false, error: "Campagne moet status 'kooien_geplaatst' hebben" };
 
     await db
       .update(strayCatCampaigns)
@@ -258,7 +265,6 @@ export async function registerInspectionAction(
         catDescription: parsed.data.catDescription,
         vetName: parsed.data.vetName,
         cageAtVet: parsed.data.cageAtVet || null,
-        status: "in_behandeling",
       })
       .where(eq(strayCatCampaigns.id, parsed.data.campaignId));
 
@@ -266,8 +272,18 @@ export async function registerInspectionAction(
       "stray_cat_campaign.inspection_registered",
       "stray_cat_campaign",
       parsed.data.campaignId,
-      { status: "kooien_geplaatst" },
-      { status: "in_behandeling", vetName: parsed.data.vetName },
+      {
+        inspectionDate: campaign.inspectionDate,
+        vetName: campaign.vetName,
+        catDescription: campaign.catDescription,
+        cageAtVet: campaign.cageAtVet,
+      },
+      {
+        inspectionDate: parsed.data.inspectionDate,
+        vetName: parsed.data.vetName,
+        catDescription: parsed.data.catDescription,
+        cageAtVet: parsed.data.cageAtVet,
+      },
     );
 
     revalidatePath(REVALIDATE_PATH);
@@ -292,8 +308,6 @@ export async function completeCampaignAction(
   try {
     const campaign = await getCampaignById(parsed.data.campaignId);
     if (!campaign) return { success: false, error: "Campagne niet gevonden" };
-    if (campaign.status !== "in_behandeling")
-      return { success: false, error: "Campagne moet status 'in_behandeling' hebben" };
 
     await db
       .update(strayCatCampaigns)
@@ -302,7 +316,6 @@ export async function completeCampaignAction(
         felvStatus: parsed.data.felvStatus,
         outcome: parsed.data.outcome,
         remarks: parsed.data.remarks ?? campaign.remarks,
-        status: "afgerond",
       })
       .where(eq(strayCatCampaigns.id, parsed.data.campaignId));
 
@@ -310,15 +323,66 @@ export async function completeCampaignAction(
       "stray_cat_campaign.completed",
       "stray_cat_campaign",
       parsed.data.campaignId,
-      { status: "in_behandeling" },
-      { status: "afgerond", outcome: parsed.data.outcome },
+      {
+        fivStatus: campaign.fivStatus,
+        felvStatus: campaign.felvStatus,
+        outcome: campaign.outcome,
+      },
+      {
+        fivStatus: parsed.data.fivStatus,
+        felvStatus: parsed.data.felvStatus,
+        outcome: parsed.data.outcome,
+      },
     );
 
     revalidatePath(REVALIDATE_PATH);
     return { success: true, data: undefined };
   } catch (error) {
     console.error("completeCampaignAction failed:", error);
-    return { success: false, error: "Campagne afronden mislukt. Probeer opnieuw." };
+    return { success: false, error: "Medische resultaten opslaan mislukt. Probeer opnieuw." };
+  }
+}
+
+export async function setCampaignStatusAction(
+  campaignId: number,
+  status: string,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  if (!Number.isInteger(campaignId) || campaignId <= 0) {
+    return { success: false, error: "Ongeldig campagne-ID" };
+  }
+  if (!(CAMPAIGN_STATUSES as readonly string[]).includes(status)) {
+    return { success: false, error: "Ongeldige status" };
+  }
+
+  try {
+    const campaign = await getCampaignById(campaignId);
+    if (!campaign) return { success: false, error: "Campagne niet gevonden" };
+    if (campaign.status === status) {
+      return { success: true, data: undefined };
+    }
+
+    await db
+      .update(strayCatCampaigns)
+      .set({ status })
+      .where(eq(strayCatCampaigns.id, campaignId));
+
+    await logAudit(
+      "stray_cat_campaign.status_changed",
+      "stray_cat_campaign",
+      campaignId,
+      { status: campaign.status },
+      { status },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${campaignId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("setCampaignStatusAction failed:", err);
+    return { success: false, error: "Status wijzigen mislukt. Probeer opnieuw." };
   }
 }
 
@@ -402,5 +466,154 @@ export async function addInspectionAction(
   } catch (error) {
     console.error("addInspectionAction failed:", error);
     return { success: false, error: "Inspectie-log toevoegen mislukt. Probeer opnieuw." };
+  }
+}
+
+// --- Medische inspecties (1 per kat) ---
+
+export async function createMedicalInspectionAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult<{ id: number }>> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = createMedicalInspectionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige invoer", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const campaign = await getCampaignById(parsed.data.campaignId);
+    if (!campaign) return { success: false, error: "Campagne niet gevonden" };
+
+    const inserted = await db
+      .insert(strayCatCampaignMedicalInspections)
+      .values({
+        campaignId: parsed.data.campaignId,
+        inspectionDate: parsed.data.inspectionDate,
+        vetName: parsed.data.vetName || null,
+        catDescription: parsed.data.catDescription || null,
+        cageAtVet: parsed.data.cageAtVet || null,
+        fivStatus: parsed.data.fivStatus ?? null,
+        felvStatus: parsed.data.felvStatus ?? null,
+        outcome: parsed.data.outcome ?? null,
+        notes: parsed.data.notes || null,
+      })
+      .returning({ id: strayCatCampaignMedicalInspections.id });
+
+    const id = inserted[0]?.id;
+
+    await logAudit(
+      "stray_cat_campaign.medical_inspection_created",
+      "stray_cat_campaign_medical_inspection",
+      id,
+      null,
+      {
+        campaignId: parsed.data.campaignId,
+        inspectionDate: parsed.data.inspectionDate,
+        vetName: parsed.data.vetName,
+        outcome: parsed.data.outcome,
+      },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${parsed.data.campaignId}`);
+    return { success: true, data: { id } };
+  } catch (err) {
+    console.error("createMedicalInspectionAction failed:", err);
+    return { success: false, error: "Medische inspectie aanmaken mislukt. Probeer opnieuw." };
+  }
+}
+
+export async function updateMedicalInspectionAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = updateMedicalInspectionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Ongeldige invoer", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const existing = await getMedicalInspectionById(parsed.data.id);
+    if (!existing) return { success: false, error: "Medische inspectie niet gevonden" };
+
+    await db
+      .update(strayCatCampaignMedicalInspections)
+      .set({
+        inspectionDate: parsed.data.inspectionDate,
+        vetName: parsed.data.vetName || null,
+        catDescription: parsed.data.catDescription || null,
+        cageAtVet: parsed.data.cageAtVet || null,
+        fivStatus: parsed.data.fivStatus ?? null,
+        felvStatus: parsed.data.felvStatus ?? null,
+        outcome: parsed.data.outcome ?? null,
+        notes: parsed.data.notes || null,
+      })
+      .where(eq(strayCatCampaignMedicalInspections.id, parsed.data.id));
+
+    await logAudit(
+      "stray_cat_campaign.medical_inspection_updated",
+      "stray_cat_campaign_medical_inspection",
+      parsed.data.id,
+      {
+        inspectionDate: existing.inspectionDate,
+        vetName: existing.vetName,
+        outcome: existing.outcome,
+      },
+      {
+        inspectionDate: parsed.data.inspectionDate,
+        vetName: parsed.data.vetName,
+        outcome: parsed.data.outcome,
+      },
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${existing.campaignId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("updateMedicalInspectionAction failed:", err);
+    return { success: false, error: "Medische inspectie bijwerken mislukt. Probeer opnieuw." };
+  }
+}
+
+export async function deleteMedicalInspectionAction(
+  id: number,
+): Promise<ActionResult> {
+  const auth = await requireAuth();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return { success: false, error: "Ongeldig ID" };
+  }
+
+  try {
+    const existing = await getMedicalInspectionById(id);
+    if (!existing) return { success: false, error: "Medische inspectie niet gevonden" };
+
+    await db
+      .delete(strayCatCampaignMedicalInspections)
+      .where(eq(strayCatCampaignMedicalInspections.id, id));
+
+    await logAudit(
+      "stray_cat_campaign.medical_inspection_deleted",
+      "stray_cat_campaign_medical_inspection",
+      id,
+      {
+        campaignId: existing.campaignId,
+        inspectionDate: existing.inspectionDate,
+        vetName: existing.vetName,
+      },
+      null,
+    );
+
+    revalidatePath(REVALIDATE_PATH);
+    revalidatePath(`${REVALIDATE_PATH}/${existing.campaignId}`);
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("deleteMedicalInspectionAction failed:", err);
+    return { success: false, error: "Medische inspectie verwijderen mislukt. Probeer opnieuw." };
   }
 }
