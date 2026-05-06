@@ -96,6 +96,7 @@ export async function getDistinctMunicipalities(): Promise<string[]> {
 
 export interface CampaignReportFilters {
   municipality?: string;
+  status?: string;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -120,10 +121,13 @@ export interface CampaignReportResult {
 export async function getCampaignReport(
   filters: CampaignReportFilters = {},
 ): Promise<CampaignReportResult> {
-  const { municipality, dateFrom, dateTo } = filters;
+  const { municipality, status, dateFrom, dateTo } = filters;
 
   const conditions: SQL[] = [];
   if (municipality) conditions.push(eq(strayCatCampaigns.municipality, municipality));
+  if (status && (CAMPAIGN_STATUSES as readonly string[]).includes(status)) {
+    conditions.push(eq(strayCatCampaigns.status, status));
+  }
   if (dateFrom && isValidDate(dateFrom)) conditions.push(gte(strayCatCampaigns.requestDate, dateFrom));
   if (dateTo && isValidDate(dateTo)) conditions.push(lte(strayCatCampaigns.requestDate, dateTo));
 

@@ -4,11 +4,10 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/permissions";
 import { getCampaignReport, getDistinctMunicipalities } from "@/lib/queries/stray-cat-campaigns";
 import { CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
-import DateRangeFilter from "@/components/beheerder/rapporten/DateRangeFilter";
 import ReportExportBar from "@/components/beheerder/rapporten/ReportExportBar";
 import CampaignStatusBadge from "@/components/beheerder/zwerfkatten/CampaignStatusBadge";
+import CampaignFilters from "@/components/beheerder/zwerfkatten/CampaignFilters";
 import { exportStrayCatCsvWrapper } from "./actions";
-import GemeenteFilter from "./GemeenteFilter";
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -23,11 +22,12 @@ export default async function ZwerfkattenRapportPage({ searchParams }: Props) {
   const params = await searchParams;
 
   const municipality = typeof params.gemeente === "string" ? params.gemeente : undefined;
+  const status = typeof params.status === "string" ? params.status : undefined;
   const dateFrom = typeof params.van === "string" ? params.van : undefined;
   const dateTo = typeof params.tot === "string" ? params.tot : undefined;
 
   const [{ campaigns, stats }, municipalities] = await Promise.all([
-    getCampaignReport({ municipality, dateFrom, dateTo }),
+    getCampaignReport({ municipality, status, dateFrom, dateTo }),
     getDistinctMunicipalities(),
   ]);
 
@@ -56,11 +56,9 @@ export default async function ZwerfkattenRapportPage({ searchParams }: Props) {
         </Suspense>
       </div>
 
-      {/* Filters */}
-      <Suspense fallback={<div className="h-16 animate-pulse rounded-lg bg-gray-100" />}>
-        <DateRangeFilter>
-          <GemeenteFilter municipalities={municipalities} />
-        </DateRangeFilter>
+      {/* Filters — identiek aan campagnes-overzicht (gemeente, status, van, tot) */}
+      <Suspense fallback={<div className="h-10 animate-pulse rounded-lg bg-gray-100" />}>
+        <CampaignFilters municipalities={municipalities} />
       </Suspense>
 
       {/* Statistieken */}

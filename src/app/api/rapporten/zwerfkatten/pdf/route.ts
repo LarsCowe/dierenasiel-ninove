@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const rawFrom = params.get("van") || undefined;
     const rawTo = params.get("tot") || undefined;
     const rawMunicipality = params.get("gemeente") || undefined;
+    const rawStatus = params.get("status") || undefined;
 
     const dateFrom = rawFrom && datePattern.test(rawFrom) ? rawFrom : undefined;
     const dateTo = rawTo && datePattern.test(rawTo) ? rawTo : undefined;
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     const [{ campaigns, stats }, logo] = await Promise.all([
       getCampaignReport({
         municipality: rawMunicipality,
+        status: rawStatus,
         dateFrom,
         dateTo,
       }),
@@ -34,19 +36,50 @@ export async function GET(request: NextRequest) {
 
     // Pre-fetch het logo en geef als data-URL door — @react-pdf/renderer kan
     // remote URLs niet altijd betrouwbaar laden in de server-context, een data-URL
-    // werkt overal. SVG's slaan we over (niet ondersteund door <Image>).
+    // werkt overal. We baseren het mime-type op de response Content-Type (met
+    // URL-extensie als fallback) zodat Vercel-Blob URLs met random suffix ook
+    // herkend worden. Soft-deleted opdrachtgevers blijven werken: de blob is
+    // bij soft-delete bewust behouden en getMunicipalityLogoByName filtert
+    // niet op deletedAt.
     let logoDataUrl: string | undefined;
     if (logo?.logoUrl) {
       try {
-        const url = new URL(logo.logoUrl);
-        const ext = url.pathname.toLowerCase();
-        if (/\.(png|jpe?g|webp)$/.test(ext)) {
-          const res = await fetch(logo.logoUrl);
-          if (res.ok) {
-            const arrayBuffer = await res.arrayBuffer();
-            const mime = res.headers.get("content-type") ?? "image/png";
+        const res = await fetch(logo.logoUrl);
+        if (!res.ok) {
+          console.error(
+            `logo fetch HTTP ${res.status} voor "${logo.name}": ${logo.logoUrl}`,
+          );
+        } else {
+          const arrayBuffer = await res.arrayBuffer();
+          const headerMime = res.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+          const urlExtMatch = (() => {
+            try {
+              const u = new URL(logo.logoUrl);
+              return u.pathname.toLowerCase().match(/\.(png|jpe?g|webp|svg)$/);
+            } catch {
+              return null;
+            }
+          })();
+          const extMime = (() => {
+            switch (urlExtMatch?.[1]) {
+              case "png": return "image/png";
+              case "jpg":
+              case "jpeg": return "image/jpeg";
+              case "webp": return "image/webp";
+              case "svg": return "image/svg+xml";
+              default: return undefined;
+            }
+          })();
+          const mime = headerMime && headerMime.startsWith("image/") ? headerMime : extMime;
+          // @react-pdf/renderer's <Image> ondersteunt PNG, JPEG en WebP. SVG
+          // vergt een aparte <Svg>-flow en wordt overgeslagen.
+          if (mime && /^image\/(png|jpe?g|webp)$/.test(mime)) {
             const base64 = Buffer.from(arrayBuffer).toString("base64");
             logoDataUrl = `data:${mime};base64,${base64}`;
+          } else {
+            console.warn(
+              `logo "${logo.name}" overgeslagen — niet-ondersteund mime: ${mime ?? "onbekend"}`,
+            );
           }
         }
       } catch (err) {

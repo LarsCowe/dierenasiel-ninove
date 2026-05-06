@@ -7,6 +7,7 @@ export async function exportStrayCatCsvWrapper(
 ): Promise<{ success: true; data: string } | { success: false; error?: string }> {
   return exportStrayCatCampaignsCsv({
     municipality: filters.gemeente || undefined,
+    status: filters.status || undefined,
     dateFrom: filters.van || undefined,
     dateTo: filters.tot || undefined,
   });
