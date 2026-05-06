@@ -16,14 +16,13 @@ import {
   FIV_FELV_STATUS_LABELS,
   CAMPAIGN_OUTCOMES,
   CAMPAIGN_OUTCOME_LABELS,
-  CAGE_NUMBERS,
 } from "@/lib/constants";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoUpload from "./CampaignPhotoUpload";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
 import InspectionLogSection from "./InspectionLogSection";
 import type { CampaignAttachment } from "@/lib/queries/stray-cat-campaigns";
-import type { MunicipalityLogo } from "@/types";
+import type { MunicipalityLogo, Cage } from "@/types";
 
 interface Props {
   campaign: StrayCatCampaign;
@@ -32,6 +31,7 @@ interface Props {
   inspections: StrayCatCampaignInspection[];
   attachments?: CampaignAttachment[];
   opdrachtgevers?: MunicipalityLogo[];
+  cages?: Cage[];
 }
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -187,9 +187,11 @@ async function handleDeployCages(prev: ActionResult | null, formData: FormData) 
 function DeployCagesSection({
   campaignId,
   occupiedCages,
+  cages,
 }: {
   campaignId: number;
   occupiedCages: Record<string, number>;
+  cages: Cage[];
 }) {
   const [state, formAction, isPending] = useActionState(handleDeployCages, null);
   const [selectedCages, setSelectedCages] = useState<string[]>([]);
@@ -234,13 +236,19 @@ function DeployCagesSection({
           </span>
         </div>
         <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-5">
-          {CAGE_NUMBERS.map((num) => {
+          {cages.length === 0 && (
+            <p className="col-span-full text-xs text-gray-500">
+              Nog geen kooien in de bibliotheek. Voeg er één toe via de kooi-bibliotheek.
+            </p>
+          )}
+          {cages.map((cage) => {
+            const num = cage.code;
             const occupiedBy = occupiedCages[num];
             const isOccupied = occupiedBy !== undefined;
             const isSelected = selectedCages.includes(num);
             return (
               <label
-                key={num}
+                key={cage.id}
                 title={isOccupied ? `In gebruik in campagne #${occupiedBy}` : undefined}
                 className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm ${
                   isOccupied
@@ -517,8 +525,17 @@ function AnimalLinkSection({ campaignId, availableCats, currentLinkedAnimalId }:
   );
 }
 
+// Korte uitleg hoe een campagne in elke status terechtkomt — getoond
+// in een hover-popup naast het status-label.
+const STATUS_HOW_TO_REACH: Record<string, string> = {
+  open: "Initiële status zodra de campagne wordt aangemaakt via 'Nieuwe campagne'.",
+  kooien_geplaatst: "Vul de sectie 'Kooi-uitzetting' in (datum + kooien) en klik op 'Kooien uitzetten'.",
+  in_behandeling: "Vul de sectie 'Inspectie' in (datum, dierenarts, katbeschrijving) en klik op 'Inspectie registreren'.",
+  afgerond: "Vul de sectie 'Medische resultaten & uitkomst' in (FIV/FeLV-status + uitkomst) en klik op 'Campagne afronden'.",
+};
+
 // --- Hoofd component ---
-export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], opdrachtgevers = [] }: Props) {
+export default function CampaignDetailForm({ campaign, availableCats, occupiedCages, inspections, attachments = [], opdrachtgevers = [], cages = [] }: Props) {
   const statusOrder = ["open", "kooien_geplaatst", "in_behandeling", "afgerond"];
   const currentIndex = statusOrder.indexOf(campaign.status);
 
@@ -533,18 +550,39 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
           <CampaignStatusBadge status={campaign.status} />
         </div>
         <div className="flex gap-1">
-          {statusOrder.map((s, i) => (
-            <div
-              key={s}
-              className={`flex-1 rounded-md px-3 py-1.5 text-center text-xs font-medium ${
-                i <= currentIndex
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              {CAMPAIGN_STATUS_LABELS[s as keyof typeof CAMPAIGN_STATUS_LABELS]}
-            </div>
-          ))}
+          {statusOrder.map((s, i) => {
+            const reached = i <= currentIndex;
+            return (
+              <div
+                key={s}
+                className={`group relative flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+                  reached
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-gray-100 text-gray-400"
+                }`}
+              >
+                <span>{CAMPAIGN_STATUS_LABELS[s as keyof typeof CAMPAIGN_STATUS_LABELS]}</span>
+                <button
+                  type="button"
+                  aria-label={`Hoe bereik je status ${CAMPAIGN_STATUS_LABELS[s as keyof typeof CAMPAIGN_STATUS_LABELS]}?`}
+                  className={`flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[10px] font-bold ${
+                    reached
+                      ? "bg-emerald-200 text-emerald-900 hover:bg-emerald-300"
+                      : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                  }`}
+                >
+                  i
+                </button>
+                <span
+                  role="tooltip"
+                  className="pointer-events-none invisible absolute top-full z-20 mt-2 w-64 rounded-md bg-gray-900 px-3 py-2 text-left text-xs font-normal leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100"
+                >
+                  {STATUS_HOW_TO_REACH[s]}
+                  <span className="absolute -top-1 left-1/2 -ml-1 h-2 w-2 rotate-45 bg-gray-900" />
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -567,7 +605,7 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Kooi-uitzetting</h3>
         {campaign.status === "open" ? (
-          <DeployCagesSection campaignId={campaign.id} occupiedCages={occupiedCages} />
+          <DeployCagesSection campaignId={campaign.id} occupiedCages={occupiedCages} cages={cages} />
         ) : (
           <dl className="grid gap-4 sm:grid-cols-2">
             <ReadonlyField label="Datum kooi-uitzetting" value={campaign.cageDeploymentDate} />

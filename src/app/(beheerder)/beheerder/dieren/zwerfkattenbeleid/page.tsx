@@ -68,6 +68,12 @@ export default async function ZwerfkattenbeleidPage({ searchParams }: Props) {
             Beheer Opdrachtgevers
           </Link>
           <Link
+            href="/beheerder/dieren/zwerfkattenbeleid/kooien"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Beheer Kooien
+          </Link>
+          <Link
             href="/beheerder/dieren/zwerfkattenbeleid/nieuw"
             className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
           >

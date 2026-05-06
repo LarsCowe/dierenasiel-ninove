@@ -1,4 +1,4 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, municipalityLogos, veterinaryDiagnoses, blacklistEntries } from "@/lib/db/schema";
+import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, municipalityLogos, veterinaryDiagnoses, blacklistEntries, cages } from "@/lib/db/schema";
 import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
@@ -253,6 +253,9 @@ export type NewMunicipalityLogo = typeof municipalityLogos.$inferInsert;
 
 export type VeterinaryDiagnosis = typeof veterinaryDiagnoses.$inferSelect;
 export type NewVeterinaryDiagnosis = typeof veterinaryDiagnoses.$inferInsert;
+
+export type Cage = typeof cages.$inferSelect;
+export type NewCage = typeof cages.$inferInsert;
 
 export type BlacklistEntry = typeof blacklistEntries.$inferSelect;
 export type NewBlacklistEntry = typeof blacklistEntries.$inferInsert;

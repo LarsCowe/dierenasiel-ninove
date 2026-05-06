@@ -564,6 +564,18 @@ export const veterinaryDiagnoses = pgTable("veterinary_diagnoses", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Beheerbare kooien-bibliotheek voor zwerfkat-campagnes (vervangt
+// hardcoded CAGE_NUMBERS-constant). Codes (bv. K1) zijn unique.
+// deletedAt: soft-delete zodat historische campagnes hun kooi-referentie
+// blijven herkennen wanneer een kooi uit de bibliotheek wordt verwijderd.
+export const cages = pgTable("cages", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
 // Story 10.17: .eml-uploads van gemeente per campagne.
 export const strayCatCampaignAttachments = pgTable("stray_cat_campaign_attachments", {
   id: serial("id").primaryKey(),
