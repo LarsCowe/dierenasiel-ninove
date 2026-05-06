@@ -73,7 +73,7 @@ describe("verifySession", () => {
     }
   });
 
-  it("creates a token with 8 hour expiry, not 7 days", async () => {
+  it("creates a token with 7 day expiry", async () => {
     const now = Math.floor(Date.now() / 1000);
 
     const token = await createSession({
@@ -92,12 +92,10 @@ describe("verifySession", () => {
       Buffer.from(parts[1], "base64url").toString("utf8")
     );
 
-    const expectedExpiry = now + 8 * 60 * 60; // 8 hours from now
-    const sevenDayExpiry = now + 7 * 24 * 60 * 60; // 7 days from now
+    const expectedExpiry = now + 7 * 24 * 60 * 60; // 7 days from now
 
-    // exp should be ~8 hours from now (within 5 second tolerance)
-    expect(claims.exp).toBeGreaterThan(now);
+    // exp should be ~7 days from now (within 5 second tolerance)
+    expect(claims.exp).toBeGreaterThan(now + 6 * 24 * 60 * 60);
     expect(claims.exp).toBeLessThanOrEqual(expectedExpiry + 5);
-    expect(claims.exp).toBeLessThan(sevenDayExpiry); // Must NOT be 7 days
   });
 });

@@ -7,8 +7,8 @@ const SECRET = new TextEncoder().encode(
 
 const SESSION_COOKIE = "session";
 const GUEST_COOKIE = "guest-mode";
-export const SESSION_DURATION = 8 * 60 * 60; // 8 hours in seconds
-const REFRESH_THRESHOLD = 60 * 60; // Refresh if < 1 hour remaining
+export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
+const REFRESH_THRESHOLD = 24 * 60 * 60; // Refresh if < 1 day remaining
 
 export interface SessionPayload {
   userId: number;
@@ -49,7 +49,7 @@ export async function setSessionCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_DURATION, // 8 hours
+    maxAge: SESSION_DURATION, // 7 days
     path: "/",
   });
 }
