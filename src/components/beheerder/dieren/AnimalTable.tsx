@@ -4,6 +4,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { speciesLabel, statusLabel, formatDate } from "@/lib/utils";
 import { getIntakeReasonLabel } from "@/lib/constants";
+import { useClickableRow } from "@/lib/hooks/useClickableRow";
 import type { Animal } from "@/types";
 
 interface AnimalTableProps {
@@ -35,6 +36,62 @@ const COLUMNS: Column[] = [
   { key: "intakeDate", label: "Intake datum", sortable: true },
   { key: "intakeReason", label: "Reden van intake", sortable: false },
 ];
+
+function AnimalRow({ animal }: { animal: Animal }) {
+  const rowProps = useClickableRow(`/beheerder/dieren/${animal.id}`, {
+    ariaLabel: `Bekijk ${animal.name}`,
+  });
+  return (
+    <tr
+      {...rowProps}
+      className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+    >
+      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium">
+        <Link
+          href={`/beheerder/dieren/${animal.id}`}
+          className="text-[#1b4332] hover:underline"
+        >
+          {animal.name}
+        </Link>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+        {speciesLabel(animal.species)}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+        {animal.breed || "—"}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm">
+        <span
+          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            STATUS_COLORS[animal.status ?? ""] ?? "bg-gray-100 text-gray-800"
+          }`}
+        >
+          {statusLabel(animal.status ?? "")}
+        </span>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm">
+        <span
+          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            animal.isAvailableForAdoption
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {animal.isAvailableForAdoption ? "Ja" : "Nee"}
+        </span>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+        {animal.kennelId ?? "—"}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+        {animal.intakeDate ? formatDate(animal.intakeDate) : "—"}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+        {getIntakeReasonLabel(animal.intakeReason)}
+      </td>
+    </tr>
+  );
+}
 
 export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTableProps) {
   const router = useRouter();
@@ -88,51 +145,7 @@ export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTablePro
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
           {animals.map((animal) => (
-            <tr key={animal.id} className="hover:bg-gray-50">
-              <td className="whitespace-nowrap px-4 py-3 text-sm font-medium">
-                <Link
-                  href={`/beheerder/dieren/${animal.id}`}
-                  className="text-[#1b4332] hover:underline"
-                >
-                  {animal.name}
-                </Link>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                {speciesLabel(animal.species)}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                {animal.breed || "\u2014"}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    STATUS_COLORS[animal.status ?? ""] ?? "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {statusLabel(animal.status ?? "")}
-                </span>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    animal.isAvailableForAdoption
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {animal.isAvailableForAdoption ? "Ja" : "Nee"}
-                </span>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                {animal.kennelId ?? "\u2014"}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                {animal.intakeDate ? formatDate(animal.intakeDate) : "\u2014"}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                {getIntakeReasonLabel(animal.intakeReason)}
-              </td>
-            </tr>
+            <AnimalRow key={animal.id} animal={animal} />
           ))}
         </tbody>
       </table>

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import type { StrayCatCampaign, MunicipalityLogo } from "@/types";
 import { CAMPAIGN_OUTCOME_LABELS } from "@/lib/constants";
+import { useClickableRow } from "@/lib/hooks/useClickableRow";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 
 interface Props {
@@ -11,9 +11,53 @@ interface Props {
   logoById?: Record<number, MunicipalityLogo>;
 }
 
-export default function CampaignTable({ campaigns, logoById = {} }: Props) {
-  const router = useRouter();
+function CampaignRow({
+  campaign,
+  logoById,
+}: {
+  campaign: StrayCatCampaign;
+  logoById: Record<number, MunicipalityLogo>;
+}) {
+  const rowProps = useClickableRow(`/beheerder/dieren/zwerfkattenbeleid/${campaign.id}`, {
+    ariaLabel: `Bekijk campagne ${campaign.municipality} ${campaign.requestDate}`,
+  });
+  return (
+    <tr
+      {...rowProps}
+      className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+    >
+      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-[#1b4332]">
+        {campaign.requestDate}
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-700">
+        <div className="flex items-center gap-2">
+          {campaign.municipalityLogoId && logoById[campaign.municipalityLogoId] && (
+            <Image
+              src={logoById[campaign.municipalityLogoId].logoUrl}
+              alt={logoById[campaign.municipalityLogoId].name}
+              width={24}
+              height={24}
+              unoptimized
+              className="h-6 w-6 shrink-0 rounded object-contain"
+            />
+          )}
+          <span>{campaign.municipality}</span>
+        </div>
+      </td>
+      <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">{campaign.address}</td>
+      <td className="px-4 py-3 text-sm">
+        <CampaignStatusBadge status={campaign.status} />
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-700">
+        {campaign.outcome
+          ? CAMPAIGN_OUTCOME_LABELS[campaign.outcome as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? campaign.outcome
+          : "—"}
+      </td>
+    </tr>
+  );
+}
 
+export default function CampaignTable({ campaigns, logoById = {} }: Props) {
   if (campaigns.length === 0) {
     return (
       <div className="rounded-lg border border-gray-100 bg-white p-8 text-center shadow-sm">
@@ -21,16 +65,6 @@ export default function CampaignTable({ campaigns, logoById = {} }: Props) {
       </div>
     );
   }
-
-  const navigate = (href: string, event: React.MouseEvent | React.KeyboardEvent) => {
-    // Respecteer Ctrl/Cmd/middle-click voor "open in nieuw tabblad".
-    const mouseEvent = event as React.MouseEvent;
-    if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.button === 1) {
-      window.open(href, "_blank", "noopener,noreferrer");
-      return;
-    }
-    router.push(href);
-  };
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-100 bg-white shadow-sm">
@@ -45,55 +79,9 @@ export default function CampaignTable({ campaigns, logoById = {} }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
-          {campaigns.map((campaign) => {
-            const href = `/beheerder/dieren/zwerfkattenbeleid/${campaign.id}`;
-            return (
-              <tr
-                key={campaign.id}
-                tabIndex={0}
-                role="link"
-                onClick={(e) => navigate(href, e)}
-                onAuxClick={(e) => {
-                  if (e.button === 1) navigate(href, e);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    navigate(href, e);
-                  }
-                }}
-                className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
-              >
-                <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-[#1b4332]">
-                  {campaign.requestDate}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-                  <div className="flex items-center gap-2">
-                    {campaign.municipalityLogoId && logoById[campaign.municipalityLogoId] && (
-                      <Image
-                        src={logoById[campaign.municipalityLogoId].logoUrl}
-                        alt={logoById[campaign.municipalityLogoId].name}
-                        width={24}
-                        height={24}
-                        unoptimized
-                        className="h-6 w-6 shrink-0 rounded object-contain"
-                      />
-                    )}
-                    <span>{campaign.municipality}</span>
-                  </div>
-                </td>
-                <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">{campaign.address}</td>
-                <td className="px-4 py-3 text-sm">
-                  <CampaignStatusBadge status={campaign.status} />
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700">
-                  {campaign.outcome
-                    ? CAMPAIGN_OUTCOME_LABELS[campaign.outcome as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? campaign.outcome
-                    : "—"}
-                </td>
-              </tr>
-            );
-          })}
+          {campaigns.map((campaign) => (
+            <CampaignRow key={campaign.id} campaign={campaign} logoById={logoById} />
+          ))}
         </tbody>
       </table>
     </div>

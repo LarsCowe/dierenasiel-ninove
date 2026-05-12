@@ -1,8 +1,50 @@
+"use client";
+
 import Link from "next/link";
+import { useClickableRow } from "@/lib/hooks/useClickableRow";
 import type { VetInspectionReport, TreatedAnimalEntry, EuthanizedAnimalEntry } from "@/types";
 
 interface Props {
   reports: VetInspectionReport[];
+}
+
+function ReportRow({ report }: { report: VetInspectionReport }) {
+  const treatedCount = ((report.animalsTreated ?? []) as TreatedAnimalEntry[]).length;
+  const euthanizedCount = ((report.animalsEuthanized ?? []) as EuthanizedAnimalEntry[]).length;
+  const rowProps = useClickableRow(`/beheerder/medisch/bezoekrapport/${report.id}`, {
+    ariaLabel: `Bekijk bezoekrapport ${report.vetName} ${report.visitDate}`,
+  });
+
+  return (
+    <tr
+      {...rowProps}
+      className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+    >
+      <td className="px-4 py-3 font-medium text-gray-800">{new Date(report.visitDate + "T00:00:00").toLocaleDateString("nl-BE")}</td>
+      <td className="px-4 py-3 text-gray-600">{report.vetName}</td>
+      <td className="px-4 py-3 text-center text-gray-600">{treatedCount}</td>
+      <td className="px-4 py-3 text-center text-gray-600">{euthanizedCount}</td>
+      <td className="px-4 py-3">
+        {report.vetSignature ? (
+          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            Ondertekend
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+            Concept
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <Link
+          href={`/beheerder/medisch/bezoekrapport/${report.id}`}
+          className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+        >
+          Bekijken
+        </Link>
+      </td>
+    </tr>
+  );
 }
 
 export default function InspectionReportList({ reports }: Props) {
@@ -30,38 +72,9 @@ export default function InspectionReportList({ reports }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {reports.map((report) => {
-            const treatedCount = ((report.animalsTreated ?? []) as TreatedAnimalEntry[]).length;
-            const euthanizedCount = ((report.animalsEuthanized ?? []) as EuthanizedAnimalEntry[]).length;
-
-            return (
-              <tr key={report.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{new Date(report.visitDate + "T00:00:00").toLocaleDateString("nl-BE")}</td>
-                <td className="px-4 py-3 text-gray-600">{report.vetName}</td>
-                <td className="px-4 py-3 text-center text-gray-600">{treatedCount}</td>
-                <td className="px-4 py-3 text-center text-gray-600">{euthanizedCount}</td>
-                <td className="px-4 py-3">
-                  {report.vetSignature ? (
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                      Ondertekend
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                      Concept
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/beheerder/medisch/bezoekrapport/${report.id}`}
-                    className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
-                  >
-                    Bekijken
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
+          {reports.map((report) => (
+            <ReportRow key={report.id} report={report} />
+          ))}
         </tbody>
       </table>
     </div>

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 import AnimalTable from "./AnimalTable";
 import type { Animal } from "@/types";
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: mockPush }),
   usePathname: () => "/beheerder/dieren",
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -55,6 +57,39 @@ function mockAnimal(overrides: Partial<Animal> = {}): Animal {
   } as Animal;
 }
 
+describe("AnimalTable — klikbare rij (Story 10.22)", () => {
+  beforeEach(() => mockPush.mockClear());
+
+  it("navigeert naar detail-pagina bij klik op een data-cel", () => {
+    render(<AnimalTable animals={[mockAnimal({ id: 42, name: "Rex" })]} />);
+    const dataRow = screen.getAllByRole("link", { name: /Rex/ }).find((el) => el.tagName === "TR")!;
+    const cells = within(dataRow).getAllByRole("cell");
+    fireEvent.click(cells[1]); // Soort-cel, niet de naam-link
+    expect(mockPush).toHaveBeenCalledWith("/beheerder/dieren/42");
+  });
+
+  it("navigeert bij Enter op gefocuste rij", () => {
+    render(<AnimalTable animals={[mockAnimal({ id: 7, name: "Rex" })]} />);
+    const dataRow = screen.getAllByRole("link", { name: /Rex/ }).find((el) => el.tagName === "TR")!;
+    fireEvent.keyDown(dataRow, { key: "Enter" });
+    expect(mockPush).toHaveBeenCalledWith("/beheerder/dieren/7");
+  });
+
+  it("header-rij is niet klikbaar (alleen data-rijen)", () => {
+    render(<AnimalTable animals={[mockAnimal()]} />);
+    const headerRow = screen.getByRole("row"); // alleen header heeft role=row
+    fireEvent.click(headerRow);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("rij heeft role='link', tabIndex=0 en aria-label met de diernaam", () => {
+    render(<AnimalTable animals={[mockAnimal({ id: 9, name: "Mimi" })]} />);
+    const dataRow = screen.getAllByRole("link", { name: /Mimi/ }).find((el) => el.tagName === "TR")!;
+    expect(dataRow.getAttribute("tabindex")).toBe("0");
+    expect(dataRow.getAttribute("aria-label")).toMatch(/Mimi/);
+  });
+});
+
 describe("AnimalTable — 'Reden van intake' kolom (Story 10.21)", () => {
   it("toont de nieuwe kolom direct na 'Intake datum' (positie 8)", () => {
     render(<AnimalTable animals={[mockAnimal()]} />);
@@ -75,12 +110,12 @@ describe("AnimalTable — 'Reden van intake' kolom (Story 10.21)", () => {
     ];
     render(<AnimalTable animals={animals} />);
 
-    const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(within(rows[0]).getByText("Afstand door eigenaar")).toBeInTheDocument();
-    expect(within(rows[1]).getByText("Inbeslagname (IBN)")).toBeInTheDocument();
-    expect(within(rows[2]).getByText("Vondeling")).toBeInTheDocument();
+    const dataRows = screen.getAllByRole("link").filter((el) => el.tagName === "TR");
+    expect(within(dataRows[0]).getByText("Afstand door eigenaar")).toBeInTheDocument();
+    expect(within(dataRows[1]).getByText("Inbeslagname (IBN)")).toBeInTheDocument();
+    expect(within(dataRows[2]).getByText("Vondeling")).toBeInTheDocument();
     // Dier zonder reden toont '—'
-    const reasonCell4 = within(rows[3]).getAllByRole("cell").at(-1);
+    const reasonCell4 = within(dataRows[3]).getAllByRole("cell").at(-1);
     expect(reasonCell4?.textContent?.trim()).toBe("—");
   });
 });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { computeReviewResult } from "@/lib/utils/review-result";
 import { hardDeleteAdoptionCandidate } from "@/lib/actions/adoption-candidates";
+import { useClickableRow } from "@/lib/hooks/useClickableRow";
 import type { AdoptionCandidateWithAnimal } from "@/lib/queries/adoption-candidates";
 
 interface Props {
@@ -30,6 +31,95 @@ type SortKey = "naam" | "dier" | "beoordeling" | "datum";
 type SortDir = "asc" | "desc";
 
 const RESULT_ORDER: Record<string, number> = { geschikt: 0, misschien: 1, niet_weerhouden: 2 };
+
+function CandidateRow({
+  candidate,
+  deleting,
+  onDelete,
+}: {
+  candidate: AdoptionCandidateWithAnimal;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const reviewResult = computeReviewResult(
+    candidate.reviewMartine,
+    candidate.reviewNathalie,
+    candidate.reviewSven,
+  );
+  const resultBadge = reviewResult ? RESULT_BADGES[reviewResult] : null;
+  const reviewCount = [candidate.reviewMartine, candidate.reviewNathalie, candidate.reviewSven].filter((r) => r && r !== "in_beraad").length;
+  const rowProps = useClickableRow(`/beheerder/adoptie/${candidate.id}`, {
+    ariaLabel: `Bekijk ${candidate.firstName} ${candidate.lastName}`,
+  });
+
+  return (
+    <tr
+      {...rowProps}
+      className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+    >
+      <td className="px-3 py-3">
+        <div className="flex items-center gap-1.5">
+          {candidate.blacklistMatch && (
+            <span className="text-red-600" title="Zwarte lijst overeenkomst">&#9873;</span>
+          )}
+          <span className="font-medium text-gray-800">
+            {candidate.firstName} {candidate.lastName}
+          </span>
+        </div>
+        <div className="text-xs text-gray-400">{candidate.email}</div>
+      </td>
+      <td className="px-3 py-3">
+        {candidate.animalName ? (
+          <span className="text-sm text-gray-700">{candidate.animalName}</span>
+        ) : (
+          <span className="text-xs text-gray-400">-</span>
+        )}
+        {candidate.species && (
+          <span className="ml-1 text-xs text-gray-400">
+            ({candidate.species === "hond" ? "H" : "K"})
+          </span>
+        )}
+      </td>
+      <td className="px-3 py-3">
+        {resultBadge ? (
+          <div>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${resultBadge.className}`}>
+              {resultBadge.label}
+            </span>
+            <span className="ml-1 text-xs text-gray-400">{reviewCount}/3</span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">{reviewCount > 0 ? `${reviewCount}/3` : "-"}</span>
+        )}
+      </td>
+      <td className="px-3 py-3 text-gray-600">
+        <div>{new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
+        <div className="text-xs text-gray-400">{new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</div>
+      </td>
+      <td className="px-3 py-3 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/beheerder/adoptie/${candidate.id}`}
+            className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+          >
+            Bekijken
+          </Link>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={deleting}
+            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+            title="Definitief verwijderen"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function AdoptionCandidateList({ candidates, activeCategory }: Props) {
   const router = useRouter();
@@ -176,80 +266,14 @@ export default function AdoptionCandidateList({ candidates, activeCategory }: Pr
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {sorted.map((candidate) => {
-                const reviewResult = computeReviewResult(
-                  candidate.reviewMartine,
-                  candidate.reviewNathalie,
-                  candidate.reviewSven,
-                );
-                const resultBadge = reviewResult ? RESULT_BADGES[reviewResult] : null;
-                const reviewCount = [candidate.reviewMartine, candidate.reviewNathalie, candidate.reviewSven].filter((r) => r && r !== "in_beraad").length;
-
-                return (
-                  <tr key={candidate.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1.5">
-                        {candidate.blacklistMatch && (
-                          <span className="text-red-600" title="Zwarte lijst overeenkomst">&#9873;</span>
-                        )}
-                        <span className="font-medium text-gray-800">
-                          {candidate.firstName} {candidate.lastName}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-400">{candidate.email}</div>
-                    </td>
-                    <td className="px-3 py-3">
-                      {candidate.animalName ? (
-                        <span className="text-sm text-gray-700">{candidate.animalName}</span>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                      {candidate.species && (
-                        <span className="ml-1 text-xs text-gray-400">
-                          ({candidate.species === "hond" ? "H" : "K"})
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">
-                      {resultBadge ? (
-                        <div>
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${resultBadge.className}`}>
-                            {resultBadge.label}
-                          </span>
-                          <span className="ml-1 text-xs text-gray-400">{reviewCount}/3</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">{reviewCount > 0 ? `${reviewCount}/3` : "-"}</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-gray-600">
-                      <div>{new Date(candidate.createdAt).toLocaleDateString("nl-BE", { day: "2-digit", month: "2-digit", year: "numeric" })}</div>
-                      <div className="text-xs text-gray-400">{new Date(candidate.createdAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}</div>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/beheerder/adoptie/${candidate.id}`}
-                          className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
-                        >
-                          Bekijken
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(candidate.id, `${candidate.firstName} ${candidate.lastName}`)}
-                          disabled={isPending && deletingId === candidate.id}
-                          className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                          title="Definitief verwijderen"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {sorted.map((candidate) => (
+                <CandidateRow
+                  key={candidate.id}
+                  candidate={candidate}
+                  deleting={isPending && deletingId === candidate.id}
+                  onDelete={() => handleDelete(candidate.id, `${candidate.firstName} ${candidate.lastName}`)}
+                />
+              ))}
             </tbody>
           </table>
         </div>

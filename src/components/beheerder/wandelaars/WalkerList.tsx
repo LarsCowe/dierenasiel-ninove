@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useClickableRow } from "@/lib/hooks/useClickableRow";
 import type { Walker } from "@/types";
 
 interface Props {
@@ -20,6 +23,42 @@ const STATUS_FILTERS = [
   { value: "rejected", label: "Afgewezen" },
   { value: "inactive", label: "Inactief" },
 ];
+
+function WalkerRow({ walker }: { walker: Walker }) {
+  const badge = STATUS_BADGES[walker.status] ?? STATUS_BADGES.pending;
+  const rowProps = useClickableRow(`/beheerder/wandelaars/${walker.id}`, {
+    ariaLabel: `Bekijk ${walker.firstName} ${walker.lastName}`,
+  });
+  return (
+    <tr
+      {...rowProps}
+      className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+    >
+      <td className="px-4 py-3 font-medium text-gray-800">
+        {walker.firstName} {walker.lastName}
+      </td>
+      <td className="px-4 py-3 text-gray-600">{walker.email}</td>
+      <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">{walker.phone}</td>
+      <td className="px-4 py-3 font-mono text-xs text-gray-500">{walker.barcode || "-"}</td>
+      <td className="px-4 py-3">
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}>
+          {badge.label}
+        </span>
+      </td>
+      <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">
+        {new Date(walker.createdAt).toLocaleDateString("nl-BE")}
+      </td>
+      <td className="px-4 py-3 text-right">
+        <Link
+          href={`/beheerder/wandelaars/${walker.id}`}
+          className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+        >
+          Bekijken
+        </Link>
+      </td>
+    </tr>
+  );
+}
 
 export default function WalkerList({ walkers, activeStatus }: Props) {
   return (
@@ -67,35 +106,9 @@ export default function WalkerList({ walkers, activeStatus }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {walkers.map((walker) => {
-                const badge = STATUS_BADGES[walker.status] ?? STATUS_BADGES.pending;
-                return (
-                  <tr key={walker.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-800">
-                      {walker.firstName} {walker.lastName}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{walker.email}</td>
-                    <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">{walker.phone}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{walker.barcode || "-"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">
-                      {new Date(walker.createdAt).toLocaleDateString("nl-BE")}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/beheerder/wandelaars/${walker.id}`}
-                        className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
-                      >
-                        Bekijken
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
+              {walkers.map((walker) => (
+                <WalkerRow key={walker.id} walker={walker} />
+              ))}
             </tbody>
           </table>
         </div>
