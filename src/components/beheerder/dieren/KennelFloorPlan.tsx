@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 
@@ -11,11 +11,15 @@ interface KennelFloorPlanProps {
   editingKennelId?: number | null;
   // Geselecteerde kennel (voor detail-paneel rechts) — gelift naar parent.
   selectedKennelId?: number | null;
+  // Story 10.24: kennel waar een gezocht dier zit → amber pulse + auto-scroll.
+  highlightedKennelId?: number | null;
   onSelectKennel?: (kennel: Kennel) => void;
   // Story 10.19+: laag-filter linksboven op grondplan.
   activeLayer?: number;
   availableLayers?: number[];
   onLayerChange?: (layer: number) => void;
+  // Story 10.24: extra UI links van de legende op dezelfde regel (zoekfunctie).
+  searchSlot?: ReactNode;
 }
 
 function getOccupancyColor(count: number, capacity: number): string {
@@ -36,14 +40,27 @@ export default function KennelFloorPlan({
   animalsByKennel,
   editingKennelId = null,
   selectedKennelId = null,
+  highlightedKennelId = null,
   onSelectKennel,
   activeLayer,
   availableLayers,
   onLayerChange,
+  searchSlot,
 }: KennelFloorPlanProps) {
   const positioned = occupancy.filter(
     (o) => o.kennel.posX !== null && o.kennel.posY !== null && o.kennel.posW !== null && o.kennel.posH !== null,
   );
+
+  // Story 10.24: ref-map voor scroll-naar-kennel bij zoekfunctie.
+  const tileRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    if (highlightedKennelId === null) return;
+    const el = tileRefs.current.get(highlightedKennelId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    }
+  }, [highlightedKennelId, activeLayer]);
 
   // Sven heeft soms hokken die op een hogere laag staan — toon altijd minstens
   // de gangbare set 1/2/3 zodat hij snel een nieuwe laag kan activeren.
@@ -56,6 +73,10 @@ export default function KennelFloorPlan({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4 text-sm">
+        {searchSlot}
+        {searchSlot && (
+          <span aria-hidden="true" className="hidden h-5 w-px bg-gray-300 sm:block" />
+        )}
         <div className="flex items-center gap-2">
           <span className="inline-block h-4 w-4 rounded border border-emerald-600 bg-emerald-400/60" />
           <span>Leeg</span>
@@ -111,7 +132,12 @@ export default function KennelFloorPlan({
             animals={animalsByKennel[kennel.id] ?? []}
             isEditing={editingKennelId === kennel.id}
             isSelected={selectedKennelId === kennel.id}
+            isHighlighted={highlightedKennelId === kennel.id}
             onSelect={onSelectKennel}
+            registerRef={(el) => {
+              if (el) tileRefs.current.set(kennel.id, el);
+              else tileRefs.current.delete(kennel.id);
+            }}
           />
         ))}
       </div>
@@ -125,10 +151,12 @@ interface KennelTileProps {
   animals: Animal[];
   isEditing: boolean;
   isSelected: boolean;
+  isHighlighted?: boolean;
   onSelect?: (kennel: Kennel) => void;
+  registerRef?: (el: HTMLButtonElement | null) => void;
 }
 
-function KennelTile({ kennel, count, animals, isEditing, isSelected, onSelect }: KennelTileProps) {
+function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlighted = false, onSelect, registerRef }: KennelTileProps) {
   const x = num(kennel.posX)!;
   const y = num(kennel.posY)!;
   const w = num(kennel.posW)!;
@@ -158,17 +186,20 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, onSelect }:
 
   return (
     <button
+      ref={registerRef}
       type="button"
       onClick={() => onSelect?.(kennel)}
       aria-label={`Kennel ${kennel.code}: ${count} van ${kennel.capacity} bezet`}
       className={`absolute overflow-hidden rounded border-2 text-xs font-bold transition-all ${
         hasPhoto ? "bg-white" : colorClasses
       } ${
-        isEditing
-          ? "ring-2 ring-blue-500 ring-offset-1 animate-pulse"
-          : isSelected
-            ? "ring-2 ring-blue-500 ring-offset-1"
-            : ""
+        isHighlighted
+          ? "ring-4 ring-amber-400 ring-offset-1 animate-pulse"
+          : isEditing
+            ? "ring-2 ring-blue-500 ring-offset-1 animate-pulse"
+            : isSelected
+              ? "ring-2 ring-blue-500 ring-offset-1"
+              : ""
       }`}
       style={{
         left: `${x}%`,

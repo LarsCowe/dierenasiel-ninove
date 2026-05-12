@@ -71,7 +71,7 @@ export default function KennelCreateForm({ defaultLayer = 1 }: Props = {}) {
         className={`flex w-full items-center justify-between px-4 py-2 text-left ${open ? "border-b border-sky-200" : ""}`}
       >
         <span className="text-sm font-medium text-sky-800">
-          + Nieuw vak toevoegen
+          + Nieuwe kennel toevoegen
         </span>
         <span className="text-xs text-sky-700">{open ? "−" : "+"}</span>
       </button>
