@@ -233,6 +233,52 @@ describe("animalIntakeSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  // Story 10.23: sterilisatie/castratie — datum + door-asiel
+  it("accepts intake without isNeutered/neuteredDate/neuteredByShelter", () => {
+    const result = animalIntakeSchema.safeParse(validIntake);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isNeutered).toBe(false);
+      expect(result.data.neuteredDate).toBeUndefined();
+      expect(result.data.neuteredByShelter).toBeUndefined();
+    }
+  });
+
+  it("accepts intake with isNeutered=true and full sterilisatie details", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      isNeutered: true,
+      neuteredDate: "2024-03-15",
+      neuteredByShelter: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isNeutered).toBe(true);
+      expect(result.data.neuteredDate).toBe("2024-03-15");
+      expect(result.data.neuteredByShelter).toBe(true);
+    }
+  });
+
+  it("accepts intake with isNeutered=true but no datum/bron (Story 10.23)", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      isNeutered: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts neuteredByShelter=false (al gedaan vóór intake)", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      isNeutered: true,
+      neuteredByShelter: false,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.neuteredByShelter).toBe(false);
+    }
+  });
 });
 
 const validUpdate = {
@@ -348,6 +394,50 @@ describe("animalUpdateSchema", () => {
     for (const reason of ["vondeling", "overig"]) {
       const result = animalUpdateSchema.safeParse({ ...validUpdate, intakeReason: reason });
       expect(result.success).toBe(false);
+    }
+  });
+
+  // Story 10.23: sterilisatie/castratie — datum + door-asiel in update-schema
+  it("accepts update with neuteredDate + neuteredByShelter (Story 10.23)", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      isNeutered: true,
+      neuteredDate: "2024-03-15",
+      neuteredByShelter: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.neuteredDate).toBe("2024-03-15");
+      expect(result.data.neuteredByShelter).toBe(true);
+    }
+  });
+
+  it("accepts empty neuteredDate as literal '' in update (Story 10.23)", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      neuteredDate: "",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts update without sterilisatie velden (defaults blijven)", () => {
+    const result = animalUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.neuteredDate).toBeUndefined();
+      expect(result.data.neuteredByShelter).toBeUndefined();
+    }
+  });
+
+  it("accepts neuteredByShelter=false in update", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      isNeutered: true,
+      neuteredByShelter: false,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.neuteredByShelter).toBe(false);
     }
   });
 });

@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import AnimalEditForm from "./AnimalEditForm";
 import type { Animal } from "@/types";
 
 vi.mock("@/lib/actions/animals", () => ({
   updateAnimal: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
 }));
 
 function mockAnimal(overrides: Partial<Animal> = {}): Animal {
@@ -19,6 +23,8 @@ function mockAnimal(overrides: Partial<Animal> = {}): Animal {
     gender: "reu",
     dateOfBirth: null,
     isNeutered: false,
+    neuteredDate: null,
+    neuteredByShelter: null,
     description: null,
     shortDescription: null,
     imageUrl: null,
@@ -90,5 +96,61 @@ describe("AnimalEditForm — intake reason dropdown (Story 10.21)", () => {
   it("preselecteert de lege placeholder wanneer intakeReason null is", () => {
     render(<AnimalEditForm animal={mockAnimal({ intakeReason: null })} />);
     expect(getReasonSelect().value).toBe("");
+  });
+});
+
+describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
+  function getIsNeuteredCheckbox(): HTMLInputElement {
+    return screen.getByLabelText("Gesteriliseerd / Gecastreerd") as HTMLInputElement;
+  }
+
+  it("toont GEEN datum/bron-velden wanneer isNeutered=false", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isNeutered: false })} />);
+    expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
+    expect(screen.queryByLabelText(/Door het asiel/i)).toBeNull();
+  });
+
+  it("toont datum + bron-velden wanneer isNeutered=true", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isNeutered: true })} />);
+    expect(screen.getByLabelText(/Datum sterilisatie/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Door het asiel/i)).toBeInTheDocument();
+  });
+
+  it("toont velden zodra de gebruiker isNeutered aanvinkt", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isNeutered: false })} />);
+    expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
+    fireEvent.click(getIsNeuteredCheckbox());
+    expect(screen.getByLabelText(/Datum sterilisatie/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Door het asiel/i)).toBeInTheDocument();
+  });
+
+  it("pre-fillt datum en door-asiel uit het dier", () => {
+    render(
+      <AnimalEditForm
+        animal={mockAnimal({
+          isNeutered: true,
+          neuteredDate: "2024-03-15",
+          neuteredByShelter: true,
+        })}
+      />,
+    );
+    const dateInput = screen.getByLabelText(/Datum sterilisatie/i) as HTMLInputElement;
+    const byShelterCheckbox = screen.getByLabelText(/Door het asiel/i) as HTMLInputElement;
+    expect(dateInput.value).toBe("2024-03-15");
+    expect(byShelterCheckbox.checked).toBe(true);
+  });
+
+  it("door-asiel checkbox is unchecked wanneer neuteredByShelter=false", () => {
+    render(
+      <AnimalEditForm
+        animal={mockAnimal({
+          isNeutered: true,
+          neuteredDate: "2024-03-15",
+          neuteredByShelter: false,
+        })}
+      />,
+    );
+    const byShelterCheckbox = screen.getByLabelText(/Door het asiel/i) as HTMLInputElement;
+    expect(byShelterCheckbox.checked).toBe(false);
   });
 });

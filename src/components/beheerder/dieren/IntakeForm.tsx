@@ -43,6 +43,7 @@ export default function IntakeForm() {
   const [species, setSpecies] = useState("");
   const [intakeReason, setIntakeReason] = useState("");
   const [isPickedUp, setIsPickedUp] = useState(false);
+  const [isNeutered, setIsNeutered] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function IntakeForm() {
       setSpecies("");
       setIntakeReason("");
       setIsPickedUp(false);
+      setIsNeutered(false);
     }
   }, [state]);
 
@@ -424,6 +426,62 @@ export default function IntakeForm() {
                   <FieldError errors={fieldErrors?.["intakeMetadata.betrokkenInstanties"]} />
                 </div>
               )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sterilisatie / Castratie — Story 10.23 */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="font-heading text-lg font-bold text-[#1b4332]">
+          Sterilisatie / Castratie
+        </h2>
+
+        <div className="mt-4 flex items-center gap-2">
+          <input type="hidden" name="isNeutered" value="false" />
+          <input
+            type="checkbox"
+            id="isNeutered"
+            name="isNeutered"
+            value="true"
+            checked={isNeutered}
+            onChange={(e) => setIsNeutered(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          />
+          <label htmlFor="isNeutered" className="text-sm text-gray-700">
+            Gesteriliseerd / Gecastreerd
+          </label>
+        </div>
+
+        {isNeutered && (
+          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="neuteredDate" className="block text-sm font-medium text-gray-700">
+                  Datum sterilisatie/castratie
+                </label>
+                <input
+                  type="date"
+                  id="neuteredDate"
+                  name="neuteredDate"
+                  className={INPUT_NORMAL}
+                />
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center gap-2 pb-2">
+                  <input type="hidden" name="neuteredByShelter" value="false" />
+                  <input
+                    type="checkbox"
+                    id="neuteredByShelter"
+                    name="neuteredByShelter"
+                    value="true"
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="neuteredByShelter" className="text-sm text-gray-700">
+                    Door het asiel uitgevoerd
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}

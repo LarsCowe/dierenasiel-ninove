@@ -309,6 +309,36 @@ describe("createAnimalIntake", () => {
       }),
     );
   });
+
+  // Story 10.23: sterilisatie/castratie — datum + door-asiel bij intake
+  it("saves isNeutered, neuteredDate, neuteredByShelter when provided at intake", async () => {
+    await createAnimalIntake(null, makeFormData({
+      ...validFormData,
+      isNeutered: "true",
+      neuteredDate: "2024-03-15",
+      neuteredByShelter: "false",
+    }));
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: true,
+        neuteredDate: "2024-03-15",
+        neuteredByShelter: false,
+      }),
+    );
+  });
+
+  it("saves isNeutered=false with null neuteredDate/neuteredByShelter when omitted", async () => {
+    await createAnimalIntake(null, makeFormData(validFormData));
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: false,
+        neuteredDate: null,
+        neuteredByShelter: null,
+      }),
+    );
+  });
 });
 
 const existingAnimal = {
@@ -467,5 +497,89 @@ describe("updateAnimal", () => {
     await updateAnimal(null, makeFormData(updateFormData));
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren");
+  });
+
+  // Story 10.23: voorkom stale UI op detail-pagina door óók die path te invalideren.
+  it("revalidates the animal detail page after update", async () => {
+    await updateAnimal(null, makeFormData({ ...updateFormData, id: "42" }));
+
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/beheerder/dieren/42");
+  });
+
+  // Story 10.23: sterilisatie/castratie — datum + door-asiel
+  it("saves neuteredDate and neuteredByShelter when isNeutered is true", async () => {
+    await updateAnimal(null, makeFormData({
+      ...updateFormData,
+      isNeutered: "true",
+      neuteredDate: "2024-03-15",
+      neuteredByShelter: "true",
+    }));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: true,
+        neuteredDate: "2024-03-15",
+        neuteredByShelter: true,
+      }),
+    );
+  });
+
+  it("wist neuteredDate en neuteredByShelter wanneer isNeutered uitgevinkt wordt", async () => {
+    // Sven-feedback 2026-05-12: bij heraanvinken mag de oude datum/bron NIET
+    // weer verschijnen — uitvinken moet die velden actief wissen.
+    await updateAnimal(null, makeFormData({
+      ...updateFormData,
+      isNeutered: "false",
+    }));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: false,
+        neuteredDate: null,
+        neuteredByShelter: null,
+      }),
+    );
+  });
+
+  it("saves neuteredByShelter=false (al gedaan vóór intake) when explicitly set", async () => {
+    await updateAnimal(null, makeFormData({
+      ...updateFormData,
+      isNeutered: "true",
+      neuteredDate: "2023-08-01",
+      neuteredByShelter: "false",
+    }));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: true,
+        neuteredDate: "2023-08-01",
+        neuteredByShelter: false,
+      }),
+    );
+  });
+
+  it("BUG-REPRO: parses isNeutered correctly when form sends BOTH hidden 'false' AND checkbox 'true' (real browser behavior)", async () => {
+    // Real browser form submission with <input type="hidden" value="false" /> +
+    // <input type="checkbox" value="true" checked /> creates TWO entries for the same name.
+    // formData.get() returns the first ("false"), which previously broke the parsing.
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append("isNeutered", "false"); // hidden fallback first
+    fd.append("isNeutered", "true"); // checkbox value when checked
+    fd.append("neuteredDate", "2024-03-15");
+    fd.append("neuteredByShelter", "false"); // hidden fallback
+    fd.append("neuteredByShelter", "true"); // checkbox value when checked
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: true,
+        neuteredDate: "2024-03-15",
+        neuteredByShelter: true,
+      }),
+    );
   });
 });

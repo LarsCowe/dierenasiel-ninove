@@ -39,6 +39,8 @@ export const animals = pgTable("animals", {
   gender: varchar("gender", { length: 20 }).notNull(),
   dateOfBirth: date("date_of_birth"),
   isNeutered: boolean("is_neutered").default(false),
+  neuteredDate: date("neutered_date"),
+  neuteredByShelter: boolean("neutered_by_shelter"),
   description: text("description").notNull(),
   shortDescription: varchar("short_description", { length: 300 }),
   imageUrl: varchar("image_url", { length: 500 }),

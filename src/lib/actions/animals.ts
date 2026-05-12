@@ -34,6 +34,10 @@ export async function createAnimalIntake(
       }
     : undefined;
 
+  // Use getAll().includes for hidden+checkbox patterns: real browser sends
+  // TWO entries (hidden 'false' first, checkbox 'true' second when checked).
+  // get() returns first ('false'); getAll().includes('true') is robust for both.
+  const isNeutered = formData.getAll("isNeutered").includes("true");
   const raw = {
     name: (formData.get("name") as string) || "",
     species: formData.get("species") as string,
@@ -47,6 +51,9 @@ export async function createAnimalIntake(
     intakeReason,
     description: (formData.get("description") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
+    isNeutered,
+    neuteredDate: isNeutered ? (formData.get("neuteredDate") as string) || undefined : undefined,
+    neuteredByShelter: isNeutered ? formData.getAll("neuteredByShelter").includes("true") : undefined,
     isPickedUpByShelter: isPickedUp,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
     pvNr: (formData.get("pvNr") as string) || undefined,
@@ -88,6 +95,9 @@ export async function createAnimalIntake(
         intakeReason: parsed.data.intakeReason || null,
         description: parsed.data.description || "",
         shortDescription: parsed.data.shortDescription || null,
+        isNeutered: parsed.data.isNeutered,
+        neuteredDate: parsed.data.neuteredDate || null,
+        neuteredByShelter: parsed.data.neuteredByShelter ?? null,
         isPickedUpByShelter: parsed.data.isPickedUpByShelter,
         intakeMetadata: parsed.data.intakeMetadata || null,
         dossierNr: parsed.data.dossierNr || null,
@@ -139,6 +149,9 @@ export async function updateAnimal(
     return { success: false, error: permCheck.error };
   }
 
+  // Use getAll().includes for hidden+checkbox patterns: real browser sends
+  // TWO entries (hidden 'false' first, checkbox 'true' second when checked).
+  const isNeuteredFlag = formData.getAll("isNeutered").includes("true");
   const raw = {
     id: formData.get("id"),
     name: (formData.get("name") as string) || "",
@@ -150,7 +163,9 @@ export async function updateAnimal(
     intakeDate: (formData.get("intakeDate") as string) || undefined,
     intakeReason: (formData.get("intakeReason") as string) || undefined,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
-    isNeutered: formData.get("isNeutered") === "true",
+    isNeutered: isNeuteredFlag,
+    neuteredDate: isNeuteredFlag ? (formData.get("neuteredDate") as string) || undefined : undefined,
+    neuteredByShelter: isNeuteredFlag ? formData.getAll("neuteredByShelter").includes("true") : undefined,
     description: (formData.get("description") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
     identificationNr: (formData.get("identificationNr") as string) || undefined,
@@ -176,36 +191,48 @@ export async function updateAnimal(
     if (!oldAnimal) return { success: false, error: "Dier niet gevonden" };
 
     const slug = slugify(parsed.data.name);
+    const baseSet: Record<string, unknown> = {
+      name: parsed.data.name,
+      slug,
+      aliasName: parsed.data.aliasName || sql`null`,
+      gender: parsed.data.gender,
+      breed: parsed.data.breed || sql`null`,
+      color: parsed.data.color || sql`null`,
+      dateOfBirth: parsed.data.dateOfBirth || sql`null`,
+      intakeDate: parsed.data.intakeDate || sql`null`,
+      intakeReason: parsed.data.intakeReason || sql`null`,
+      dossierNr: parsed.data.dossierNr || sql`null`,
+      isNeutered: parsed.data.isNeutered,
+      description: parsed.data.description || sql`null`,
+      shortDescription: parsed.data.shortDescription || sql`null`,
+      identificationNr: parsed.data.identificationNr || sql`null`,
+      isNewChip: parsed.data.isNewChip,
+      passportNr: parsed.data.passportNr || sql`null`,
+      isNewPassport: parsed.data.isNewPassport,
+      barcode: parsed.data.barcode || sql`null`,
+      isOnWebsite: parsed.data.isOnWebsite,
+      isFeatured: parsed.data.isFeatured,
+      updatedAt: new Date(),
+    };
+    // Story 10.23: bij uitvinken óók datum + bron wissen. Anders verschijnen
+    // de oude waarden weer bij heraanvinken, wat verwarrend is voor de
+    // gebruiker (zie Sven-feedback 2026-05-12).
+    if (parsed.data.isNeutered) {
+      baseSet.neuteredDate = parsed.data.neuteredDate ? parsed.data.neuteredDate : null;
+      baseSet.neuteredByShelter = parsed.data.neuteredByShelter ?? null;
+    } else {
+      baseSet.neuteredDate = null;
+      baseSet.neuteredByShelter = null;
+    }
     const [updated] = await db
       .update(animals)
-      .set({
-        name: parsed.data.name,
-        slug,
-        aliasName: parsed.data.aliasName || sql`null`,
-        gender: parsed.data.gender,
-        breed: parsed.data.breed || sql`null`,
-        color: parsed.data.color || sql`null`,
-        dateOfBirth: parsed.data.dateOfBirth || sql`null`,
-        intakeDate: parsed.data.intakeDate || sql`null`,
-        intakeReason: parsed.data.intakeReason || sql`null`,
-        dossierNr: parsed.data.dossierNr || sql`null`,
-        isNeutered: parsed.data.isNeutered,
-        description: parsed.data.description || sql`null`,
-        shortDescription: parsed.data.shortDescription || sql`null`,
-        identificationNr: parsed.data.identificationNr || sql`null`,
-        isNewChip: parsed.data.isNewChip,
-        passportNr: parsed.data.passportNr || sql`null`,
-        isNewPassport: parsed.data.isNewPassport,
-        barcode: parsed.data.barcode || sql`null`,
-        isOnWebsite: parsed.data.isOnWebsite,
-        isFeatured: parsed.data.isFeatured,
-        updatedAt: new Date(),
-      })
+      .set(baseSet)
       .where(eq(animals.id, parsed.data.id))
       .returning();
 
     await logAudit("update_animal", "animal", updated.id, oldAnimal, updated);
     revalidatePath("/beheerder/dieren");
+    revalidatePath(`/beheerder/dieren/${parsed.data.id}`);
 
     return { success: true, data: updated };
   } catch (err: unknown) {

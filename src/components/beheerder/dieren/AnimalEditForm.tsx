@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateAnimal } from "@/lib/actions/animals";
 import { INTAKE_REASONS } from "@/lib/constants";
 import type { Animal } from "@/types";
@@ -11,8 +12,37 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
+function FormButtons({ isPending }: { isPending: boolean }) {
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <Link
+        href="/beheerder/dieren"
+        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+      >
+        Annuleren
+      </Link>
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rounded-md bg-[#1b4332] px-5 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
+      >
+        {isPending ? "Opslaan..." : "Opslaan"}
+      </button>
+    </div>
+  );
+}
+
 export default function AnimalEditForm({ animal }: { animal: Animal }) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(updateAnimal, null);
+  const [isNeutered, setIsNeutered] = useState(animal.isNeutered ?? false);
+
+  // Story 10.23: na succesvolle save de server component opnieuw fetchen
+  // zodat de form pre-fills (defaultValue/defaultChecked) de gepersisteerde
+  // waarden tonen i.p.v. de stale prop van vóór de save.
+  useEffect(() => {
+    if (state?.success) router.refresh();
+  }, [state, router]);
 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
@@ -22,17 +52,10 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
       <input type="hidden" name="id" value={animal.id} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-bold text-[#1b4332]">
-          {animal.name} bewerken
-        </h1>
-        <Link
-          href="/beheerder/dieren"
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Terug naar overzicht
-        </Link>
-      </div>
+      <h1 className="font-heading text-xl font-bold text-[#1b4332]">
+        {animal.name} bewerken
+      </h1>
+      <FormButtons isPending={isPending} />
 
       {/* Success message */}
       {state?.success && (
@@ -64,6 +87,8 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               id="name"
               name="name"
               defaultValue={animal.name}
+              maxLength={100}
+              autoComplete="off"
               aria-invalid={!!fieldErrors?.name || undefined}
               className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.name ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             />
@@ -79,6 +104,8 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               id="aliasName"
               name="aliasName"
               defaultValue={animal.aliasName ?? ""}
+              maxLength={100}
+              autoComplete="off"
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
               placeholder="IBN alias"
             />
@@ -198,13 +225,49 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
             id="isNeutered"
             name="isNeutered"
             value="true"
-            defaultChecked={animal.isNeutered ?? false}
+            checked={isNeutered}
+            onChange={(e) => setIsNeutered(e.target.checked)}
             className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
           />
           <label htmlFor="isNeutered" className="text-sm text-gray-700">
             Gesteriliseerd / Gecastreerd
           </label>
         </div>
+
+        {isNeutered && (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="neuteredDate" className="block text-xs font-medium text-gray-600">
+                  Datum sterilisatie/castratie
+                </label>
+                <input
+                  type="date"
+                  id="neuteredDate"
+                  name="neuteredDate"
+                  defaultValue={animal.neuteredDate ?? ""}
+                  className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                />
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center gap-2">
+                  <input type="hidden" name="neuteredByShelter" value="false" />
+                  <input
+                    type="checkbox"
+                    id="neuteredByShelter"
+                    name="neuteredByShelter"
+                    value="true"
+                    defaultChecked={animal.neuteredByShelter ?? false}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="neuteredByShelter" className="text-sm text-gray-700">
+                    Door het asiel uitgevoerd
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <h2 className="mt-4 border-t border-gray-100 pt-3 text-sm font-bold text-[#1b4332]">Identificatie</h2>
 
@@ -339,22 +402,6 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
         </div>
       </div>
 
-      {/* Submit */}
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          href="/beheerder/dieren"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Annuleren
-        </Link>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-md bg-[#1b4332] px-5 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
-        >
-          {isPending ? "Opslaan..." : "Opslaan"}
-        </button>
-      </div>
     </form>
   );
 }

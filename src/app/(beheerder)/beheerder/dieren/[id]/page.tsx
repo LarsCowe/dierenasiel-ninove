@@ -109,7 +109,10 @@ export default async function DierDetailPage({ params }: Props) {
         {{
           overzicht: (
             <div className="space-y-4">
-              <AnimalEditForm animal={animal} />
+              <AnimalEditForm
+                animal={animal}
+                key={animal.updatedAt ? new Date(animal.updatedAt).getTime() : animal.id}
+              />
 
               {/* Status, Kennel, Adoptie & Uitstroom */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
