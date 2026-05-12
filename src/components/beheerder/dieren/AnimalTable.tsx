@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { speciesLabel, statusLabel, formatDate } from "@/lib/utils";
+import { getIntakeReasonLabel } from "@/lib/constants";
 import type { Animal } from "@/types";
 
 interface AnimalTableProps {
@@ -32,6 +33,7 @@ const COLUMNS: Column[] = [
   { key: "isAvailableForAdoption", label: "Ter adoptie", sortable: false },
   { key: "kennelId", label: "Kennel", sortable: false },
   { key: "intakeDate", label: "Intake datum", sortable: true },
+  { key: "intakeReason", label: "Reden van intake", sortable: false },
 ];
 
 export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTableProps) {
@@ -126,6 +128,9 @@ export default function AnimalTable({ animals, sortBy, sortDir }: AnimalTablePro
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                 {animal.intakeDate ? formatDate(animal.intakeDate) : "\u2014"}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
+                {getIntakeReasonLabel(animal.intakeReason)}
               </td>
             </tr>
           ))}

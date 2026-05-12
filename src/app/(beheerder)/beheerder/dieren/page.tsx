@@ -10,6 +10,7 @@ interface Props {
     zoek?: string;
     soort?: string;
     status?: string;
+    intakeReason?: string;
     pagina?: string;
     sorteer?: string;
     richting?: string;
@@ -32,6 +33,7 @@ export default async function DierenOverzichtPage({ searchParams }: Props) {
     search: params.zoek,
     species: params.soort,
     status: params.status,
+    intakeReason: params.intakeReason,
     page,
     pageSize: PAGE_SIZE,
     sortBy: params.sorteer,

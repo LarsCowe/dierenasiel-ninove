@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { updateAnimal } from "@/lib/actions/animals";
+import { INTAKE_REASONS } from "@/lib/constants";
 import type { Animal } from "@/types";
 import Link from "next/link";
 
@@ -167,11 +168,11 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             >
               <option value="">Niet opgegeven</option>
-              <option value="afstand">Afstand</option>
-              <option value="ibn">IBN (Inbeslagname)</option>
-              <option value="vondeling">Vondeling</option>
-              <option value="zwerfhond">Zwerfhond</option>
-              <option value="overig">Overig</option>
+              {INTAKE_REASONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
 

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { INTAKE_REASONS } from "@/lib/constants";
 
 const SPECIES_OPTIONS = [
   { value: "", label: "Alle soorten" },
@@ -16,6 +17,11 @@ const STATUS_OPTIONS = [
   { value: "gereserveerd", label: "Gereserveerd" },
   { value: "in_behandeling", label: "In behandeling" },
   { value: "geadopteerd", label: "Geadopteerd" },
+];
+
+const INTAKE_REASON_OPTIONS = [
+  { value: "", label: "Alle redenen" },
+  ...INTAKE_REASONS,
 ];
 
 export default function AnimalFilters() {
@@ -90,6 +96,19 @@ export default function AnimalFilters() {
         className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
       >
         {STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      {/* Reden van intake filter (Story 10.21) */}
+      <select
+        value={searchParams.get("intakeReason") ?? ""}
+        onChange={(e) => updateParam("intakeReason", e.target.value)}
+        className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+      >
+        {INTAKE_REASON_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>

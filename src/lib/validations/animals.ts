@@ -10,9 +10,7 @@ export const animalIntakeSchema = z.object({
   identificationNr: z.string().optional(),
   passportNr: z.string().optional(),
   intakeDate: z.string().min(1, "Intake datum is verplicht"),
-  intakeReason: z
-    .enum(["afstand", "zwerfhond", "ibn", "vondeling", "overig"])
-    .optional(),
+  intakeReason: z.enum(["afstand", "ibn", "zwerfhond"]).optional(),
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   isPickedUpByShelter: z.boolean().optional().default(false),
@@ -57,7 +55,7 @@ export const animalUpdateSchema = z.object({
   dateOfBirth: z.string().optional(),
   intakeDate: z.string().optional(),
   intakeReason: z
-    .enum(["afstand", "zwerfhond", "ibn", "vondeling", "overig"])
+    .enum(["afstand", "ibn", "zwerfhond"])
     .optional()
     .or(z.literal("")),
   dossierNr: z.string().optional(),

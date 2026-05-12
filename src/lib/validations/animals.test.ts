@@ -86,8 +86,8 @@ describe("animalIntakeSchema", () => {
     }
   });
 
-  it("accepts valid intake reasons", () => {
-    for (const reason of ["afstand", "zwerfhond", "vondeling", "overig"]) {
+  it("accepts the 3 valid intake reasons (Story 10.21: afstand, ibn, zwerfhond)", () => {
+    for (const reason of ["afstand", "zwerfhond"]) {
       const result = animalIntakeSchema.safeParse({ ...validIntake, intakeReason: reason });
       expect(result.success).toBe(true);
     }
@@ -99,6 +99,13 @@ describe("animalIntakeSchema", () => {
       pvNr: "PV-2026-001",
     });
     expect(ibnResult.success).toBe(true);
+  });
+
+  it("rejects legacy intake reasons 'vondeling' and 'overig' (Story 10.21 snoeien)", () => {
+    for (const reason of ["vondeling", "overig"]) {
+      const result = animalIntakeSchema.safeParse({ ...validIntake, intakeReason: reason });
+      expect(result.success).toBe(false);
+    }
   });
 
   it("rejects an invalid intake reason", () => {
@@ -327,6 +334,20 @@ describe("animalUpdateSchema", () => {
       expect(result.data.color).toBeUndefined();
       expect(result.data.aliasName).toBeUndefined();
       expect(result.data.description).toBeUndefined();
+    }
+  });
+
+  it("accepts the 3 valid intake reasons + empty string (Story 10.21)", () => {
+    for (const reason of ["afstand", "ibn", "zwerfhond", ""]) {
+      const result = animalUpdateSchema.safeParse({ ...validUpdate, intakeReason: reason });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it("rejects legacy intake reasons 'vondeling' and 'overig' in update (Story 10.21 snoeien)", () => {
+    for (const reason of ["vondeling", "overig"]) {
+      const result = animalUpdateSchema.safeParse({ ...validUpdate, intakeReason: reason });
+      expect(result.success).toBe(false);
     }
   });
 });

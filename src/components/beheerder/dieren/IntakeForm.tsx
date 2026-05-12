@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useRef, useEffect } from "react";
 import { createAnimalIntake } from "@/lib/actions/animals";
+import { INTAKE_REASONS } from "@/lib/constants";
 
 const SPECIES_OPTIONS = [
   { value: "hond", label: "Hond" },
@@ -23,15 +24,6 @@ const GENDER_OPTIONS: Record<string, { value: string; label: string }[]> = {
     { value: "vrouwtje", label: "Vrouwtje" },
   ],
 };
-
-const INTAKE_REASONS = [
-  { value: "", label: "Selecteer reden..." },
-  { value: "afstand", label: "Afstand door eigenaar" },
-  { value: "zwerfhond", label: "Zwerfdier (gevonden/gemeld)" },
-  { value: "ibn", label: "Inbeslagname (IBN)" },
-  { value: "vondeling", label: "Vondeling" },
-  { value: "overig", label: "Overig" },
-];
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -298,6 +290,7 @@ export default function IntakeForm() {
               aria-invalid={hasError(fieldErrors, "intakeReason") || undefined}
               className={fieldClass("intakeReason")}
             >
+              <option value="">Selecteer reden...</option>
               {INTAKE_REASONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}

@@ -46,6 +46,7 @@ vi.mock("@/lib/db/schema", () => ({
     status: "status",
     identificationNr: "identification_nr",
     intakeDate: "intake_date",
+    intakeReason: "intake_reason",
     createdAt: "created_at",
   },
 }));
@@ -147,6 +148,30 @@ describe("getAnimalsForAdmin", () => {
     await getAnimalsForAdmin({ species: "hond", status: "beschikbaar", search: "Rex" });
 
     expect(andFn).toHaveBeenCalled();
+  });
+
+  it("filters by intakeReason when provided (Story 10.21)", async () => {
+    mockResults.push(
+      [{ id: 1, name: "Rex", intakeReason: "ibn" }],
+      [{ count: 1 }],
+    );
+
+    const { eq } = await import("drizzle-orm");
+    await getAnimalsForAdmin({ intakeReason: "ibn" });
+
+    expect(eq).toHaveBeenCalledWith("intake_reason", "ibn");
+  });
+
+  it("does NOT filter by intakeReason when omitted or empty (Story 10.21)", async () => {
+    mockResults.push([], [{ count: 0 }]);
+    const { eq } = await import("drizzle-orm");
+    await getAnimalsForAdmin({});
+    expect(eq).not.toHaveBeenCalledWith("intake_reason", expect.anything());
+
+    vi.clearAllMocks();
+    mockResults.push([], [{ count: 0 }]);
+    await getAnimalsForAdmin({ intakeReason: "" });
+    expect(eq).not.toHaveBeenCalledWith("intake_reason", expect.anything());
   });
 
   it("paginates with limit and offset", async () => {

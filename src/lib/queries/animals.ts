@@ -7,6 +7,7 @@ export interface AdminAnimalListOptions {
   search?: string;
   species?: string;
   status?: string;
+  intakeReason?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -91,6 +92,7 @@ export async function getAnimalsForAdmin(
     search,
     species,
     status,
+    intakeReason,
     page = 1,
     pageSize = 25,
     sortBy,
@@ -100,6 +102,7 @@ export async function getAnimalsForAdmin(
   const conditions = [];
   if (species) conditions.push(eq(animals.species, species));
   if (status) conditions.push(eq(animals.status, status));
+  if (intakeReason) conditions.push(eq(animals.intakeReason, intakeReason));
   if (search) {
     const escaped = search.replace(/[%_]/g, "\\$&");
     conditions.push(
