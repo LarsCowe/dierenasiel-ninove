@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   addPersonToDay,
   removeAttendance,
+  setAttendanceTask,
   signUpForDay,
 } from "@/lib/actions/staff-attendance";
 import {
@@ -24,10 +25,13 @@ interface Props {
   today: string;
   currentUserId: number | null;
   mayManageOthers: boolean;
+  /** Story 14.2 — vaste voorstellen + wat eerder al ingevuld werd. */
+  taskSuggestions: string[];
 }
 
 const TIJD =
   "w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500";
+const TAKEN_LIJST = "personeel-taken";
 
 /** De eerste zinnige melding: een veldfout ("Einduur moet na…") gaat voor "Validatie mislukt". */
 function melding(state: ActionResult | null): string | null {
@@ -62,6 +66,21 @@ function Uren({ dagLabel }: { dagLabel: string }) {
   );
 }
 
+/** Story 14.2 — vrije tekst met voorstellen. */
+function TaakVeld({ label, defaultValue }: { label: string; defaultValue?: string }) {
+  return (
+    <input
+      name="task"
+      list={TAKEN_LIJST}
+      maxLength={120}
+      defaultValue={defaultValue}
+      placeholder="Taak (optioneel)"
+      aria-label={label}
+      className={TIJD}
+    />
+  );
+}
+
 export default function AttendanceWeek({
   week,
   weekStart,
@@ -70,31 +89,60 @@ export default function AttendanceWeek({
   today,
   currentUserId,
   mayManageOthers,
+  taskSuggestions,
 }: Props) {
   const [signUpState, signUpAction, signUpPending] = useActionState(signUpForDay, null);
   const [removeState, removeAction] = useActionState(removeAttendance, null);
   const [addState, addAction] = useActionState(addPersonToDay, null);
+  const [taskState, taskAction, taskPending] = useActionState(setAttendanceTask, null);
   const [addingOn, setAddingOn] = useState<string | null>(null);
   // Story 14.7 — op welke dag het urenformulier openstaat.
   const [urenOp, setUrenOp] = useState<string | null>(null);
-  // Er staat telkens hooguit één urenformulier en één vrijwilligersformulier open.
+  // Story 14.2 — bij welke inschrijving het taakveld openstaat.
+  const [taakBij, setTaakBij] = useState<number | null>(null);
+  // Er staat telkens hooguit één formulier van elke soort open.
   const urenForm = useRef<HTMLFormElement>(null);
   const addForm = useRef<HTMLFormElement>(null);
+  const taakForm = useRef<HTMLFormElement>(null);
+
+  // Code-review 14.2 — de melding hoort bij wat je net deed. Elk formulier houdt zijn
+  // laatste resultaat bij; zonder dit bleef een oude fout van "Ik kom" staan en leek
+  // "Bewaren" bij een taak niets te doen.
+  const [laatste, setLaatste] = useState<ActionResult | null>(null);
 
   // Geslaagd: formulier dicht. Mislukt: ingevulde waarden terug.
   useEffect(() => {
-    if (signUpState?.success) setUrenOp(null);
-    else if (signUpState) herstel(urenForm.current, signUpState.values);
+    if (!signUpState) return;
+    setLaatste(signUpState);
+    if (signUpState.success) setUrenOp(null);
+    else herstel(urenForm.current, signUpState.values);
   }, [signUpState]);
   useEffect(() => {
-    if (addState?.success) setAddingOn(null);
-    else if (addState) herstel(addForm.current, addState.values);
+    if (removeState) setLaatste(removeState);
+  }, [removeState]);
+  useEffect(() => {
+    if (!addState) return;
+    setLaatste(addState);
+    if (addState.success) setAddingOn(null);
+    else herstel(addForm.current, addState.values);
   }, [addState]);
+  useEffect(() => {
+    if (!taskState) return;
+    setLaatste(taskState);
+    if (taskState.success) setTaakBij(null);
+    else herstel(taakForm.current, taskState.values);
+  }, [taskState]);
 
-  const foutmelding = melding(signUpState) ?? melding(removeState) ?? melding(addState);
+  const foutmelding = melding(laatste);
 
   return (
     <div className="space-y-4">
+      <datalist id={TAKEN_LIJST}>
+        {taskSuggestions.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <Link
@@ -152,33 +200,71 @@ export default function AttendanceWeek({
               {day.entries.length === 0 ? (
                 <p className="py-2 text-sm text-gray-400">Nog niemand ingeschreven.</p>
               ) : (
-                <ul className="mb-2 space-y-1">
-                  {day.entries.map((entry) => (
-                    <li key={entry.id} className="flex items-start justify-between gap-2 text-sm">
-                      <span className="text-gray-700">
-                        {displayName(entry)}
-                        {entry.userId === null && (
-                          <span className="ml-1 text-xs text-gray-400">(vrijwilliger)</span>
+                <ul className="mb-2 space-y-1.5">
+                  {day.entries.map((entry) => {
+                    // Wie een inschrijving mag weghalen, mag er ook de taak van aanpassen:
+                    // de eigen, of — voor de leiding — die van iedereen.
+                    const magBeheren = canRemove(entry, currentUserId, mayManageOthers);
+                    const wie = `${displayName(entry)} (${formatTimeRange(entry)})`;
+
+                    return (
+                      <li key={entry.id} className="text-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-gray-700">
+                            {displayName(entry)}
+                            {entry.userId === null && (
+                              <span className="ml-1 text-xs text-gray-400">(vrijwilliger)</span>
+                            )}
+                            <span className="block text-xs tabular-nums text-gray-500">
+                              {formatTimeRange(entry)}
+                              {entry.note && <> · {entry.note}</>}
+                            </span>
+                            {entry.task && taakBij !== entry.id && (
+                              <span className="mt-0.5 inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
+                                {entry.task}
+                              </span>
+                            )}
+                          </span>
+                          {magBeheren && (
+                            <span className="flex shrink-0 items-center">
+                              <button
+                                type="button"
+                                onClick={() => setTaakBij(taakBij === entry.id ? null : entry.id)}
+                                aria-label={`Taak van ${wie}`}
+                                className="rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-emerald-700"
+                              >
+                                taak
+                              </button>
+                              <form action={removeAction}>
+                                <input type="hidden" name="id" value={entry.id} />
+                                <button
+                                  type="submit"
+                                  aria-label={`${wie} uitschrijven`}
+                                  className="rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                                >
+                                  ✕
+                                </button>
+                              </form>
+                            </span>
+                          )}
+                        </div>
+
+                        {taakBij === entry.id && (
+                          <form ref={taakForm} action={taskAction} className="mt-1 flex gap-1.5">
+                            <input type="hidden" name="id" value={entry.id} />
+                            <TaakVeld label={`Taak voor ${wie}`} defaultValue={entry.task ?? ""} />
+                            <button
+                              type="submit"
+                              disabled={taskPending}
+                              className="rounded-md border border-emerald-600 px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                            >
+                              Bewaren
+                            </button>
+                          </form>
                         )}
-                        <span className="block text-xs tabular-nums text-gray-500">
-                          {formatTimeRange(entry)}
-                          {entry.note && <> · {entry.note}</>}
-                        </span>
-                      </span>
-                      {canRemove(entry, currentUserId, mayManageOthers) && (
-                        <form action={removeAction}>
-                          <input type="hidden" name="id" value={entry.id} />
-                          <button
-                            type="submit"
-                            aria-label={`${displayName(entry)} uitschrijven (${formatTimeRange(entry)})`}
-                            className="rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-red-600"
-                          >
-                            ✕
-                          </button>
-                        </form>
-                      )}
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
 
@@ -187,6 +273,7 @@ export default function AttendanceWeek({
                   <form ref={urenForm} action={signUpAction} className="space-y-1.5">
                     <input type="hidden" name="date" value={day.date} />
                     <Uren dagLabel={day.label} />
+                    <TaakVeld label={`Taak (${day.label})`} />
                     <div className="flex gap-1.5">
                       <button
                         type="submit"
@@ -206,7 +293,7 @@ export default function AttendanceWeek({
                   </form>
                 ) : !ikKom ? (
                   <div className="space-y-1">
-                    {/* "Ik kom" blijft één klik voor een hele dag; uren zijn een verfijning. */}
+                    {/* "Ik kom" blijft één klik voor een hele dag; uren en taak zijn een verfijning. */}
                     <form action={signUpAction}>
                       <input type="hidden" name="date" value={day.date} />
                       <button
@@ -222,7 +309,7 @@ export default function AttendanceWeek({
                       onClick={() => setUrenOp(day.date)}
                       className="w-full text-center text-xs text-[#2d6a4f] hover:underline"
                     >
-                      met uren…
+                      met uren of taak…
                     </button>
                   </div>
                 ) : (
@@ -249,6 +336,7 @@ export default function AttendanceWeek({
                         className={TIJD}
                       />
                       <Uren dagLabel={`vrijwilliger ${day.label}`} />
+                      <TaakVeld label={`Taak vrijwilliger (${day.label})`} />
                       <input
                         name="note"
                         placeholder="Toelichting (optioneel)"

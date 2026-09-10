@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission, requirePermission } from "@/lib/permissions";
-import { getAttendanceForWeek } from "@/lib/queries/staff-attendance";
+import { getAttendanceForWeek, getRecentAttendanceTasks } from "@/lib/queries/staff-attendance";
 import { buildAttendanceWeek, weekStartFor } from "@/lib/staff/attendance";
+import { taskSuggestions } from "@/lib/staff/tasks";
 import { addDays } from "@/lib/calendar/events";
 import { getBelgianDayBounds } from "@/lib/utils/date";
 import AttendanceWeek from "@/components/beheerder/personeel/AttendanceWeek";
@@ -24,7 +25,11 @@ export default async function PersoneelPage({ searchParams }: Props) {
   const today = getBelgianDayBounds().start.toISOString().slice(0, 10);
   const weekStart = weekStartFor(/^\d{4}-\d{2}-\d{2}$/.test(week ?? "") ? week! : today);
 
-  const entries = await getAttendanceForWeek(weekStart);
+  // Story 14.2 — de taken van het voorbije halfjaar komen mee in de voorstellen.
+  const [entries, eerdereTaken] = await Promise.all([
+    getAttendanceForWeek(weekStart),
+    getRecentAttendanceTasks(addDays(today, -183)),
+  ]);
   const days = buildAttendanceWeek(weekStart, entries);
 
   return (
@@ -32,8 +37,8 @@ export default async function PersoneelPage({ searchParams }: Props) {
       <div>
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Personeel</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Wie komt wanneer. Schrijf jezelf in voor een hele dag, of met uren als je die al weet —
-          dan weet de rest van het team op wie ze kunnen rekenen.
+          Wie komt wanneer, en wat die komt doen. Schrijf jezelf in voor een hele dag, of met uren
+          en een taak als je die al weet — dan weet de rest van het team op wie ze kunnen rekenen.
         </p>
       </div>
 
@@ -46,6 +51,7 @@ export default async function PersoneelPage({ searchParams }: Props) {
           today={today}
           currentUserId={session?.userId ?? null}
           mayManageOthers={!!session && hasPermission(session.role, "staff:write")}
+          taskSuggestions={taskSuggestions(eerdereTaken)}
         />
       </div>
     </div>

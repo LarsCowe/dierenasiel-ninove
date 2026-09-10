@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { staffAttendance, users } from "@/lib/db/schema";
 import { addDays } from "@/lib/calendar/events";
@@ -22,6 +22,7 @@ export async function getAttendanceForWeek(weekStart: string): Promise<Attendanc
         guestName: staffAttendance.guestName,
         startTime: staffAttendance.startTime,
         endTime: staffAttendance.endTime,
+        task: staffAttendance.task,
         note: staffAttendance.note,
       })
       .from(staffAttendance)
@@ -35,6 +36,24 @@ export async function getAttendanceForWeek(weekStart: string): Promise<Attendanc
     }));
   } catch (err) {
     console.error("getAttendanceForWeek query failed:", err);
+    return [];
+  }
+}
+
+/**
+ * Story 14.2 — de taken die sinds `sinds` al ingevuld werden. Ze komen mee in de
+ * voorstellen (`taskSuggestions`); het ontdubbelen gebeurt daar, niet hier.
+ */
+export async function getRecentAttendanceTasks(sinds: string): Promise<string[]> {
+  try {
+    const rows = await db
+      .selectDistinct({ task: staffAttendance.task })
+      .from(staffAttendance)
+      .where(and(isNotNull(staffAttendance.task), gte(staffAttendance.date, sinds)))
+      .limit(100);
+    return rows.map((row) => row.task).filter((task): task is string => Boolean(task));
+  } catch (err) {
+    console.error("getRecentAttendanceTasks query failed:", err);
     return [];
   }
 }

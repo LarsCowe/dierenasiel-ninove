@@ -912,6 +912,9 @@ export const staffAttendance = pgTable("staff_attendance", {
   startTime: varchar("start_time", { length: 5 }),
   // Leeg = open einde ("vanaf 14:00").
   endTime: varchar("end_time", { length: 5 }),
+  // Story 14.2 — wat die persoon komt doen ("Kuis honden", "Zwerfkat ophalen").
+  // Vrije tekst met voorstellen (`src/lib/staff/tasks.ts`). Geen toelichting: die blijft `note`.
+  task: varchar("task", { length: 120 }),
   note: varchar("note", { length: 200 }),
   /** Wie de inschrijving zette — jezelf of iemand van de leiding. */
   createdBy: integer("created_by").references(() => users.id),

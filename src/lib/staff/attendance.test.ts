@@ -21,6 +21,7 @@ const entry = (overrides: Partial<AttendanceEntry> = {}): AttendanceEntry => ({
   guestName: null,
   startTime: null,
   endTime: null,
+  task: null,
   note: null,
   ...overrides,
 });
