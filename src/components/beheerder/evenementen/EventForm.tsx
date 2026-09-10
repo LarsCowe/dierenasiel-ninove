@@ -9,6 +9,8 @@ import { EVENT_TYPES, EVENT_STATUSES } from "@/lib/events/types";
 interface EventFormProps {
   mode: "create" | "edit";
   event?: EventRow;
+  /** Story 13.14 — de accounts die trekker kunnen worden. */
+  trekkerOptions: { id: number; name: string }[];
 }
 
 const INPUT =
@@ -20,7 +22,7 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
-export default function EventForm({ mode, event }: EventFormProps) {
+export default function EventForm({ mode, event, trekkerOptions }: EventFormProps) {
   const router = useRouter();
   const action = mode === "create" ? createEvent : updateEvent;
   const [state, formAction, isPending] = useActionState(action, null);
@@ -148,16 +150,41 @@ export default function EventForm({ mode, event }: EventFormProps) {
             />
           </div>
 
+          {/* Story 13.14 — de trekker is een account, geen rol. */}
+          <div>
+            <label htmlFor="trekkerUserId" className={LABEL}>
+              Trekker (optioneel)
+            </label>
+            <select
+              id="trekkerUserId"
+              name="trekkerUserId"
+              defaultValue={event?.trekkerUserId ? String(event.trekkerUserId) : ""}
+              className={INPUT}
+            >
+              <option value="">— Niemand met een account —</option>
+              {trekkerOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Kan het draaiboek, de shiften en het materiaal van dit evenement aanpassen, ook
+              zonder beheerder te zijn.
+            </p>
+            <FieldError errors={fieldErrors?.trekkerUserId} />
+          </div>
+
           <div>
             <label htmlFor="responsible" className={LABEL}>
-              Verantwoordelijke (optioneel)
+              Trekker zonder account (optioneel)
             </label>
             <input
               id="responsible"
               name="responsible"
               defaultValue={event?.responsible ?? ""}
               className={INPUT}
-              placeholder="Wie trekt dit evenement?"
+              placeholder="Naam, als de trekker geen login heeft"
             />
           </div>
 

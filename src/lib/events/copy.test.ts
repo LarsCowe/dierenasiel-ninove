@@ -19,6 +19,7 @@ const bron: CopySource = {
     endTime: null,
     location: "Parochiezaal Denderwindeke",
     responsible: "Sven",
+    trekkerUserId: 3,
     expectedVisitors: 300,
     description: "Zaal open vanaf 17u.",
   },
@@ -107,6 +108,8 @@ describe("buildNextEdition", () => {
       date: "2027-11-13",
       location: "Parochiezaal Denderwindeke",
       responsible: "Sven",
+      // Story 13.14 — "meestal ga ik dat zijn": de trekker gaat mee.
+      trekkerUserId: 3,
       copiedFromEventId: 5,
     });
   });

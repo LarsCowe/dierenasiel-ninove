@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const {
   mockInsertReturning, mockInsertValues, mockInsert,
   mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-  mockRequirePermission, mockGetSession, mockLogAudit, mockRevalidate,
+  mockRequirePermission, mockEventAccess, mockGetSession, mockLogAudit, mockRevalidate,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn();
@@ -17,7 +17,7 @@ const {
   return {
     mockInsertReturning, mockInsertValues, mockInsert,
     mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-    mockRequirePermission: vi.fn(), mockGetSession: vi.fn(),
+    mockRequirePermission: vi.fn(), mockEventAccess: vi.fn(), mockGetSession: vi.fn(),
     mockLogAudit: vi.fn(), mockRevalidate: vi.fn(),
   };
 });
@@ -30,6 +30,7 @@ vi.mock("@/lib/db/schema", () => ({
   eventShifts: Symbol("eventShifts"),
 }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
+vi.mock("@/lib/events/event-access", () => ({ requireEventDraaiboekAccess: mockEventAccess }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidate }));
@@ -39,7 +40,8 @@ import { addStandardTasks, copyEventToNextEdition } from "./event-copy";
 const EVENT = {
   id: 5, name: "Eetfestijn 2026", type: "eetfestijn", status: "afgelopen",
   date: "2026-11-14", endDate: "2026-11-15", startTime: "18:00", endTime: null,
-  location: "Parochiezaal", responsible: "Sven", expectedVisitors: 300, description: null,
+  location: "Parochiezaal", responsible: "Sven", trekkerUserId: 3,
+  expectedVisitors: 300, description: null,
 };
 
 const TAAK = {
@@ -77,6 +79,7 @@ beforeEach(() => {
   mockInsertValues.mockReset();
 
   mockRequirePermission.mockResolvedValue(undefined);
+  mockEventAccess.mockResolvedValue(undefined);
   mockGetSession.mockResolvedValue({ userId: 20, role: "beheerder" });
   mockLogAudit.mockResolvedValue(undefined);
   mockInsertReturning.mockResolvedValue([{ id: 99 }]);
@@ -86,10 +89,17 @@ beforeEach(() => {
 });
 
 describe("addStandardTasks", () => {
-  it("weigert zonder schrijfrecht", async () => {
-    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+  it("weigert wie geen toegang heeft tot het evenement", async () => {
+    mockEventAccess.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
     expect((await addStandardTasks(5)).success).toBe(false);
     expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("is draaiboekwerk: ook de trekker van dít evenement mag de taken klaarzetten", async () => {
+    mockSelectWhere.mockReturnValueOnce({ limit: mockSelectLimit }).mockResolvedValueOnce([]);
+    await addStandardTasks(5);
+    expect(mockEventAccess).toHaveBeenCalledWith(5);
+    expect(mockRequirePermission).not.toHaveBeenCalled();
   });
 
   it("zet de zes taken van Sven klaar bij een eetfestijn", async () => {
@@ -140,9 +150,10 @@ describe("copyEventToNextEdition", () => {
       .mockResolvedValueOnce([SHIFT]);
   }
 
-  it("weigert zonder schrijfrecht", async () => {
+  it("weigert zonder schrijfrecht — ook voor de trekker, want de begroting gaat mee", async () => {
     mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
     expect((await copyEventToNextEdition(null, fd(basis))).success).toBe(false);
+    expect(mockRequirePermission).toHaveBeenCalledWith("event:write");
   });
 
   it("eist een naam en een datum", async () => {
@@ -166,6 +177,12 @@ describe("copyEventToNextEdition", () => {
       copiedFromEventId: 5,
       createdByUserId: 20,
     });
+  });
+
+  it("neemt de trekker mee naar de volgende editie", async () => {
+    stelBronIn();
+    await copyEventToNextEdition(null, fd(basis));
+    expect(ins(0)).toMatchObject({ trekkerUserId: 3 });
   });
 
   it("neemt de taken mee, met de datums opgeschoven en niet afgevinkt", async () => {

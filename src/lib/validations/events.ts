@@ -18,6 +18,13 @@ export const eventSchema = z
     endTime: optionalTime,
     location: z.string().optional(),
     responsible: z.string().optional(),
+    // Story 13.14 — het account van de trekker. Leeg = geen trekker met login.
+    // Of het een backoffice-account is, controleert de actie tegen de databank.
+    trekkerUserId: z
+      .string()
+      .optional()
+      .refine((v) => !v || /^[1-9]\d*$/.test(v), "Kies iemand uit de lijst")
+      .transform((v) => (v ? Number(v) : undefined)),
     // Leeg mag; "0 bezoekers verwacht" heeft geen betekenis, negatief al helemaal niet.
     expectedVisitors: z
       .union([z.literal(""), z.coerce.number().int().positive("Ongeldig aantal")])

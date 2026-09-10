@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { events, eventTasks, eventCosts, eventShifts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
+import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
@@ -14,15 +15,14 @@ import type { ActionResult } from "@/types";
  * Story 13.10 — de zes vaste taken van Sven (vraag 8) in één klik in een leeg
  * draaiboek zetten. Bewust alleen bruikbaar wanneer het draaiboek nog leeg is:
  * twee keer klikken mag geen dubbele lijst geven.
+ *
+ * Story 13.14 — dit is draaiboekwerk, dus ook de trekker van dít evenement mag het.
  */
 export async function addStandardTasks(
   eventId: number,
 ): Promise<ActionResult<{ toegevoegd: number }>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
-  if (!Number.isInteger(eventId) || eventId <= 0) {
-    return { success: false, error: "Ongeldig evenement" };
-  }
+  const toegang = await requireEventDraaiboekAccess(eventId);
+  if (toegang) return toegang;
 
   try {
     const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
@@ -57,6 +57,9 @@ export async function addStandardTasks(
 /**
  * Story 13.10 — "volgende editie": kopieert het evenement met zijn draaiboek,
  * begroting en (optioneel) de bezetting naar een nieuwe datum.
+ *
+ * Blijft enkel voor de beheerder (`event:write`), ook na story 13.14: de begroting
+ * gaat mee, en geld is geen zaak van de trekker.
  *
  * Faalt er iets halverwege, dan blijft het nieuwe evenement bestaan met wat er al
  * in zit; er is geen transactie over de neon-http-driver. Daarom staat het aanmaken

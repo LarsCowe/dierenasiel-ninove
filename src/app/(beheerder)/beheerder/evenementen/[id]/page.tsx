@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { requirePermission, hasPermission } from "@/lib/permissions";
 import { getSession } from "@/lib/auth/session";
 import {
   getEventById,
@@ -11,6 +10,7 @@ import {
   getPreviousEditionLessons,
   getEventMaterials,
 } from "@/lib/queries/events";
+import { eventRights } from "@/lib/events/access";
 import { draaiboekProgress } from "@/lib/events/draaiboek";
 import { formatEventPeriod } from "@/lib/events/list";
 import { eventStatusLabel, eventStatusPill, eventTypeLabel } from "@/lib/events/types";
@@ -36,30 +36,30 @@ function Regel({ label, waarde }: { label: string; waarde: string | number | nul
 }
 
 export default async function EvenementFichePage({ params }: Props) {
-  const permCheck = await requirePermission("event:read");
-  if (permCheck && !permCheck.success) {
-    redirect("/beheerder");
-  }
+  const session = await getSession();
+  if (!session) redirect("/beheerder");
 
   const { id } = await params;
   const eventId = Number(id);
   if (!Number.isInteger(eventId) || eventId <= 0) notFound();
 
-  const [event, tasks, costs, shifts, evaluation, materials] = await Promise.all([
-    getEventById(eventId),
-    getEventTasks(eventId),
-    getEventCosts(eventId),
-    getEventShifts(eventId),
-    getEventEvaluation(eventId),
-    getEventMaterials(eventId),
-  ]);
+  const event = await getEventById(eventId);
   if (!event) notFound();
 
-  const [session, vorigeEditie] = await Promise.all([
-    getSession(),
+  // Story 13.14 — de beheerder, of de trekker van dít evenement.
+  const rechten = eventRights(session.role, session.userId, event.trekkerUserId);
+  if (!rechten.zien) redirect("/beheerder");
+
+  // Geld blijft bij de beheerder: voor een trekker worden kosten en evaluatie
+  // niet eens opgehaald.
+  const [tasks, costs, shifts, evaluation, materials, vorigeEditie] = await Promise.all([
+    getEventTasks(eventId),
+    rechten.geld ? getEventCosts(eventId) : Promise.resolve([]),
+    getEventShifts(eventId),
+    rechten.geld ? getEventEvaluation(eventId) : Promise.resolve(null),
+    getEventMaterials(eventId),
     getPreviousEditionLessons(event.copiedFromEventId),
   ]);
-  const magSchrijven = session ? hasPermission(session.role, "event:write") : false;
 
   return (
     <div className="space-y-6">
@@ -94,7 +94,7 @@ export default async function EvenementFichePage({ params }: Props) {
             </svg>
             Draaiboek (PDF)
           </a>
-          {magSchrijven && (
+          {rechten.beheer && (
             <>
               <Link
                 href={`/beheerder/evenementen/${event.id}/volgende-editie`}
@@ -114,12 +114,19 @@ export default async function EvenementFichePage({ params }: Props) {
         </div>
       </div>
 
+      {!rechten.beheer && (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">
+          Je bent trekker van dit evenement: je kan het draaiboek, de shiften en het materiaal
+          aanpassen. Kosten en evaluatie blijven bij de beheerder.
+        </p>
+      )}
+
       <section className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
         <h2 className="mb-3 font-heading text-base font-semibold text-[#1b4332]">Gegevens</h2>
         <dl className="grid gap-3 sm:grid-cols-3">
           <Regel label="Periode" waarde={formatEventPeriod(event)} />
           <Regel label="Locatie" waarde={event.location} />
-          <Regel label="Verantwoordelijke" waarde={event.responsible} />
+          <Regel label="Trekker" waarde={event.trekkerName ?? event.responsible} />
           <Regel label="Verwachte bezoekers" waarde={event.expectedVisitors} />
         </dl>
         {event.description && (
@@ -163,7 +170,7 @@ export default async function EvenementFichePage({ params }: Props) {
       <DraaiboekPanel
         eventId={event.id}
         tasks={tasks}
-        canWrite={magSchrijven}
+        canWrite={rechten.draaiboek}
         today={new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Brussels" })}
       />
 
@@ -171,22 +178,26 @@ export default async function EvenementFichePage({ params }: Props) {
         eventId={event.id}
         shifts={shifts}
         eventDate={event.date}
-        canWrite={magSchrijven}
+        canWrite={rechten.draaiboek}
       />
 
-      <EventMaterialsPanel eventId={event.id} materials={materials} canWrite={magSchrijven} />
+      <EventMaterialsPanel eventId={event.id} materials={materials} canWrite={rechten.draaiboek} />
 
-      <EventCostsPanel eventId={event.id} lines={costs} canWrite={magSchrijven} />
+      {rechten.geld && (
+        <>
+          <EventCostsPanel eventId={event.id} lines={costs} canWrite={rechten.beheer} />
 
-      <EventEvaluationPanel
-        eventId={event.id}
-        evaluation={evaluation}
-        costs={costs}
-        shiftCount={shifts.length}
-        tasksDone={draaiboekProgress(tasks).done}
-        tasksTotal={tasks.length}
-        canWrite={magSchrijven}
-      />
+          <EventEvaluationPanel
+            eventId={event.id}
+            evaluation={evaluation}
+            costs={costs}
+            shiftCount={shifts.length}
+            tasksDone={draaiboekProgress(tasks).done}
+            tasksTotal={tasks.length}
+            canWrite={rechten.beheer}
+          />
+        </>
+      )}
     </div>
   );
 }

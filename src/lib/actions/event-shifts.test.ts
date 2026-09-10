@@ -5,7 +5,7 @@ const {
   mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-  mockRequirePermission, mockGetSession, mockLogAudit, mockRevalidate,
+  mockEventAccess, mockGetSession, mockLogAudit, mockRevalidate,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn().mockReturnValue({ returning: mockInsertReturning });
@@ -29,7 +29,7 @@ const {
     mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-    mockRequirePermission: vi.fn(), mockGetSession: vi.fn(),
+    mockEventAccess: vi.fn(), mockGetSession: vi.fn(),
     mockLogAudit: vi.fn(), mockRevalidate: vi.fn(),
   };
 });
@@ -38,7 +38,7 @@ vi.mock("@/lib/db", () => ({
   db: { insert: mockInsert, update: mockUpdate, delete: mockDelete, select: mockSelect },
 }));
 vi.mock("@/lib/db/schema", () => ({ eventShifts: Symbol("eventShifts") }));
-vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
+vi.mock("@/lib/events/event-access", () => ({ requireEventDraaiboekAccess: mockEventAccess }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidate }));
@@ -63,10 +63,11 @@ const geldig = {
   post: "Bar",
   personName: "Katrien",
 };
+const GEWEIGERD = { success: false as const, error: "Onvoldoende rechten" };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockRequirePermission.mockResolvedValue(undefined);
+  mockEventAccess.mockResolvedValue(undefined);
   mockGetSession.mockResolvedValue({ userId: 7, role: "beheerder" });
   mockLogAudit.mockResolvedValue(undefined);
   mockInsertReturning.mockResolvedValue([{ id: 5, eventId: 7 }]);
@@ -75,11 +76,16 @@ beforeEach(() => {
 });
 
 describe("createEventShift", () => {
-  it("weigert zonder schrijfrecht", async () => {
-    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+  it("weigert wie geen toegang heeft tot het evenement", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
     const res = await createEventShift(null, fd(geldig));
-    expect(res.success).toBe(false);
+    expect(res).toEqual(GEWEIGERD);
     expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("controleert de toegang op het evenement waar de shift bij komt", async () => {
+    await createEventShift(null, fd(geldig));
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
   });
 
   it("bewaart de shift", async () => {
@@ -133,13 +139,28 @@ describe("updateEventShift", () => {
     expect(res.success).toBe(true);
     expect((mockUpdateSet.mock.calls[0] as unknown[])[0]).toMatchObject({ post: "Kassa" });
   });
+
+  it("weigert wie geen toegang heeft tot het evenement van de shift", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    const res = await updateEventShift(null, fd({ ...geldig, id: "5" }));
+    expect(res).toEqual(GEWEIGERD);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("controleert het evenement van de bestaande shift en verhuist ze niet", async () => {
+    await updateEventShift(null, fd({ ...geldig, id: "5", eventId: "99" }));
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
+    expect(mockEventAccess).not.toHaveBeenCalledWith(99);
+    expect((mockUpdateSet.mock.calls[0] as unknown[])[0]).toMatchObject({ eventId: 7 });
+  });
 });
 
 describe("deleteEventShift", () => {
-  it("weigert zonder schrijfrecht", async () => {
-    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+  it("weigert wie geen toegang heeft tot het evenement van de shift", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
     const res = await deleteEventShift(5);
     expect(res.success).toBe(false);
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
     expect(mockDelete).not.toHaveBeenCalled();
   });
 

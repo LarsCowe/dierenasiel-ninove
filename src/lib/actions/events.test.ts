@@ -37,7 +37,7 @@ const {
 vi.mock("@/lib/db", () => ({
   db: { insert: mockInsert, update: mockUpdate, delete: mockDelete, select: mockSelect },
 }));
-vi.mock("@/lib/db/schema", () => ({ events: Symbol("events") }));
+vi.mock("@/lib/db/schema", () => ({ events: Symbol("events"), users: Symbol("users") }));
 vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
@@ -58,8 +58,13 @@ const geldig = {
   date: "2026-09-12",
 };
 
+/** Het account dat als trekker gekozen wordt. */
+const KATRIEN = { id: 4, role: "medewerker" };
+
 beforeEach(() => {
   vi.clearAllMocks();
+  // mockReset i.p.v. clear: de trekker-tests zetten een `…Once`-wachtrij.
+  mockSelectLimit.mockReset();
   // requirePermission geeft undefined terug wanneer alles in orde is.
   mockRequirePermission.mockResolvedValue(undefined);
   mockGetSession.mockResolvedValue({ userId: 7, role: "beheerder" });
@@ -118,6 +123,48 @@ describe("createEvent", () => {
     expect(res.success).toBe(false);
     if (!res.success) expect(res.values?.location).toBe("Parochiezaal");
   });
+
+  // Story 13.14 — de trekker is een account, geen rol.
+  describe("trekker", () => {
+    it("bewaart de gekozen trekker", async () => {
+      mockSelectLimit.mockResolvedValue([KATRIEN]);
+      const res = await createEvent(null, fd({ ...geldig, trekkerUserId: "4" }));
+      expect(res.success).toBe(true);
+      expect(mockInsertValues).toHaveBeenCalledWith(expect.objectContaining({ trekkerUserId: 4 }));
+    });
+
+    it("laat de trekker leeg wanneer niemand gekozen is, zonder de gebruikers te raadplegen", async () => {
+      await createEvent(null, fd({ ...geldig, trekkerUserId: "" }));
+      expect(mockInsertValues).toHaveBeenCalledWith(expect.objectContaining({ trekkerUserId: null }));
+      expect(mockSelect).not.toHaveBeenCalled();
+    });
+
+    it("weigert een wandelaar als trekker", async () => {
+      mockSelectLimit.mockResolvedValue([{ id: 4, role: "wandelaar" }]);
+      const res = await createEvent(null, fd({ ...geldig, trekkerUserId: "4" }));
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.fieldErrors?.trekkerUserId?.[0]).toBeTruthy();
+        expect(res.values?.trekkerUserId).toBe("4");
+      }
+      expect(mockInsert).not.toHaveBeenCalled();
+    });
+
+    it("weigert een account dat niet bestaat", async () => {
+      mockSelectLimit.mockResolvedValue([]);
+      const res = await createEvent(null, fd({ ...geldig, trekkerUserId: "404" }));
+      expect(res.success).toBe(false);
+      if (!res.success) expect(res.fieldErrors?.trekkerUserId?.[0]).toBeTruthy();
+      expect(mockInsert).not.toHaveBeenCalled();
+    });
+
+    it("weigert iets dat geen nummer is", async () => {
+      const res = await createEvent(null, fd({ ...geldig, trekkerUserId: "Sven" }));
+      expect(res.success).toBe(false);
+      if (!res.success) expect(res.fieldErrors?.trekkerUserId?.[0]).toBeTruthy();
+      expect(mockInsert).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe("updateEvent", () => {
@@ -145,6 +192,42 @@ describe("updateEvent", () => {
     const res = await updateEvent(null, fd({ id: "3", ...geldig }));
     expect(res.success).toBe(false);
     expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("zet een andere trekker", async () => {
+    // 1e select = het bestaande evenement, 2e = het gekozen account
+    mockSelectLimit
+      .mockResolvedValueOnce([{ id: 3, name: "Oud", trekkerUserId: null }])
+      .mockResolvedValueOnce([KATRIEN]);
+    const res = await updateEvent(null, fd({ id: "3", ...geldig, trekkerUserId: "4" }));
+    expect(res.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ trekkerUserId: 4 }));
+  });
+
+  it("laat een ongewijzigde trekker staan, ook als die geen backoffice-rol meer heeft", async () => {
+    // Review 13.14: anders kan de beheerder niets meer aan dit evenement bewaren tot hij
+    // het trekkerveld aanpast — een veld dat hij niet aanraakte. Rechten heeft zo'n
+    // oud-trekker toch niet meer (zie eventRights).
+    mockSelectLimit.mockResolvedValue([{ id: 3, name: "Oud", trekkerUserId: 9 }]);
+    const res = await updateEvent(null, fd({ id: "3", ...geldig, trekkerUserId: "9" }));
+    expect(res.success).toBe(true);
+    expect(mockSelect).toHaveBeenCalledTimes(1); // enkel het evenement, geen accountcontrole
+    expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ trekkerUserId: 9 }));
+  });
+
+  it("weigert wél een nieuw gekozen trekker zonder backoffice-rol", async () => {
+    mockSelectLimit
+      .mockResolvedValueOnce([{ id: 3, name: "Oud", trekkerUserId: null }])
+      .mockResolvedValueOnce([{ id: 9, role: "wandelaar" }]);
+    const res = await updateEvent(null, fd({ id: "3", ...geldig, trekkerUserId: "9" }));
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.fieldErrors?.trekkerUserId?.[0]).toBeTruthy();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("haalt de trekker weg wanneer het veld leeg is", async () => {
+    await updateEvent(null, fd({ id: "3", ...geldig, trekkerUserId: "" }));
+    expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ trekkerUserId: null }));
   });
 });
 

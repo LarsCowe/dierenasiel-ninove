@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { eventMaterials } from "@/lib/db/schema";
 import { eq, type InferSelectModel } from "drizzle-orm";
-import { requirePermission } from "@/lib/permissions";
+import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { logAudit } from "@/lib/audit";
 import { eventMaterialSchema } from "@/lib/validations/event-materials";
 import { revalidatePath } from "next/cache";
@@ -58,8 +58,9 @@ export async function createEventMaterial(
   _prev: ActionResult<EventMaterialRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventMaterialRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
+  // Story 13.14 — de beheerder, of de trekker van het evenement waar de regel bij komt.
+  const toegang = await requireEventDraaiboekAccess(Number(formData.get("eventId")));
+  if (toegang) return toegang;
 
   const waarden = readForm(formData);
   const parsed = eventMaterialSchema.safeParse(waarden);
@@ -84,28 +85,30 @@ export async function updateEventMaterial(
   _prev: ActionResult<EventMaterialRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventMaterialRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
-
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige regel" };
-
-  const waarden = readForm(formData);
-  const parsed = eventMaterialSchema.safeParse(waarden);
-  if (!parsed.success) return foutAntwoord(waarden, parsed);
 
   try {
     const [old] = await db.select().from(eventMaterials).where(eq(eventMaterials.id, id)).limit(1);
     if (!old) return { success: false, error: "Regel niet gevonden" };
 
+    // Het evenement van de bestaande regel telt, niet wat het formulier meestuurt.
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
+
+    const waarden = readForm(formData);
+    const parsed = eventMaterialSchema.safeParse(waarden);
+    if (!parsed.success) return foutAntwoord(waarden, parsed);
+
     const [record] = await db
       .update(eventMaterials)
-      .set({ ...toColumns(parsed.data), updatedAt: new Date() })
+      // Een regel verhuist niet naar een ander evenement.
+      .set({ ...toColumns(parsed.data), eventId: old.eventId, updatedAt: new Date() })
       .where(eq(eventMaterials.id, id))
       .returning();
 
     await logAudit("update_event_material", "event_material", id, old, record);
-    revalidatePath(fichePad(parsed.data.eventId));
+    revalidatePath(fichePad(old.eventId));
     return { success: true, data: record };
   } catch {
     return { success: false, error: "Er ging iets mis bij het opslaan van het materiaal." };
@@ -121,8 +124,6 @@ export async function toggleEventMaterial(
   veld: "arranged" | "returned",
   waarde: boolean,
 ): Promise<ActionResult<EventMaterialRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige regel" };
   if (veld !== "arranged" && veld !== "returned") {
     return { success: false, error: "Onbekend veld" };
@@ -131,6 +132,9 @@ export async function toggleEventMaterial(
   try {
     const [old] = await db.select().from(eventMaterials).where(eq(eventMaterials.id, id)).limit(1);
     if (!old) return { success: false, error: "Regel niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
 
     const [record] = await db
       .update(eventMaterials)
@@ -147,13 +151,14 @@ export async function toggleEventMaterial(
 }
 
 export async function deleteEventMaterial(id: number): Promise<ActionResult<{ id: number }>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige regel" };
 
   try {
     const [old] = await db.select().from(eventMaterials).where(eq(eventMaterials.id, id)).limit(1);
     if (!old) return { success: false, error: "Regel niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
 
     await db.delete(eventMaterials).where(eq(eventMaterials.id, id));
     await logAudit("delete_event_material", "event_material", id, old, null);

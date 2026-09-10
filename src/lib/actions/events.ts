@@ -1,14 +1,15 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { events } from "@/lib/db/schema";
+import { events, users } from "@/lib/db/schema";
 import { eq, type InferSelectModel } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { eventSchema } from "@/lib/validations/events";
+import { BACKOFFICE_ROLES } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/types";
+import type { ActionResult, BackofficeRole } from "@/types";
 
 export type EventRow = InferSelectModel<typeof events>;
 
@@ -26,6 +27,7 @@ function readForm(formData: FormData) {
     endTime: (formData.get("endTime") as string) || "",
     location: (formData.get("location") as string)?.trim() || "",
     responsible: (formData.get("responsible") as string)?.trim() || "",
+    trekkerUserId: (formData.get("trekkerUserId") as string) || "",
     expectedVisitors: (formData.get("expectedVisitors") as string) || "",
     description: (formData.get("description") as string)?.trim() || "",
   };
@@ -52,9 +54,28 @@ function toColumns(d: ReturnType<typeof eventSchema.parse>) {
     endTime: d.endTime || null,
     location: d.location || null,
     responsible: d.responsible || null,
+    trekkerUserId: d.trekkerUserId ?? null,
     expectedVisitors: d.expectedVisitors ?? null,
     description: d.description || null,
   };
+}
+
+/**
+ * Story 13.14 — enkel een backoffice-account kan trekker zijn. Het formulier toont
+ * alleen die, maar een aangepast formulier zou anders een wandelaar of een verzonnen
+ * nummer toegang tot het draaiboek kunnen geven.
+ */
+async function trekkerFout(trekkerUserId: number | undefined): Promise<string | null> {
+  if (trekkerUserId === undefined) return null;
+  const [account] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.id, trekkerUserId))
+    .limit(1);
+  if (!account || !BACKOFFICE_ROLES.includes(account.role as BackofficeRole)) {
+    return "Kies iemand uit de lijst";
+  }
+  return null;
 }
 
 export async function createEvent(
@@ -75,6 +96,11 @@ export async function createEvent(
   }
 
   try {
+    const fout = await trekkerFout(parsed.data.trekkerUserId);
+    if (fout) {
+      return { success: false, fieldErrors: { trekkerUserId: [fout] }, values: terugTeGeven(waarden) };
+    }
+
     const session = await getSession();
     const [record] = await db
       .insert(events)
@@ -116,6 +142,17 @@ export async function updateEvent(
   try {
     const [old] = await db.select().from(events).where(eq(events.id, id)).limit(1);
     if (!old) return { success: false, error: "Evenement niet gevonden" };
+
+    // Review 13.14 — een ongewijzigde trekker niet opnieuw keuren. Wie intussen geen
+    // backoffice-rol meer heeft, zou anders elke bewaring van dit evenement blokkeren,
+    // ook van velden die niets met de trekker te maken hebben. Rechten heeft zo'n
+    // oud-trekker toch niet meer (zie `eventRights`).
+    if (parsed.data.trekkerUserId !== (old.trekkerUserId ?? undefined)) {
+      const fout = await trekkerFout(parsed.data.trekkerUserId);
+      if (fout) {
+        return { success: false, fieldErrors: { trekkerUserId: [fout] }, values: terugTeGeven(waarden) };
+      }
+    }
 
     const [record] = await db
       .update(events)

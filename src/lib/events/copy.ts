@@ -81,6 +81,7 @@ export interface CopySource {
     endTime: string | null;
     location: string | null;
     responsible: string | null;
+    trekkerUserId: number | null;
     expectedVisitors: number | null;
     description: string | null;
   };
@@ -129,6 +130,8 @@ export interface CopyOptions {
  *   precies wat een begroting hoort te zijn voor wie er nog nooit een maakte (vraag 14).
  * - De **evaluatie gaat niet mee**: die hoort bij die editie. Ze blijft wel raadpleegbaar
  *   via `copiedFromEventId`.
+ *
+ * De trekker gaat wél mee (story 13.14): "meestal ga ik dat zijn".
  */
 export function buildNextEdition(bron: CopySource, opties: CopyOptions) {
   const offset = diffDays(bron.event.date, opties.date);
@@ -144,6 +147,7 @@ export function buildNextEdition(bron: CopySource, opties: CopyOptions) {
       endTime: bron.event.endTime,
       location: bron.event.location,
       responsible: bron.event.responsible,
+      trekkerUserId: bron.event.trekkerUserId,
       expectedVisitors: bron.event.expectedVisitors,
       description: bron.event.description,
       copiedFromEventId: bron.event.id,

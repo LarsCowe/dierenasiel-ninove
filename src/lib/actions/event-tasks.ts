@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { eventTasks } from "@/lib/db/schema";
 import { eq, type InferSelectModel } from "drizzle-orm";
-import { requirePermission } from "@/lib/permissions";
+import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { eventTaskSchema } from "@/lib/validations/event-tasks";
@@ -38,22 +38,25 @@ function toColumns(d: ReturnType<typeof eventTaskSchema.parse>) {
   };
 }
 
+function foutAntwoord(waarden: ReturnType<typeof readForm>, fieldErrors: Record<string, string[]>) {
+  return {
+    success: false as const,
+    fieldErrors,
+    values: Object.fromEntries(Object.entries(waarden).map(([k, v]) => [k, String(v)])),
+  };
+}
+
 export async function createEventTask(
   _prev: ActionResult<EventTaskRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventTaskRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
+  // Story 13.14 — de beheerder, of de trekker van het evenement waar de taak bij komt.
+  const toegang = await requireEventDraaiboekAccess(Number(formData.get("eventId")));
+  if (toegang) return toegang;
 
   const waarden = readForm(formData);
   const parsed = eventTaskSchema.safeParse(waarden);
-  if (!parsed.success) {
-    return {
-      success: false,
-      fieldErrors: parsed.error.flatten().fieldErrors,
-      values: Object.fromEntries(Object.entries(waarden).map(([k, v]) => [k, String(v)])),
-    };
-  }
+  if (!parsed.success) return foutAntwoord(waarden, parsed.error.flatten().fieldErrors);
 
   try {
     // Nieuwe taken achteraan hun fase; de sortering doet de rest.
@@ -75,34 +78,30 @@ export async function updateEventTask(
   _prev: ActionResult<EventTaskRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventTaskRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
-
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige taak" };
-
-  const waarden = readForm(formData);
-  const parsed = eventTaskSchema.safeParse(waarden);
-  if (!parsed.success) {
-    return {
-      success: false,
-      fieldErrors: parsed.error.flatten().fieldErrors,
-      values: Object.fromEntries(Object.entries(waarden).map(([k, v]) => [k, String(v)])),
-    };
-  }
 
   try {
     const [old] = await db.select().from(eventTasks).where(eq(eventTasks.id, id)).limit(1);
     if (!old) return { success: false, error: "Taak niet gevonden" };
 
+    // Het evenement van de bestaande taak telt, niet wat het formulier meestuurt.
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
+
+    const waarden = readForm(formData);
+    const parsed = eventTaskSchema.safeParse(waarden);
+    if (!parsed.success) return foutAntwoord(waarden, parsed.error.flatten().fieldErrors);
+
     const [record] = await db
       .update(eventTasks)
-      .set({ ...toColumns(parsed.data), updatedAt: new Date() })
+      // Een taak verhuist niet naar een ander evenement.
+      .set({ ...toColumns(parsed.data), eventId: old.eventId, updatedAt: new Date() })
       .where(eq(eventTasks.id, id))
       .returning();
 
     await logAudit("update_event_task", "event_task", id, old, record);
-    revalidatePath(fichePad(parsed.data.eventId));
+    revalidatePath(fichePad(old.eventId));
     return { success: true, data: record };
   } catch {
     return { success: false, error: "Er ging iets mis bij het opslaan van de taak." };
@@ -114,13 +113,14 @@ export async function toggleEventTask(
   id: number,
   done: boolean,
 ): Promise<ActionResult<EventTaskRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige taak" };
 
   try {
     const [old] = await db.select().from(eventTasks).where(eq(eventTasks.id, id)).limit(1);
     if (!old) return { success: false, error: "Taak niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
 
     const session = await getSession();
     const [record] = await db
@@ -143,13 +143,14 @@ export async function toggleEventTask(
 }
 
 export async function deleteEventTask(id: number): Promise<ActionResult<{ id: number }>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige taak" };
 
   try {
     const [old] = await db.select().from(eventTasks).where(eq(eventTasks.id, id)).limit(1);
     if (!old) return { success: false, error: "Taak niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
 
     await db.delete(eventTasks).where(eq(eventTasks.id, id));
     await logAudit("delete_event_task", "event_task", id, old, null);

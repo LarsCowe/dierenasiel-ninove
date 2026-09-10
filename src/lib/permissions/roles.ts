@@ -8,6 +8,11 @@ import { ALL_PERMISSIONS } from "./types";
  * "Enkel beheerders of trekkers". Een evenement is dus géén gedeelde module zoals
  * de kalender. Gaat dit later open naar medewerkers, dan komt er een aparte
  * `event:finance:read` bij — het kostenblok is dan al één afgebakend stuk scherm.
+ *
+ * Story 13.14 — de "trekker" uit vraag 26 is bewust GEEN rol: een gebruiker heeft
+ * er maar één. Trekker is een eigenschap van een evenement (`events.trekker_user_id`)
+ * en geeft, los van de rol, toegang tot het draaiboek van dát evenement. Zie
+ * `src/lib/events/access.ts`.
  */
 
 export const ROLE_PERMISSIONS: PermissionMap = {

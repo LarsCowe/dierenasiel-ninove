@@ -12,9 +12,14 @@ function pill(urgency: Reminder["urgency"]): string {
   return "text-yellow-700 bg-yellow-100";
 }
 
-export default async function EventRemindersWidget() {
+export default async function EventRemindersWidget({
+  trekkerUserId,
+}: {
+  /** Story 13.14 — enkel de evenementen die deze gebruiker trekt. Leeg = alle. */
+  trekkerUserId?: number;
+} = {}) {
   const vandaag = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Brussels" });
-  const alle = await getEventTaskReminders(vandaag);
+  const alle = await getEventTaskReminders(vandaag, { trekkerUserId });
   const tellers = reminderCounts(alle);
   // Meer dan acht regels maakt van een seintje een tweede takenlijst.
   const zichtbaar = alle.slice(0, 8);

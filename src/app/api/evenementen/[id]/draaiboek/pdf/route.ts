@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
-import { requirePermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
 import {
   getEventById,
   getEventTasks,
   getEventShifts,
   getEventMaterials,
 } from "@/lib/queries/events";
+import { eventRights } from "@/lib/events/access";
 import { buildDraaiboekPrint, draaiboekFileName } from "@/lib/events/draaiboek-print";
 import DraaiboekPdf from "@/components/beheerder/evenementen/DraaiboekPdf";
 
@@ -16,14 +17,17 @@ import DraaiboekPdf from "@/components/beheerder/evenementen/DraaiboekPdf";
  *
  * Zelfde opzet als de kennelkaart-route (Story 10.43): de PDF hangt aan het
  * evenement, niet aan de rapportenmodule.
+ *
+ * Story 13.14 — ook de trekker van dít evenement mag afdrukken. Er staan geen
+ * bedragen op het blad, dus dat mag.
  */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const permCheck = await requirePermission("event:read");
-  if (permCheck && !permCheck.success) {
-    return new Response("Onvoldoende rechten", { status: 403 });
+  const session = await getSession();
+  if (!session) {
+    return new Response("Niet ingelogd", { status: 401 });
   }
 
   const { id } = await params;
@@ -36,6 +40,9 @@ export async function GET(
   if (!event) {
     return new Response("Evenement niet gevonden", { status: 404 });
   }
+  if (!eventRights(session.role, session.userId, event.trekkerUserId).zien) {
+    return new Response("Onvoldoende rechten", { status: 403 });
+  }
 
   const [tasks, shifts, materials] = await Promise.all([
     getEventTasks(eventId),
@@ -44,7 +51,8 @@ export async function GET(
   ]);
 
   const model = buildDraaiboekPrint({
-    event,
+    // De trekker met account gaat voor op de vrije tekst, net als op de fiche.
+    event: { ...event, responsible: event.trekkerName ?? event.responsible },
     tasks,
     shifts,
     materials,

@@ -5,7 +5,7 @@ const {
   mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-  mockRequirePermission, mockLogAudit, mockRevalidate,
+  mockEventAccess, mockLogAudit, mockRevalidate,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn().mockReturnValue({ returning: mockInsertReturning });
@@ -29,7 +29,7 @@ const {
     mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-    mockRequirePermission: vi.fn(), mockLogAudit: vi.fn(), mockRevalidate: vi.fn(),
+    mockEventAccess: vi.fn(), mockLogAudit: vi.fn(), mockRevalidate: vi.fn(),
   };
 });
 
@@ -37,7 +37,7 @@ vi.mock("@/lib/db", () => ({
   db: { insert: mockInsert, update: mockUpdate, delete: mockDelete, select: mockSelect },
 }));
 vi.mock("@/lib/db/schema", () => ({ eventMaterials: Symbol("eventMaterials") }));
-vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }));
+vi.mock("@/lib/events/event-access", () => ({ requireEventDraaiboekAccess: mockEventAccess }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidate }));
 
@@ -70,10 +70,11 @@ const geldig = {
   origin: "geleend",
   supplier: "Chiro Ninove",
 };
+const GEWEIGERD = { success: false as const, error: "Onvoldoende rechten" };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockRequirePermission.mockResolvedValue(undefined);
+  mockEventAccess.mockResolvedValue(undefined);
   mockLogAudit.mockResolvedValue(undefined);
   mockInsertReturning.mockResolvedValue([{ id: 3, eventId: 7 }]);
   mockUpdateReturning.mockResolvedValue([{ id: 3, eventId: 7 }]);
@@ -81,10 +82,15 @@ beforeEach(() => {
 });
 
 describe("createEventMaterial", () => {
-  it("weigert zonder schrijfrecht", async () => {
-    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
-    expect((await createEventMaterial(null, fd(geldig))).success).toBe(false);
+  it("weigert wie geen toegang heeft tot het evenement", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    expect(await createEventMaterial(null, fd(geldig))).toEqual(GEWEIGERD);
     expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("controleert de toegang op het evenement waar de regel bij komt", async () => {
+    await createEventMaterial(null, fd(geldig));
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
   });
 
   it("bewaart de regel met herkomst en leverancier", async () => {
@@ -139,6 +145,19 @@ describe("updateEventMaterial", () => {
     mockSelectLimit.mockResolvedValue([]);
     expect((await updateEventMaterial(null, fd({ ...geldig, id: "3" }))).success).toBe(false);
   });
+
+  it("weigert wie geen toegang heeft tot het evenement van de regel", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    expect(await updateEventMaterial(null, fd({ ...geldig, id: "3" }))).toEqual(GEWEIGERD);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("controleert het evenement van de bestaande regel en verhuist ze niet", async () => {
+    await updateEventMaterial(null, fd({ ...geldig, id: "3", eventId: "99" }));
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
+    expect(mockEventAccess).not.toHaveBeenCalledWith(99);
+    expect(updateWaarden()).toMatchObject({ eventId: 7 });
+  });
 });
 
 describe("toggleEventMaterial", () => {
@@ -159,6 +178,13 @@ describe("toggleEventMaterial", () => {
     expect(res.success).toBe(false);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
+
+  it("weigert wie geen toegang heeft tot het evenement van de regel", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    expect((await toggleEventMaterial(3, "returned", true)).success).toBe(false);
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("deleteEventMaterial", () => {
@@ -170,9 +196,10 @@ describe("deleteEventMaterial", () => {
     );
   });
 
-  it("weigert zonder schrijfrecht", async () => {
-    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+  it("weigert wie geen toegang heeft tot het evenement van de regel", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
     expect((await deleteEventMaterial(3)).success).toBe(false);
+    expect(mockEventAccess).toHaveBeenCalledWith(7);
     expect(mockDelete).not.toHaveBeenCalled();
   });
 });

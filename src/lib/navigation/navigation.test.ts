@@ -146,6 +146,22 @@ describe("getVisibleNavItems", () => {
     const items = getVisibleNavItems("unknown-role");
     expect(items.map((i) => i.label)).toEqual(["Dashboard", "Kalender"]);
   });
+
+  // Story 13.14 — trekker is geen rol, maar een eigenschap van een evenement.
+  it("toont Evenementen aan een medewerker die trekker is van een evenement", () => {
+    expect(getVisibleNavItems("medewerker", { trekker: true }).map((i) => i.label)).toContain("Evenementen");
+  });
+
+  it("toont Evenementen niet aan een medewerker zonder trekkerschap", () => {
+    expect(getVisibleNavItems("medewerker").map((i) => i.label)).not.toContain("Evenementen");
+    expect(getVisibleNavItems("medewerker", { trekker: false }).map((i) => i.label)).not.toContain("Evenementen");
+  });
+
+  it("opent als trekker enkel Evenementen, geen andere menu's", () => {
+    const zonder = getVisibleNavItems("dierenarts").map((i) => i.label);
+    const met = getVisibleNavItems("dierenarts", { trekker: true }).map((i) => i.label);
+    expect(met.filter((l) => !zonder.includes(l))).toEqual(["Evenementen"]);
+  });
 });
 
 describe("isNavItemActive", () => {

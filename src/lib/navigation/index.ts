@@ -6,12 +6,14 @@ export type NavItem = {
   href: string;
   icon: string;
   requiredPermission: Permission | null;
+  /** Story 13.14 — ook zichtbaar voor wie trekker is van minstens één evenement. */
+  alsoForTrekker?: boolean;
 };
 
 export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", href: "/beheerder", icon: "📊", requiredPermission: null },
   { label: "Kalender", href: "/beheerder/kalender", icon: "📅", requiredPermission: null },
-  { label: "Evenementen", href: "/beheerder/evenementen", icon: "🎉", requiredPermission: "event:read" },
+  { label: "Evenementen", href: "/beheerder/evenementen", icon: "🎉", requiredPermission: "event:read", alsoForTrekker: true },
   // Epic 14 — wie komt welke dag.
   { label: "Personeel", href: "/beheerder/personeel", icon: "🧑‍🤝‍🧑", requiredPermission: "staff:read" },
   { label: "Zwerfkatten", href: "/beheerder/dieren/zwerfkattenbeleid", icon: "🐈", requiredPermission: "stray_cat:read" },
@@ -30,10 +32,17 @@ export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Instellingen", href: "/beheerder/instellingen", icon: "⚙️", requiredPermission: "settings:read" },
 ];
 
-export function getVisibleNavItems(role: string): NavItem[] {
+export interface NavOptions {
+  /** Is deze gebruiker trekker van minstens één evenement? (story 13.14) */
+  trekker?: boolean;
+}
+
+export function getVisibleNavItems(role: string, opties: NavOptions = {}): NavItem[] {
   return BEHEERDER_NAV_ITEMS.filter(
     (item) =>
-      !item.requiredPermission || hasPermission(role, item.requiredPermission),
+      !item.requiredPermission ||
+      hasPermission(role, item.requiredPermission) ||
+      (item.alsoForTrekker === true && opties.trekker === true),
   );
 }
 

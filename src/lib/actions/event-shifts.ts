@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { eventShifts } from "@/lib/db/schema";
 import { eq, type InferSelectModel } from "drizzle-orm";
-import { requirePermission } from "@/lib/permissions";
+import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { eventShiftSchema } from "@/lib/validations/event-shifts";
@@ -53,8 +53,9 @@ export async function createEventShift(
   _prev: ActionResult<EventShiftRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventShiftRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
+  // Story 13.14 — de beheerder, of de trekker van het evenement waar de shift bij komt.
+  const toegang = await requireEventDraaiboekAccess(Number(formData.get("eventId")));
+  if (toegang) return toegang;
 
   const waarden = readForm(formData);
   const parsed = eventShiftSchema.safeParse(waarden);
@@ -80,28 +81,30 @@ export async function updateEventShift(
   _prev: ActionResult<EventShiftRow> | null,
   formData: FormData,
 ): Promise<ActionResult<EventShiftRow>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
-
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige shift" };
-
-  const waarden = readForm(formData);
-  const parsed = eventShiftSchema.safeParse(waarden);
-  if (!parsed.success) return foutAntwoord(waarden, parsed);
 
   try {
     const [old] = await db.select().from(eventShifts).where(eq(eventShifts.id, id)).limit(1);
     if (!old) return { success: false, error: "Shift niet gevonden" };
 
+    // Het evenement van de bestaande shift telt, niet wat het formulier meestuurt.
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
+
+    const waarden = readForm(formData);
+    const parsed = eventShiftSchema.safeParse(waarden);
+    if (!parsed.success) return foutAntwoord(waarden, parsed);
+
     const [record] = await db
       .update(eventShifts)
-      .set({ ...toColumns(parsed.data), updatedAt: new Date() })
+      // Een shift verhuist niet naar een ander evenement.
+      .set({ ...toColumns(parsed.data), eventId: old.eventId, updatedAt: new Date() })
       .where(eq(eventShifts.id, id))
       .returning();
 
     await logAudit("update_event_shift", "event_shift", id, old, record);
-    revalidatePath(fichePad(parsed.data.eventId));
+    revalidatePath(fichePad(old.eventId));
     return { success: true, data: record };
   } catch {
     return { success: false, error: "Er ging iets mis bij het opslaan van de shift." };
@@ -109,13 +112,14 @@ export async function updateEventShift(
 }
 
 export async function deleteEventShift(id: number): Promise<ActionResult<{ id: number }>> {
-  const permCheck = await requirePermission("event:write");
-  if (permCheck && !permCheck.success) return { success: false, error: permCheck.error };
   if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige shift" };
 
   try {
     const [old] = await db.select().from(eventShifts).where(eq(eventShifts.id, id)).limit(1);
     if (!old) return { success: false, error: "Shift niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
 
     await db.delete(eventShifts).where(eq(eventShifts.id, id));
     await logAudit("delete_event_shift", "event_shift", id, old, null);

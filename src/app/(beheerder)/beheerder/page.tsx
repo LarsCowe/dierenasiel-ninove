@@ -1,5 +1,6 @@
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { getActiveStrayCatCampaigns } from "@/lib/queries/stray-cat-campaigns";
+import { isTrekkerOfAnyEvent } from "@/lib/queries/events";
 import StatsCards from "@/components/beheerder/dashboard/StatsCards";
 import AlertWidget from "@/components/beheerder/dashboard/AlertWidget";
 import TodoWidget from "@/components/beheerder/dashboard/TodoWidget";
@@ -34,6 +35,11 @@ export default async function BeheerderDashboard({ searchParams }: PageProps) {
 
   // Evenementen zijn sinds story 13.3 enkel voor beheerders; het blok volgt dat.
   const toontEvenementen = session ? hasPermission(session.role, "event:read") : false;
+  // Story 13.14 — een trekker krijgt de herinneringen van de evenementen die hij trekt.
+  const trekkerId =
+    session && !toontEvenementen && (await isTrekkerOfAnyEvent(session.userId))
+      ? session.userId
+      : null;
 
   return (
     <div>
@@ -57,6 +63,7 @@ export default async function BeheerderDashboard({ searchParams }: PageProps) {
         <DeadlineWidget />
         <TodoWidget />
         {toontEvenementen && <EventRemindersWidget />}
+        {trekkerId !== null && <EventRemindersWidget trekkerUserId={trekkerId} />}
       </div>
     </div>
   );

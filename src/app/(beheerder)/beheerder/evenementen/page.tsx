@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requirePermission } from "@/lib/permissions";
-import { getEvents } from "@/lib/queries/events";
+import { hasPermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
+import { getEvents, type EventWithTrekker } from "@/lib/queries/events";
 import { splitEvents, formatEventPeriod } from "@/lib/events/list";
 import { eventStatusLabel, eventStatusPill, eventTypeLabel } from "@/lib/events/types";
-import type { EventRow } from "@/lib/actions/events";
 import InfoButton from "@/components/beheerder/shared/InfoButton";
 
-function EventCard({ event }: { event: EventRow }) {
+function EventCard({ event }: { event: EventWithTrekker }) {
+  const trekker = event.trekkerName ?? event.responsible;
   return (
     <li>
       <Link
@@ -26,21 +27,24 @@ function EventCard({ event }: { event: EventRow }) {
             {eventStatusLabel(event.status)}
           </span>
         </div>
-        {event.responsible && (
-          <p className="mt-1 text-xs text-gray-500">Verantwoordelijke: {event.responsible}</p>
-        )}
+        {trekker && <p className="mt-1 text-xs text-gray-500">Trekker: {trekker}</p>}
       </Link>
     </li>
   );
 }
 
 export default async function EvenementenPage() {
-  const permCheck = await requirePermission("event:read");
-  if (permCheck && !permCheck.success) {
-    redirect("/beheerder");
-  }
+  const session = await getSession();
+  if (!session) redirect("/beheerder");
 
-  const alle = await getEvents();
+  // Story 13.14 — de beheerder ziet alles; een trekker enkel de evenementen die hij trekt.
+  const alleEvenementen = hasPermission(session.role, "event:read");
+  const alle = alleEvenementen
+    ? await getEvents()
+    : await getEvents({ trekkerUserId: session.userId });
+  if (!alleEvenementen && alle.length === 0) redirect("/beheerder");
+
+  const magAanmaken = hasPermission(session.role, "event:write");
   const vandaag = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Brussels" });
   const { komend, afgelopen } = splitEvents(alle, vandaag);
 
@@ -58,20 +62,33 @@ export default async function EvenementenPage() {
             <span className="font-medium">Afgelopen</span>. De status blijft wel handmatig: een
             evenement dat niet doorgaat, zet je zelf op <span className="font-medium">Geannuleerd</span>.
           </p>
+          <p className="mt-2">
+            Wie <span className="font-medium">trekker</span> is van een evenement, kan het draaiboek,
+            de shiften en het materiaal ervan aanpassen — ook zonder beheerder te zijn. Kosten en
+            evaluatie blijven bij de beheerder.
+          </p>
         </InfoButton>
-        <Link
-          href="/beheerder/evenementen/jaaroverzicht"
-          className="ml-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Jaaroverzicht
-        </Link>
-        <Link
-          href="/beheerder/evenementen/nieuw"
-          className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
-        >
-          + Nieuw evenement
-        </Link>
+        {alleEvenementen && (
+          <Link
+            href="/beheerder/evenementen/jaaroverzicht"
+            className="ml-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Jaaroverzicht
+          </Link>
+        )}
+        {magAanmaken && (
+          <Link
+            href="/beheerder/evenementen/nieuw"
+            className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+          >
+            + Nieuw evenement
+          </Link>
+        )}
       </div>
+
+      {!alleEvenementen && (
+        <p className="text-sm text-gray-600">Je ziet hier de evenementen waarvan jij trekker bent.</p>
+      )}
 
       {alle.length === 0 && (
         <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">

@@ -94,7 +94,7 @@ export const PERMISSION_AREAS: PermissionArea[] = [
     label: "Evenementen",
     read: "event:read",
     write: "event:write",
-    hint: "draaiboek, kosten en evaluatie",
+    hint: "draaiboek, kosten en evaluatie; wie trekker is van een evenement, kan ook zonder dit recht het draaiboek, de shiften en het materiaal ervan aanpassen",
   },
   {
     key: "personeel",

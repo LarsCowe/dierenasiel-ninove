@@ -555,6 +555,11 @@ export const events = pgTable("events", {
   location: varchar("location", { length: 200 }),
   // Vrije tekst: wie het eetfestijn trekt is niet noodzakelijk iemand met een login.
   responsible: varchar("responsible", { length: 120 }),
+  // Story 13.14 — de trekker mét account. Die krijgt toegang tot dít evenement
+  // (draaiboek, shiften, materiaal), los van zijn rol; zie `src/lib/events/access.ts`.
+  // `responsible` blijft voor wie trekt zonder login. Set null: een account
+  // verwijderen laat het evenement staan.
+  trekkerUserId: integer("trekker_user_id").references(() => users.id, { onDelete: "set null" }),
   expectedVisitors: integer("expected_visitors"),
   description: text("description"),
   // Story 13.10 — de vorige editie waarvan dit een kopie is. Geen FK-verwijzing naar

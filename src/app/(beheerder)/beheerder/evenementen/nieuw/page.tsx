@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/permissions";
+import { getTrekkerOptions } from "@/lib/queries/events";
 import EventForm from "@/components/beheerder/evenementen/EventForm";
 
 export default async function NieuwEvenementPage() {
@@ -9,13 +10,15 @@ export default async function NieuwEvenementPage() {
     redirect("/beheerder/evenementen");
   }
 
+  const trekkerOptions = await getTrekkerOptions();
+
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link href="/beheerder/evenementen" className="text-sm text-[#2d6a4f] hover:underline">
         ← Terug naar evenementen
       </Link>
       <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Nieuw evenement</h1>
-      <EventForm mode="create" />
+      <EventForm mode="create" trekkerOptions={trekkerOptions} />
     </div>
   );
 }
