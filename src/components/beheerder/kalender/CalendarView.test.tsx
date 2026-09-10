@@ -65,6 +65,28 @@ describe("CalendarView — dag-detail (Story 12.3)", () => {
   });
 });
 
+// Story 14.5: "Personeel (3): Jan, Anja 09:00–12:00, …" moet je in de week kunnen lezen;
+// in de maand is daar geen plaats voor.
+describe("CalendarView — lange titels (Story 14.5)", () => {
+  const titel = "Personeel (3): Jan, Anja 09:00–12:00, Sven 14:00–17:00 (Kuis honden)";
+  const lang: CalendarEvent[] = [
+    { id: "personeel-2026-07-15", category: "personeel", date: "2026-07-15", time: null, title: titel, href: "/beheerder/personeel?week=2026-07-13" },
+  ];
+
+  it("laat een lange titel doorlopen in de weekweergave", () => {
+    render(<CalendarView view="week" refDate="2026-07-15" todayStr="2026-07-15" events={lang} />);
+    const pill = screen.getAllByTitle(titel)[0];
+    expect(pill.className).not.toMatch(/\btruncate\b/);
+    expect(pill.className).toMatch(/whitespace-normal/);
+  });
+
+  it("kapt dezelfde titel af in de maandweergave", () => {
+    render(<CalendarView view="maand" refDate="2026-07-15" todayStr="2026-07-15" events={lang} />);
+    const pills = screen.getAllByTitle(titel);
+    expect(pills.some((p) => /\btruncate\b/.test(p.className))).toBe(true);
+  });
+});
+
 // Story 12.6: week- en dagweergave.
 describe("CalendarView — week/dag-weergave (Story 12.6)", () => {
   it("toont een view-switcher met Maand/Week/Dag", () => {

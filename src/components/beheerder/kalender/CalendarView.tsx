@@ -66,11 +66,19 @@ function weekTitle(refDate: string): string {
     : `${dayOf(s)} ${monthOf(s)} – ${dayOf(e)} ${monthOf(e)} ${year}`;
 }
 
-function EventPill({ e }: { e: CalendarEvent }) {
+/**
+ * `wrap`: laat de titel doorlopen op een volgende regel in plaats van hem af te kappen.
+ * De maandweergave kapt af (daar is geen plaats); de weekweergave niet — story 14.5:
+ * "Personeel (3): Jan, Anja 09:00–12:00, …" moet je daar kunnen lezen.
+ */
+function EventPill({ e, wrap = false }: { e: CalendarEvent; wrap?: boolean }) {
   const cat = CALENDAR_CATEGORY_MAP[e.category];
   const label = `${e.time ? `${e.time} ` : ""}${e.title}`;
   const inner = (
-    <span title={label} className={`block truncate rounded border px-1 py-[1px] text-[10px] leading-tight ${cat.pill}`}>
+    <span
+      title={label}
+      className={`block ${wrap ? "whitespace-normal break-words" : "truncate"} rounded border px-1 py-[1px] text-[10px] leading-tight ${cat.pill}`}
+    >
       {label}
     </span>
   );
@@ -94,7 +102,8 @@ function AgendaList({ events }: { events: CalendarEvent[] }) {
           <div className="flex items-start gap-2 rounded-md border border-gray-100 p-2">
             <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${cat.dot}`} />
             <div className="min-w-0">
-              <p className="truncate text-sm text-gray-800">
+              {/* Doorlopen, niet afkappen: in de agenda is er plaats (story 14.5). */}
+              <p className="break-words text-sm text-gray-800">
                 {e.time ? <span className="text-gray-500">{e.time} · </span> : null}
                 {e.title}
               </p>
@@ -406,7 +415,7 @@ function WeekView({
               {dayEvents.length === 0 ? (
                 <span className="block px-1 py-1 text-[10px] text-gray-300">—</span>
               ) : (
-                dayEvents.map((e) => <EventPill key={e.id} e={e} />)
+                dayEvents.map((e) => <EventPill key={e.id} e={e} wrap />)
               )}
             </div>
           </div>

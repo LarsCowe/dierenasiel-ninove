@@ -15,13 +15,23 @@ import { and, gte, lte, eq, isNotNull, sql } from "drizzle-orm";
 import type { CalendarEvent } from "@/lib/calendar/events";
 import { expandEventDates } from "@/lib/calendar/events";
 import { eventsToCalendar } from "@/lib/calendar/from-events";
+import { attendanceToCalendar } from "@/lib/calendar/from-attendance";
 import type { CalendarCategoryKey } from "@/lib/calendar/categories";
+import { getAttendanceBetween } from "@/lib/queries/staff-attendance";
 
 interface Range {
   /** YYYY-MM-DD, inclusief. */
   start: string;
   /** YYYY-MM-DD, inclusief. */
   end: string;
+}
+
+interface Options {
+  /**
+   * Story 14.5 — ook wie komt (personeelsplanning). Enkel voor wie `staff:read` heeft:
+   * de kalender zelf vraagt geen recht, de personeelsplanning wel.
+   */
+  staff?: boolean;
 }
 
 /** Zet een timestamptz om naar de Belgische datum (YYYY-MM-DD) + tijd (HH:MM). */
@@ -44,7 +54,10 @@ const animalHref = (id: number | null) =>
  * (fase 1: adopties, medische afspraken, wandelingen, to-do's, IBN-deadlines).
  * Elke bron faalt onafhankelijk: een lege bron blokkeert de rest niet.
  */
-export async function getCalendarEvents({ start, end }: Range): Promise<CalendarEvent[]> {
+export async function getCalendarEvents(
+  { start, end }: Range,
+  opties: Options = {},
+): Promise<CalendarEvent[]> {
   const events: CalendarEvent[] = [];
 
   // — Adopties: kennismakingen (afspraak met tijd) —
@@ -356,6 +369,12 @@ export async function getCalendarEvents({ start, end }: Range): Promise<Calendar
     events.push(...eventsToCalendar(rows, start, end));
   } catch (err) {
     console.error("calendar: shelter events failed", err);
+  }
+
+  // — Personeel uit de personeelsplanning (Epic 14, story 14.5) —
+  // `getAttendanceBetween` vangt zijn eigen fouten op en geeft dan een lege lijst.
+  if (opties.staff) {
+    events.push(...attendanceToCalendar(await getAttendanceBetween(start, end)));
   }
 
   return events;

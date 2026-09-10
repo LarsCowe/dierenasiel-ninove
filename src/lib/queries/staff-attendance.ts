@@ -5,15 +5,19 @@ import { addDays } from "@/lib/calendar/events";
 import type { AttendanceEntry } from "@/lib/staff/attendance";
 import { sortVolunteers, type VolunteerOption } from "@/lib/staff/volunteers";
 
-/**
- * Alle inschrijvingen van één week (maandag t/m zondag). De naam van een account
- * wordt hier opgehaald in plaats van in de rij bewaard, zodat hij klopt na een
- * naamswijziging — en na het anonimiseren van een wandelaar (story 14.4).
- */
+/** Alle inschrijvingen van één week (maandag t/m zondag). */
 export async function getAttendanceForWeek(weekStart: string): Promise<AttendanceEntry[]> {
-  try {
-    const weekEnd = addDays(weekStart, 6);
+  return getAttendanceBetween(weekStart, addDays(weekStart, 6));
+}
 
+/**
+ * Alle inschrijvingen tussen twee datums (inclusief) — voor het personeelsscherm en, sinds
+ * story 14.5, de teamkalender. De naam van een account wordt hier opgehaald in plaats van
+ * in de rij bewaard, zodat hij klopt na een naamswijziging — en na het anonimiseren van
+ * een wandelaar (story 14.4).
+ */
+export async function getAttendanceBetween(start: string, end: string): Promise<AttendanceEntry[]> {
+  try {
     const rows = await db
       .select({
         id: staffAttendance.id,
@@ -29,7 +33,7 @@ export async function getAttendanceForWeek(weekStart: string): Promise<Attendanc
       })
       .from(staffAttendance)
       .leftJoin(users, eq(staffAttendance.userId, users.id))
-      .where(and(gte(staffAttendance.date, weekStart), lte(staffAttendance.date, weekEnd)))
+      .where(and(gte(staffAttendance.date, start), lte(staffAttendance.date, end)))
       .orderBy(asc(staffAttendance.date), asc(staffAttendance.id));
 
     return rows.map((row) => ({

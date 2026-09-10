@@ -113,8 +113,11 @@ export function weekStartFor(dateStr: string): string {
   return startOfWeekMonday(dateStr);
 }
 
-/** Volgorde van aankomst: hele dag eerst, dan op beginuur, dan op naam. */
-function volgorde(a: AttendanceEntry, b: AttendanceEntry): number {
+/**
+ * Volgorde van aankomst: hele dag eerst, dan op beginuur, dan op naam. Ook gebruikt door
+ * de teamkalender (story 14.5) — één sortering, zodat beide schermen hetzelfde tonen.
+ */
+export function compareAttendance(a: AttendanceEntry, b: AttendanceEntry): number {
   const aStart = a.startTime ?? "";
   const bStart = b.startTime ?? "";
   if (aStart !== bStart) return aStart < bStart ? -1 : 1;
@@ -134,7 +137,7 @@ export function buildAttendanceWeek(
 
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(weekStart, i);
-    const dayEntries = (perDay.get(date) ?? []).sort(volgorde);
+    const dayEntries = (perDay.get(date) ?? []).sort(compareAttendance);
     return { date, label: WEEKDAY_LABELS[i], entries: dayEntries };
   });
 }

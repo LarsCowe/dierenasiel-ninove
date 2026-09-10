@@ -2,6 +2,8 @@ import Link from "next/link";
 import CalendarView, { type CalendarViewMode } from "@/components/beheerder/kalender/CalendarView";
 import { getCalendarEvents } from "@/lib/queries/calendar";
 import { buildMonthGrid, startOfWeekMonday, addDays } from "@/lib/calendar/events";
+import { getSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/permissions";
 
 interface PageProps {
   searchParams: Promise<{ view?: string; d?: string; y?: string; m?: string }>;
@@ -48,7 +50,11 @@ export default async function KalenderPage({ searchParams }: PageProps) {
     end = refDate;
   }
 
-  const events = await getCalendarEvents({ start, end });
+  // Story 14.5 — personeel enkel voor wie de personeelsplanning mag zien. De kalender
+  // zelf vraagt geen recht; de planning wel.
+  const session = await getSession();
+  const toonPersoneel = !!session && hasPermission(session.role, "staff:read");
+  const events = await getCalendarEvents({ start, end }, { staff: toonPersoneel });
 
   return (
     <div className="space-y-4">
@@ -56,7 +62,8 @@ export default async function KalenderPage({ searchParams }: PageProps) {
         <div>
           <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Kalender</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gedeelde teamkalender — adopties, afspraken, wandelingen, to-do&apos;s, IBN-deadlines en eigen items.
+            Gedeelde teamkalender — adopties, afspraken, wandelingen, to-do&apos;s, IBN-deadlines,
+            evenementen{toonPersoneel ? ", wie er komt" : ""} en eigen items.
           </p>
         </div>
         <Link

@@ -14,6 +14,8 @@ export type CalendarCategoryKey =
   | "ibn"
   // Epic 13 — afgeleid uit de evenementenmodule (story 13.7).
   | "evenement"
+  // Epic 14 — afgeleid uit de personeelsplanning (story 14.5).
+  | "personeel"
   // Fase 2 — handmatige items die het team zelf beheert.
   | "stage"
   | "afstand"
@@ -38,6 +40,8 @@ export const CALENDAR_CATEGORIES: readonly CalendarCategory[] = [
   { key: "ibn", label: "IBN-deadlines", pill: "bg-red-100 text-red-800 border-red-300", dot: "bg-red-500", manual: false },
   // Sinds story 13.7 afgeleid uit de evenementenmodule: niet meer handmatig aan te maken.
   { key: "evenement", label: "Evenementen", pill: "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300", dot: "bg-fuchsia-500", manual: false },
+  // Story 14.5 — wie komt die dag, uit de personeelsplanning. Eén item per dag.
+  { key: "personeel", label: "Personeel", pill: "bg-lime-100 text-lime-800 border-lime-300", dot: "bg-lime-500", manual: false },
   { key: "stage", label: "Stage", pill: "bg-teal-100 text-teal-800 border-teal-300", dot: "bg-teal-500", manual: true },
   { key: "afstand", label: "Afstand", pill: "bg-orange-100 text-orange-800 border-orange-300", dot: "bg-orange-500", manual: true },
   { key: "afspraak", label: "Afspraak", pill: "bg-indigo-100 text-indigo-800 border-indigo-300", dot: "bg-indigo-500", manual: true },
