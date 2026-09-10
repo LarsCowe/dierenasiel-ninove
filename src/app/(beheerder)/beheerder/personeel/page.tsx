@@ -6,6 +6,7 @@ import {
   getRecentAttendanceTasks,
   getVolunteerOptions,
 } from "@/lib/queries/staff-attendance";
+import { getSlotsBetween } from "@/lib/queries/staff-slots";
 import { buildAttendanceWeek, weekStartFor } from "@/lib/staff/attendance";
 import { taskSuggestions } from "@/lib/staff/tasks";
 import { addDays } from "@/lib/calendar/events";
@@ -32,10 +33,12 @@ export default async function PersoneelPage({ searchParams }: Props) {
 
   // Story 14.2 — de taken van het voorbije halfjaar komen mee in de voorstellen.
   // Story 14.4 — de wandelaars enkel voor wie anderen mag inschrijven.
-  const [entries, eerdereTaken, volunteers] = await Promise.all([
+  // Story 14.3 — de plaatsjes van deze week.
+  const [entries, eerdereTaken, volunteers, slots] = await Promise.all([
     getAttendanceForWeek(weekStart),
     getRecentAttendanceTasks(addDays(today, -183)),
     mayManageOthers ? getVolunteerOptions() : Promise.resolve([]),
+    getSlotsBetween(weekStart, addDays(weekStart, 6)),
   ]);
   const days = buildAttendanceWeek(weekStart, entries);
 
@@ -44,8 +47,9 @@ export default async function PersoneelPage({ searchParams }: Props) {
       <div>
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Personeel</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Wie komt wanneer, en wat die komt doen. Schrijf jezelf in voor een hele dag, of met uren
-          en een taak als je die al weet — dan weet de rest van het team op wie ze kunnen rekenen.
+          Wie komt wanneer, en wat die komt doen. Schrijf jezelf in voor een hele dag, met uren en
+          een taak, of neem een plaatsje dat de leiding klaarzette — dan weet de rest van het team op
+          wie ze kunnen rekenen.
         </p>
       </div>
 
@@ -60,6 +64,7 @@ export default async function PersoneelPage({ searchParams }: Props) {
           mayManageOthers={mayManageOthers}
           taskSuggestions={taskSuggestions(eerdereTaken)}
           volunteers={volunteers}
+          slots={slots}
         />
       </div>
     </div>

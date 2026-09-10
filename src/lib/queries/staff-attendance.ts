@@ -29,6 +29,7 @@ export async function getAttendanceBetween(start: string, end: string): Promise<
         startTime: staffAttendance.startTime,
         endTime: staffAttendance.endTime,
         task: staffAttendance.task,
+        slotId: staffAttendance.slotId,
         note: staffAttendance.note,
       })
       .from(staffAttendance)

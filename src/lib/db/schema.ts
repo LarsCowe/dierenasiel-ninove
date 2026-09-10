@@ -891,6 +891,27 @@ export const strayCatCampaignInspectionCages = pgTable("stray_cat_campaign_inspe
 ]);
 
 /**
+ * Epic 14, story 14.3 — plaatsjes per tijdsblok: wat de leiding klaarzet ("zondag 2×
+ * kuis honden"). Wie een plaatsje neemt, krijgt een inschrijving in `staff_attendance`
+ * met `slot_id` — zie de ontwerpnota in `14-3-plaatsjes-per-tijdsblok.md`.
+ */
+export const staffSlots = pgTable("staff_slots", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(),
+  // "HH:MM", zoals de inschrijvingen. Leeg = hele dag.
+  startTime: varchar("start_time", { length: 5 }),
+  endTime: varchar("end_time", { length: 5 }),
+  task: varchar("task", { length: 120 }).notNull(),
+  /** Aantal plaatsen, 1–20 (`SLOT_MAX_CAPACITY`). */
+  capacity: integer("capacity").notNull(),
+  note: varchar("note", { length: 200 }),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_staff_slots_date").on(table.date),
+]);
+
+/**
  * Epic 14, story 14.1 — wie komt welke dag.
  *
  * Eén rij per blok: een persoon kan op één dag meerdere blokken hebben (story 14.7,
@@ -915,6 +936,9 @@ export const staffAttendance = pgTable("staff_attendance", {
   // Story 14.2 — wat die persoon komt doen ("Kuis honden", "Zwerfkat ophalen").
   // Vrije tekst met voorstellen (`src/lib/staff/tasks.ts`). Geen toelichting: die blijft `note`.
   task: varchar("task", { length: 120 }),
+  // Story 14.3 — het plaatsje dat deze inschrijving inneemt; leeg = gewoon blok. Een
+  // plaatsje met innemers kan niet weg (`deleteSlot`); set null is enkel een vangnet.
+  slotId: integer("slot_id").references(() => staffSlots.id, { onDelete: "set null" }),
   note: varchar("note", { length: 200 }),
   /** Wie de inschrijving zette — jezelf of iemand van de leiding. */
   createdBy: integer("created_by").references(() => users.id),

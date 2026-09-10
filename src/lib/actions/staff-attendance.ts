@@ -7,8 +7,16 @@ import { staffAttendance } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { findOverlap, formatTimeRange, isSameBlock, samePerson } from "@/lib/staff/attendance";
+import { isUniqueViolation } from "@/lib/db/errors";
+import {
+  findOverlap,
+  formatTimeRange,
+  isSameBlock,
+  samePerson,
+  timeRangeIssues,
+} from "@/lib/staff/attendance";
 import { TASK_MAX_LENGTH, normalizeTask } from "@/lib/staff/tasks";
+import { withoutSlotTakers } from "@/lib/staff/slots";
 import { findApprovedWalker } from "@/lib/queries/staff-attendance";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
@@ -40,19 +48,13 @@ const KIES_WANDELAAR = "Kies een wandelaar uit de lijst";
 
 type Issue = { code: "custom"; path: string[]; message: string };
 
-/**
- * Een einduur zonder beginuur zegt niets, en een blok over middernacht is in een asiel
- * met dagwerking eerder een tikfout dan een shift.
- */
+/** Story 14.7 — de urencontrole, gedeeld met de plaatsjes (`timeRangeIssues`). */
 function controleerUren(
   data: { startTime?: string; endTime?: string },
   ctx: { addIssue: (issue: Issue) => void },
 ) {
-  if (data.endTime && !data.startTime) {
-    ctx.addIssue({ code: "custom", path: ["startTime"], message: "Vul eerst een beginuur in" });
-  }
-  if (data.startTime && data.endTime && data.endTime <= data.startTime) {
-    ctx.addIssue({ code: "custom", path: ["endTime"], message: "Einduur moet na het beginuur liggen" });
+  for (const issue of timeRangeIssues(data.startTime, data.endTime)) {
+    ctx.addIssue({ code: "custom", path: [issue.path], message: issue.message });
   }
 }
 
@@ -83,17 +85,6 @@ const addPersonSchema = z
     controleerUren(data, ctx);
   });
 
-/**
- * Postgres "unique_violation": de databank hield een exact dubbel blok tegen.
- * drizzle-orm verpakt elke databankfout in een `DrizzleQueryError`; de Postgres-code
- * zit dan in `cause` (review 14.7 — zelfde patroon als `kennels.ts`).
- */
-function isDubbel(err: unknown): boolean {
-  if (typeof err !== "object" || err === null) return false;
-  const fout = err as { code?: unknown; cause?: { code?: unknown } };
-  return (fout.code ?? fout.cause?.code) === "23505";
-}
-
 /** Alle blokken van één dag. Een dag telt er hooguit een paar tientallen. */
 function blokkenOpDag(date: string) {
   return db
@@ -104,6 +95,7 @@ function blokkenOpDag(date: string) {
       startTime: staffAttendance.startTime,
       endTime: staffAttendance.endTime,
       task: staffAttendance.task,
+      slotId: staffAttendance.slotId,
     })
     .from(staffAttendance)
     .where(eq(staffAttendance.date, date))
@@ -126,6 +118,8 @@ function zelfdeTaak(a: string | null, b: string | null): boolean {
  * exact hetzelfde blok nog eens = niets doen, een botsend blok = weigeren, anders
  * bewaren. Een dubbel blok dat tussen twee tabbladen door glipt, houdt de databank
  * tegen; dat is dan hetzelfde als "stond al ingeschreven".
+ *
+ * Story 14.3 — enkel gewone blokken tellen hier mee: "hele dag" naast een plaatsje mag.
  */
 async function schrijfIn(
   date: string,
@@ -133,7 +127,8 @@ async function schrijfIn(
   extra: { note: string; task: string | null; createdBy: number },
   wie: string,
 ): Promise<ActionResult> {
-  const bestaande = await blokkenOpDag(date);
+  const alleRijen = await blokkenOpDag(date);
+  const bestaande = withoutSlotTakers(alleRijen);
   const alGeboekt = { success: true as const, data: undefined, message: `${wie} stond al ingeschreven.` };
 
   const zelfde = bestaande.find((b) => samePerson(b, nieuw) && isSameBlock(b, nieuw));
@@ -164,6 +159,22 @@ async function schrijfIn(
     };
   }
 
+  // Code-review 14.3 — de uniciteitsregel (dag, persoon, beginuur) telt ook de plaatsjes-rijen.
+  // Een gewoon blok op hetzelfde beginuur als een eigen plaatsje botst in de databank; zonder
+  // deze controle las de catch hieronder dat als "stond al ingeschreven", terwijl er niets
+  // bewaard werd.
+  const eigenPlaatsje = alleRijen.find(
+    (r) => r.slotId != null && samePerson(r, nieuw) && (r.startTime ?? null) === (nieuw.startTime ?? null),
+  );
+  if (eigenPlaatsje) {
+    const vanaf = eigenPlaatsje.startTime ? `vanaf ${eigenPlaatsje.startTime}` : "voor de hele dag";
+    const taak = eigenPlaatsje.task ? ` (${eigenPlaatsje.task})` : "";
+    return {
+      success: false,
+      error: `${wie} ${wie === "Je" ? "hebt" : "heeft"} die dag al een plaatsje ${vanaf}${taak}. Een gewoon blok met hetzelfde beginuur kan niet: kies een ander beginuur, of geef het plaatsje vrij.`,
+    };
+  }
+
   try {
     await db.insert(staffAttendance).values({
       date,
@@ -172,11 +183,12 @@ async function schrijfIn(
       startTime: nieuw.startTime,
       endTime: nieuw.endTime,
       task: extra.task,
+      slotId: null,
       note: extra.note || null,
       createdBy: extra.createdBy,
     });
   } catch (err) {
-    if (isDubbel(err)) {
+    if (isUniqueViolation(err)) {
       revalidatePath(PATH);
       return alGeboekt;
     }
@@ -369,12 +381,21 @@ export async function setAttendanceTask(
       userId: staffAttendance.userId,
       date: staffAttendance.date,
       task: staffAttendance.task,
+      slotId: staffAttendance.slotId,
     })
     .from(staffAttendance)
     .where(eq(staffAttendance.id, id))
     .limit(1);
 
   if (!rij) return { success: false, error: "Inschrijving niet gevonden" };
+
+  // Story 14.3 — de taak van een ingenomen plaatsje komt van dat plaatsje.
+  if (rij.slotId) {
+    return {
+      success: false,
+      error: "De taak komt van het plaatsje. Wil je iets anders doen, geef het plaatsje dan vrij (✕).",
+    };
+  }
 
   const eigen = rij.userId === session.userId;
   if (!eigen && !hasPermission(session.role, "staff:write")) {
@@ -391,7 +412,8 @@ export async function setAttendanceTask(
 
 /**
  * Een inschrijving weghalen. Je eigen mag altijd; die van iemand anders enkel
- * met schrijfrecht — de controle staat hier, niet enkel in het scherm.
+ * met schrijfrecht — de controle staat hier, niet enkel in het scherm. Sinds story
+ * 14.3 geeft dit ook een ingenomen plaatsje vrij.
  */
 export async function removeAttendance(
   _prev: ActionResult | null,

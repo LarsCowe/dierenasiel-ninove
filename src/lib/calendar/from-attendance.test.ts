@@ -12,6 +12,7 @@ const entry = (overrides: Partial<AttendanceEntry> = {}): AttendanceEntry => ({
   startTime: null,
   endTime: null,
   task: null,
+  slotId: null,
   note: null,
   ...overrides,
 });

@@ -33,7 +33,31 @@ export interface AttendanceEntry extends TimeBlock, Person {
   userRole: string | null;
   /** Story 14.2 — wat die persoon komt doen. */
   task: string | null;
+  /** Story 14.3 — het plaatsje dat deze inschrijving inneemt, of null voor een gewoon blok. */
+  slotId: number | null;
   note: string | null;
+}
+
+export interface TimeRangeIssue {
+  path: "startTime" | "endTime";
+  message: string;
+}
+
+/**
+ * Story 14.7 — kloppen de uren? Een einduur zonder beginuur zegt niets, en een blok over
+ * middernacht is in een asiel met dagwerking eerder een tikfout dan een shift. Gedeeld door
+ * de acties voor inschrijvingen en plaatsjes (14.3).
+ */
+export function timeRangeIssues(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+): TimeRangeIssue[] {
+  const issues: TimeRangeIssue[] = [];
+  if (endTime && !startTime) issues.push({ path: "startTime", message: "Vul eerst een beginuur in" });
+  if (startTime && endTime && endTime <= startTime) {
+    issues.push({ path: "endTime", message: "Einduur moet na het beginuur liggen" });
+  }
+  return issues;
 }
 
 export interface AttendanceDay {
