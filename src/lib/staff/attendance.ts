@@ -1,23 +1,34 @@
 import { addDays, startOfWeekMonday } from "@/lib/calendar/events";
 
 /**
- * Wie komt welke dag (Epic 14, story 14.1).
+ * Wie komt welke dag (Epic 14, story 14.1) — en sinds story 14.7 ook van hoe laat
+ * tot hoe laat. Sven, vraag 2: "uren zou het makkelijkste zijn om overzicht te bewaren".
  *
  * De datumrekenkunde komt uit `@/lib/calendar/events` — die is Brussel- en
  * zomertijdveilig en wordt al door de teamkalender gebruikt. Een tweede
  * implementatie zou vroeg of laat een dag verschillen met de kalender.
  */
 
-export interface AttendanceEntry {
+export interface TimeBlock {
+  /** "HH:MM". Leeg = de hele dag. */
+  startTime: string | null;
+  /** "HH:MM". Leeg = open einde (of de hele dag, als er ook geen begin is). */
+  endTime: string | null;
+}
+
+export interface Person {
+  /** Gevuld voor wie een account heeft. */
+  userId: number | null;
+  /** Naam van een vrijwilliger zonder login, ingeschreven door de leiding. */
+  guestName: string | null;
+}
+
+export interface AttendanceEntry extends TimeBlock, Person {
   id: number;
   /** YYYY-MM-DD */
   date: string;
-  /** Gevuld voor wie een account heeft. */
-  userId: number | null;
   /** Naam van dat account, opgehaald bij het uitlezen. */
   userName: string | null;
-  /** Naam van een vrijwilliger zonder login, ingeschreven door de leiding. */
-  guestName: string | null;
   note: string | null;
 }
 
@@ -43,9 +54,67 @@ export function displayName(entry: AttendanceEntry): string {
   return entry.userName ?? entry.guestName ?? "—";
 }
 
+/** "09:00–12:00", "vanaf 14:00" of "hele dag". */
+export function formatTimeRange(block: TimeBlock): string {
+  if (!block.startTime) return "hele dag";
+  if (!block.endTime) return `vanaf ${block.startTime}`;
+  return `${block.startTime}–${block.endTime}`;
+}
+
+/**
+ * Een blok als halfopen interval [begin, einde). Een hele dag loopt van 00:00 tot
+ * 24:00, een open einde tot 24:00. "HH:MM" met voorloopnul sorteert als tekst goed,
+ * dus vergelijken kan zonder omrekenen.
+ */
+function interval(block: TimeBlock): [string, string] {
+  if (!block.startTime) return ["00:00", "24:00"];
+  return [block.startTime, block.endTime ?? "24:00"];
+}
+
+/** Aansluitende blokken (9–12 en 12–15) overlappen niet; een hele dag overlapt met alles. */
+export function blocksOverlap(a: TimeBlock, b: TimeBlock): boolean {
+  const [aVan, aTot] = interval(a);
+  const [bVan, bTot] = interval(b);
+  return aVan < bTot && bVan < aTot;
+}
+
+export function isSameBlock(a: TimeBlock, b: TimeBlock): boolean {
+  return (a.startTime ?? null) === (b.startTime ?? null) && (a.endTime ?? null) === (b.endTime ?? null);
+}
+
+function normalizeName(name: string | null): string {
+  return (name ?? "").trim().toLocaleLowerCase("nl");
+}
+
+/**
+ * Dezelfde persoon: hetzelfde account, of — zonder account — dezelfde naam. Zo telt
+ * "Tante Marie" en " tante marie" als één vrijwilliger.
+ */
+export function samePerson(a: Person, b: Person): boolean {
+  if (a.userId !== null || b.userId !== null) return a.userId !== null && a.userId === b.userId;
+  const naam = normalizeName(a.guestName);
+  return naam !== "" && naam === normalizeName(b.guestName);
+}
+
+/** Het eerste bestaande blok van dezelfde persoon dat met het nieuwe botst, of null. */
+export function findOverlap<T extends Person & TimeBlock>(
+  bestaande: readonly T[],
+  nieuw: Person & TimeBlock,
+): T | null {
+  return bestaande.find((e) => samePerson(e, nieuw) && blocksOverlap(e, nieuw)) ?? null;
+}
+
 /** Maandag van de week waarin deze datum valt. */
 export function weekStartFor(dateStr: string): string {
   return startOfWeekMonday(dateStr);
+}
+
+/** Volgorde van aankomst: hele dag eerst, dan op beginuur, dan op naam. */
+function volgorde(a: AttendanceEntry, b: AttendanceEntry): number {
+  const aStart = a.startTime ?? "";
+  const bStart = b.startTime ?? "";
+  if (aStart !== bStart) return aStart < bStart ? -1 : 1;
+  return displayName(a).localeCompare(displayName(b), "nl", { sensitivity: "base" });
 }
 
 export function buildAttendanceWeek(
@@ -61,9 +130,7 @@ export function buildAttendanceWeek(
 
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(weekStart, i);
-    const dayEntries = (perDay.get(date) ?? []).sort((a, b) =>
-      displayName(a).localeCompare(displayName(b), "nl", { sensitivity: "base" }),
-    );
+    const dayEntries = (perDay.get(date) ?? []).sort(volgorde);
     return { date, label: WEEKDAY_LABELS[i], entries: dayEntries };
   });
 }

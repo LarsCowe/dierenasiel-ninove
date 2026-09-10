@@ -33,17 +33,21 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "staff:read",
   ],
 
+  // `staff:read` sinds story 14.7 — Sven, vraag 6: "iedereen met back office toegang"
+  // mag zien wie er komt (en zichzelf inschrijven, zie 14.1).
   dierenarts: [
     "animal:read",
     "medical:read",
     "medical:write",
     "medical:first_check",
+    "staff:read",
   ],
 
   adoptieconsulent: [
     "animal:read",
     "adoption:read",
     "adoption:write",
+    "staff:read",
   ],
 
   coördinator: [

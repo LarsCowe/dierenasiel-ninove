@@ -893,31 +893,42 @@ export const strayCatCampaignInspectionCages = pgTable("stray_cat_campaign_inspe
 /**
  * Epic 14, story 14.1 — wie komt welke dag.
  *
- * Eén rij per persoon per dag. `userId` is gevuld voor wie een account heeft
- * (die schrijft zichzelf in); `guestName` voor een vrijwilliger zonder login,
+ * Eén rij per blok: een persoon kan op één dag meerdere blokken hebben (story 14.7,
+ * Sven: "uren zou het makkelijkste zijn"). `userId` is gevuld voor wie een account
+ * heeft (die schrijft zichzelf in); `guestName` voor een vrijwilliger zonder login,
  * die door iemand van de leiding wordt ingeschreven. Precies één van de twee is
- * gevuld — bewaakt in `src/lib/staff/attendance.ts`.
+ * gevuld. Overlap tussen blokken van dezelfde persoon wordt geweigerd in de actie
+ * (`findOverlap` in `src/lib/staff/attendance.ts`).
  *
  * De naam van een account wordt bij het uitlezen opgehaald en niet hier
  * gekopieerd, zodat hij klopt na een naamswijziging (patroon van 10.54/10.55).
- *
- * Bewust géén dagdeel: Sven vroeg "wie komt welke dag". Komt iemand enkel
- * 's voormiddags, dan past dat in `note` — een kolom erbij is later één
- * `db:push`, een verkeerd gemodelleerd dagdeel is dat niet.
  */
 export const staffAttendance = pgTable("staff_attendance", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   guestName: varchar("guest_name", { length: 200 }),
+  // Story 14.7 — "HH:MM", zoals `events` en `event_shifts`. Leeg = hele dag.
+  startTime: varchar("start_time", { length: 5 }),
+  // Leeg = open einde ("vanaf 14:00").
+  endTime: varchar("end_time", { length: 5 }),
   note: varchar("note", { length: 200 }),
   /** Wie de inschrijving zette — jezelf of iemand van de leiding. */
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_staff_attendance_date").on(table.date),
-  // Twee keer dezelfde persoon op dezelfde dag heeft geen betekenis.
-  unique("uq_staff_attendance_date_user").on(table.date, table.userId),
+  // Story 14.7 — meerdere blokken per dag mogen, exact hetzelfde blok twee keer niet
+  // (ook niet bij twee tabbladen tegelijk). `guest_name` erbij zodat twee verschillende
+  // vrijwilligers zonder login (user_id leeg) op hetzelfde uur wél kunnen.
+  //
+  // ⚠️ In de databank staat deze regel als UNIQUE NULLS NOT DISTINCT — met de hand gezet
+  // (story 14.7), want pas dan telt "hele dag" (beginuur leeg) als hetzelfde blok.
+  // drizzle-kit leest die vlag niet uit: met `.nullsNotDistinct()` hier wil elke
+  // `db:push` de regel opnieuw aanmaken en vraagt het of de tabel leeg mag. Daarom
+  // hier zonder vlag. Wie de databank van nul opbouwt, zet de vlag er met de hand bij;
+  // de actie weigert dubbele blokken hoe dan ook (`schrijfIn`).
+  unique("uq_staff_attendance_block").on(table.date, table.userId, table.guestName, table.startTime),
 ]);
 
 export const blacklistEntries = pgTable("blacklist_entries", {

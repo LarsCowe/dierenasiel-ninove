@@ -147,6 +147,13 @@ describe("getVisibleNavItems", () => {
     expect(items.map((i) => i.label)).toEqual(["Dashboard", "Kalender"]);
   });
 
+  // Story 14.7 — Sven, vraag 6: "iedereen met back office toegang" ziet wie er komt.
+  it("toont Personeel aan elke backoffice-rol", () => {
+    for (const role of ["beheerder", "medewerker", "dierenarts", "adoptieconsulent", "coördinator"]) {
+      expect(getVisibleNavItems(role).map((i) => i.label)).toContain("Personeel");
+    }
+  });
+
   // Story 13.14 — trekker is geen rol, maar een eigenschap van een evenement.
   it("toont Evenementen aan een medewerker die trekker is van een evenement", () => {
     expect(getVisibleNavItems("medewerker", { trekker: true }).map((i) => i.label)).toContain("Evenementen");

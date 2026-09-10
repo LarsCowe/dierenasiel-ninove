@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   addPersonToDay,
@@ -10,9 +10,11 @@ import {
 import {
   canRemove,
   displayName,
+  formatTimeRange,
   isSignedUp,
   type AttendanceDay,
 } from "@/lib/staff/attendance";
+import type { ActionResult } from "@/types";
 
 interface Props {
   week: AttendanceDay[];
@@ -22,6 +24,42 @@ interface Props {
   today: string;
   currentUserId: number | null;
   mayManageOthers: boolean;
+}
+
+const TIJD =
+  "w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500";
+
+/** De eerste zinnige melding: een veldfout ("Einduur moet na…") gaat voor "Validatie mislukt". */
+function melding(state: ActionResult | null): string | null {
+  if (!state || state.success) return null;
+  const veldfout = state.fieldErrors ? Object.values(state.fieldErrors).flat()[0] : undefined;
+  return veldfout ?? state.error ?? null;
+}
+
+/**
+ * React 19 leegt ongecontroleerde velden ná een Server Action, ook bij een fout. De
+ * acties geven de ingevulde waarden terug; die zetten we hier terug, zodat niemand
+ * na "Einduur moet na het beginuur liggen" naam en uren opnieuw moet typen.
+ */
+function herstel(form: HTMLFormElement | null, waarden: Record<string, string> | undefined) {
+  if (!form || !waarden) return;
+  for (const [naam, waarde] of Object.entries(waarden)) {
+    const veld = form.elements.namedItem(naam);
+    if (veld instanceof HTMLInputElement || veld instanceof HTMLTextAreaElement) {
+      veld.value = waarde;
+    }
+  }
+}
+
+/** Van–tot, twee tijdvelden naast elkaar. Story 14.7. */
+function Uren({ dagLabel }: { dagLabel: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <input type="time" name="startTime" step={900} aria-label={`Van (${dagLabel})`} className={TIJD} />
+      <span className="text-xs text-gray-400">–</span>
+      <input type="time" name="endTime" step={900} aria-label={`Tot (${dagLabel})`} className={TIJD} />
+    </div>
+  );
 }
 
 export default function AttendanceWeek({
@@ -37,12 +75,23 @@ export default function AttendanceWeek({
   const [removeState, removeAction] = useActionState(removeAttendance, null);
   const [addState, addAction] = useActionState(addPersonToDay, null);
   const [addingOn, setAddingOn] = useState<string | null>(null);
+  // Story 14.7 — op welke dag het urenformulier openstaat.
+  const [urenOp, setUrenOp] = useState<string | null>(null);
+  // Er staat telkens hooguit één urenformulier en één vrijwilligersformulier open.
+  const urenForm = useRef<HTMLFormElement>(null);
+  const addForm = useRef<HTMLFormElement>(null);
 
-  const foutmelding =
-    (signUpState && !signUpState.success && signUpState.error) ||
-    (removeState && !removeState.success && removeState.error) ||
-    (addState && !addState.success && addState.error) ||
-    null;
+  // Geslaagd: formulier dicht. Mislukt: ingevulde waarden terug.
+  useEffect(() => {
+    if (signUpState?.success) setUrenOp(null);
+    else if (signUpState) herstel(urenForm.current, signUpState.values);
+  }, [signUpState]);
+  useEffect(() => {
+    if (addState?.success) setAddingOn(null);
+    else if (addState) herstel(addForm.current, addState.values);
+  }, [addState]);
+
+  const foutmelding = melding(signUpState) ?? melding(removeState) ?? melding(addState);
 
   return (
     <div className="space-y-4">
@@ -70,8 +119,10 @@ export default function AttendanceWeek({
         <p className="text-sm text-gray-500">Week van {weekStart}</p>
       </div>
 
-      {foutmelding && foutmelding !== "Validatie mislukt" && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{foutmelding}</p>
+      {foutmelding && (
+        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+          {foutmelding}
+        </p>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -109,16 +160,17 @@ export default function AttendanceWeek({
                         {entry.userId === null && (
                           <span className="ml-1 text-xs text-gray-400">(vrijwilliger)</span>
                         )}
-                        {entry.note && (
-                          <span className="block text-xs text-gray-500">{entry.note}</span>
-                        )}
+                        <span className="block text-xs tabular-nums text-gray-500">
+                          {formatTimeRange(entry)}
+                          {entry.note && <> · {entry.note}</>}
+                        </span>
                       </span>
                       {canRemove(entry, currentUserId, mayManageOthers) && (
                         <form action={removeAction}>
                           <input type="hidden" name="id" value={entry.id} />
                           <button
                             type="submit"
-                            aria-label={`${displayName(entry)} uitschrijven`}
+                            aria-label={`${displayName(entry)} uitschrijven (${formatTimeRange(entry)})`}
                             className="rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-red-600"
                           >
                             ✕
@@ -131,38 +183,77 @@ export default function AttendanceWeek({
               )}
 
               <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                {!ikKom ? (
-                  <form action={signUpAction}>
+                {urenOp === day.date ? (
+                  <form ref={urenForm} action={signUpAction} className="space-y-1.5">
                     <input type="hidden" name="date" value={day.date} />
-                    <button
-                      type="submit"
-                      disabled={signUpPending}
-                      className="w-full rounded-md bg-[#1b4332] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
-                    >
-                      Ik kom
-                    </button>
+                    <Uren dagLabel={day.label} />
+                    <div className="flex gap-1.5">
+                      <button
+                        type="submit"
+                        disabled={signUpPending}
+                        className="flex-1 rounded-md bg-[#1b4332] px-2 py-1 text-xs font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
+                      >
+                        Ik kom
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUrenOp(null)}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                      >
+                        Annuleren
+                      </button>
+                    </div>
                   </form>
+                ) : !ikKom ? (
+                  <div className="space-y-1">
+                    {/* "Ik kom" blijft één klik voor een hele dag; uren zijn een verfijning. */}
+                    <form action={signUpAction}>
+                      <input type="hidden" name="date" value={day.date} />
+                      <button
+                        type="submit"
+                        disabled={signUpPending}
+                        className="w-full rounded-md bg-[#1b4332] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
+                      >
+                        Ik kom
+                      </button>
+                    </form>
+                    <button
+                      type="button"
+                      onClick={() => setUrenOp(day.date)}
+                      className="w-full text-center text-xs text-[#2d6a4f] hover:underline"
+                    >
+                      met uren…
+                    </button>
+                  </div>
                 ) : (
-                  <p className="text-center text-xs font-medium text-emerald-700">
-                    Je staat ingeschreven
-                  </p>
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-emerald-700">Je staat ingeschreven</p>
+                    <button
+                      type="button"
+                      onClick={() => setUrenOp(day.date)}
+                      className="text-xs text-[#2d6a4f] hover:underline"
+                    >
+                      + nog een blok
+                    </button>
+                  </div>
                 )}
 
                 {mayManageOthers &&
                   (addingOn === day.date ? (
-                    <form action={addAction} className="space-y-1.5">
+                    <form ref={addForm} action={addAction} className="space-y-1.5">
                       <input type="hidden" name="date" value={day.date} />
                       <input
                         name="guestName"
                         placeholder="Naam vrijwilliger"
                         aria-label={`Naam vrijwilliger voor ${day.label}`}
-                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        className={TIJD}
                       />
+                      <Uren dagLabel={`vrijwilliger ${day.label}`} />
                       <input
                         name="note"
                         placeholder="Toelichting (optioneel)"
                         aria-label={`Toelichting voor ${day.label}`}
-                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        className={TIJD}
                       />
                       <div className="flex gap-1.5">
                         <button

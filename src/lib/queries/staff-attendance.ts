@@ -20,6 +20,8 @@ export async function getAttendanceForWeek(weekStart: string): Promise<Attendanc
         userId: staffAttendance.userId,
         userName: users.name,
         guestName: staffAttendance.guestName,
+        startTime: staffAttendance.startTime,
+        endTime: staffAttendance.endTime,
         note: staffAttendance.note,
       })
       .from(staffAttendance)

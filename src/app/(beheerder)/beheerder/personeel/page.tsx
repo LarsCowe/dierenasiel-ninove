@@ -32,8 +32,8 @@ export default async function PersoneelPage({ searchParams }: Props) {
       <div>
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Personeel</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Wie komt welke dag. Schrijf jezelf in, dan weet de rest van het team op wie ze kunnen
-          rekenen.
+          Wie komt wanneer. Schrijf jezelf in voor een hele dag, of met uren als je die al weet —
+          dan weet de rest van het team op wie ze kunnen rekenen.
         </p>
       </div>
 
