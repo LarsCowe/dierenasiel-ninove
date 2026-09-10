@@ -9,6 +9,7 @@ import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { findOverlap, formatTimeRange, isSameBlock, samePerson } from "@/lib/staff/attendance";
 import { TASK_MAX_LENGTH, normalizeTask } from "@/lib/staff/tasks";
+import { findApprovedWalker } from "@/lib/queries/staff-attendance";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -35,13 +36,17 @@ const task = z
   .transform((v) => normalizeTask(v))
   .refine((v) => v === null || v.length <= TASK_MAX_LENGTH, TE_LANG);
 
+const KIES_WANDELAAR = "Kies een wandelaar uit de lijst";
+
+type Issue = { code: "custom"; path: string[]; message: string };
+
 /**
  * Een einduur zonder beginuur zegt niets, en een blok over middernacht is in een asiel
  * met dagwerking eerder een tikfout dan een shift.
  */
 function controleerUren(
   data: { startTime?: string; endTime?: string },
-  ctx: { addIssue: (issue: { code: "custom"; path: string[]; message: string }) => void },
+  ctx: { addIssue: (issue: Issue) => void },
 ) {
   if (data.endTime && !data.startTime) {
     ctx.addIssue({ code: "custom", path: ["startTime"], message: "Vul eerst een beginuur in" });
@@ -58,17 +63,25 @@ const signUpSchema = z
 const addPersonSchema = z
   .object({
     date: dateString,
-    guestName: z
+    // Story 14.4 — het account van een gekozen wandelaar. Of dat echt een goedgekeurde
+    // wandelaar is, controleert de actie tegen de databank.
+    walkerUserId: z
       .string()
-      .trim()
-      .min(1, "Vul een naam in")
-      .max(200, "Naam mag max 200 tekens zijn"),
+      .optional()
+      .refine((v) => !v || /^[1-9]\d*$/.test(v), KIES_WANDELAAR)
+      .transform((v) => (v ? Number(v) : undefined)),
+    guestName: z.string().trim().max(200, "Naam mag max 200 tekens zijn").optional().default(""),
     startTime: optionalTime,
     endTime: optionalTime,
     task,
     note,
   })
-  .superRefine((data, ctx) => controleerUren(data, ctx));
+  .superRefine((data, ctx) => {
+    if (!data.walkerUserId && !data.guestName) {
+      ctx.addIssue({ code: "custom", path: ["guestName"], message: "Vul een naam in of kies een wandelaar" });
+    }
+    controleerUren(data, ctx);
+  });
 
 /**
  * Postgres "unique_violation": de databank hield een exact dubbel blok tegen.
@@ -240,7 +253,10 @@ export async function signUpForDay(
   return { success: true, data: undefined, message: "Ingeschreven." };
 }
 
-/** Iemand zonder login inschrijven — enkel met schrijfrecht. */
+/**
+ * Iemand anders inschrijven — enkel met schrijfrecht. Sinds story 14.4 een gekozen
+ * wandelaar (via zijn account) of iemand zonder account (op naam).
+ */
 export async function addPersonToDay(
   _prev: ActionResult | null,
   formData: FormData,
@@ -253,6 +269,7 @@ export async function addPersonToDay(
 
   const values = {
     date: String(formData.get("date") ?? ""),
+    walkerUserId: String(formData.get("walkerUserId") ?? ""),
     guestName: String(formData.get("guestName") ?? ""),
     startTime: String(formData.get("startTime") ?? ""),
     endTime: String(formData.get("endTime") ?? ""),
@@ -270,32 +287,59 @@ export async function addPersonToDay(
     };
   }
 
-  const blok: Blok = {
-    userId: null,
-    guestName: parsed.data.guestName,
+  const uren = {
     startTime: parsed.data.startTime || null,
     endTime: parsed.data.endTime || null,
   };
+
+  let blok: Blok;
+  let wie: string;
+  if (parsed.data.walkerUserId) {
+    // Story 14.4 — de gekozen wandelaar gaat voor op een getypte naam.
+    // Code-review 14.4 — een nummer buiten het bereik van een Postgres-integer laat de
+    // databank een fout gooien; dat is gewoon "geen wandelaar", geen crash.
+    const wandelaar =
+      parsed.data.walkerUserId <= 2_147_483_647
+        ? await findApprovedWalker(parsed.data.walkerUserId).catch((err) => {
+            console.error("findApprovedWalker failed:", err);
+            return null;
+          })
+        : null;
+    if (!wandelaar) {
+      return {
+        success: false,
+        error: "Validatie mislukt",
+        fieldErrors: { walkerUserId: [KIES_WANDELAAR] },
+        values,
+      };
+    }
+    blok = { userId: wandelaar.userId, guestName: null, ...uren };
+    wie = wandelaar.name;
+  } else {
+    blok = { userId: null, guestName: parsed.data.guestName, ...uren };
+    wie = parsed.data.guestName;
+  }
 
   const result = await schrijfIn(
     parsed.data.date,
     blok,
     { note: parsed.data.note, task: parsed.data.task, createdBy: session.userId },
-    parsed.data.guestName,
+    wie,
   );
   if (!result.success) return { ...result, values };
   if (result.message) return result;
 
   await logAudit("staff_attendance.person_added", "staff_attendance", session.userId, null, {
     date: parsed.data.date,
-    guestName: parsed.data.guestName,
+    userId: blok.userId,
+    guestName: blok.guestName,
     startTime: blok.startTime,
     endTime: blok.endTime,
     task: parsed.data.task,
   });
 
   revalidatePath(PATH);
-  return { success: true, data: undefined, message: `${parsed.data.guestName} is ingeschreven.` };
+  return { success: true, data: undefined, message: `${wie} is ingeschreven.` };
 }
 
 /**

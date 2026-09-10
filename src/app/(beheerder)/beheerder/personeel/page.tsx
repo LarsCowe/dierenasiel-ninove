@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission, requirePermission } from "@/lib/permissions";
-import { getAttendanceForWeek, getRecentAttendanceTasks } from "@/lib/queries/staff-attendance";
+import {
+  getAttendanceForWeek,
+  getRecentAttendanceTasks,
+  getVolunteerOptions,
+} from "@/lib/queries/staff-attendance";
 import { buildAttendanceWeek, weekStartFor } from "@/lib/staff/attendance";
 import { taskSuggestions } from "@/lib/staff/tasks";
 import { addDays } from "@/lib/calendar/events";
@@ -20,15 +24,18 @@ export default async function PersoneelPage({ searchParams }: Props) {
 
   const session = await getSession();
   const { week } = await searchParams;
+  const mayManageOthers = !!session && hasPermission(session.role, "staff:write");
 
   // Vandaag in Brusselse tijd — een server in UTC mag de weekgrens niet verschuiven.
   const today = getBelgianDayBounds().start.toISOString().slice(0, 10);
   const weekStart = weekStartFor(/^\d{4}-\d{2}-\d{2}$/.test(week ?? "") ? week! : today);
 
   // Story 14.2 — de taken van het voorbije halfjaar komen mee in de voorstellen.
-  const [entries, eerdereTaken] = await Promise.all([
+  // Story 14.4 — de wandelaars enkel voor wie anderen mag inschrijven.
+  const [entries, eerdereTaken, volunteers] = await Promise.all([
     getAttendanceForWeek(weekStart),
     getRecentAttendanceTasks(addDays(today, -183)),
+    mayManageOthers ? getVolunteerOptions() : Promise.resolve([]),
   ]);
   const days = buildAttendanceWeek(weekStart, entries);
 
@@ -50,8 +57,9 @@ export default async function PersoneelPage({ searchParams }: Props) {
           nextWeek={addDays(weekStart, 7)}
           today={today}
           currentUserId={session?.userId ?? null}
-          mayManageOthers={!!session && hasPermission(session.role, "staff:write")}
+          mayManageOthers={mayManageOthers}
           taskSuggestions={taskSuggestions(eerdereTaken)}
+          volunteers={volunteers}
         />
       </div>
     </div>

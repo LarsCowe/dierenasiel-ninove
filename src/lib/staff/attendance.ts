@@ -29,6 +29,8 @@ export interface AttendanceEntry extends TimeBlock, Person {
   date: string;
   /** Naam van dat account, opgehaald bij het uitlezen. */
   userName: string | null;
+  /** Story 14.4 — rol van dat account; "wandelaar" voor een vrijwilliger met account. */
+  userRole: string | null;
   /** Story 14.2 — wat die persoon komt doen. */
   task: string | null;
   note: string | null;

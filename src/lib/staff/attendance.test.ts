@@ -18,6 +18,7 @@ const entry = (overrides: Partial<AttendanceEntry> = {}): AttendanceEntry => ({
   date: "2026-08-10",
   userId: 7,
   userName: "Nathalie",
+  userRole: "medewerker",
   guestName: null,
   startTime: null,
   endTime: null,

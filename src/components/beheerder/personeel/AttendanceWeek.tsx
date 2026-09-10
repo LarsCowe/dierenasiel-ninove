@@ -15,6 +15,7 @@ import {
   isSignedUp,
   type AttendanceDay,
 } from "@/lib/staff/attendance";
+import { personLabel, type VolunteerOption } from "@/lib/staff/volunteers";
 import type { ActionResult } from "@/types";
 
 interface Props {
@@ -27,6 +28,8 @@ interface Props {
   mayManageOthers: boolean;
   /** Story 14.2 — vaste voorstellen + wat eerder al ingevuld werd. */
   taskSuggestions: string[];
+  /** Story 14.4 — de wandelaars die de leiding kan inschrijven. Leeg voor wie dat niet mag. */
+  volunteers: VolunteerOption[];
 }
 
 const TIJD =
@@ -49,7 +52,11 @@ function herstel(form: HTMLFormElement | null, waarden: Record<string, string> |
   if (!form || !waarden) return;
   for (const [naam, waarde] of Object.entries(waarden)) {
     const veld = form.elements.namedItem(naam);
-    if (veld instanceof HTMLInputElement || veld instanceof HTMLTextAreaElement) {
+    if (
+      veld instanceof HTMLInputElement ||
+      veld instanceof HTMLTextAreaElement ||
+      veld instanceof HTMLSelectElement
+    ) {
       veld.value = waarde;
     }
   }
@@ -90,6 +97,7 @@ export default function AttendanceWeek({
   currentUserId,
   mayManageOthers,
   taskSuggestions,
+  volunteers,
 }: Props) {
   const [signUpState, signUpAction, signUpPending] = useActionState(signUpForDay, null);
   const [removeState, removeAction] = useActionState(removeAttendance, null);
@@ -206,15 +214,14 @@ export default function AttendanceWeek({
                     // de eigen, of — voor de leiding — die van iedereen.
                     const magBeheren = canRemove(entry, currentUserId, mayManageOthers);
                     const wie = `${displayName(entry)} (${formatTimeRange(entry)})`;
+                    const label = personLabel(entry);
 
                     return (
                       <li key={entry.id} className="text-sm">
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-gray-700">
                             {displayName(entry)}
-                            {entry.userId === null && (
-                              <span className="ml-1 text-xs text-gray-400">(vrijwilliger)</span>
-                            )}
+                            {label && <span className="ml-1 text-xs text-gray-400">({label})</span>}
                             <span className="block text-xs tabular-nums text-gray-500">
                               {formatTimeRange(entry)}
                               {entry.note && <> · {entry.note}</>}
@@ -329,9 +336,25 @@ export default function AttendanceWeek({
                   (addingOn === day.date ? (
                     <form ref={addForm} action={addAction} className="space-y-1.5">
                       <input type="hidden" name="date" value={day.date} />
+                      {/* Story 14.4 — vrijwilligers zijn wandelaars; wie geen wandelaar is, blijft op naam. */}
+                      {volunteers.length > 0 && (
+                        <select
+                          name="walkerUserId"
+                          defaultValue=""
+                          aria-label={`Wandelaar voor ${day.label}`}
+                          className={TIJD}
+                        >
+                          <option value="">— Wandelaar kiezen —</option>
+                          {volunteers.map((v) => (
+                            <option key={v.userId} value={v.userId}>
+                              {v.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <input
                         name="guestName"
-                        placeholder="Naam vrijwilliger"
+                        placeholder={volunteers.length > 0 ? "…of een naam zonder account" : "Naam vrijwilliger"}
                         aria-label={`Naam vrijwilliger voor ${day.label}`}
                         className={TIJD}
                       />
