@@ -326,7 +326,7 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   },
   {
     key: "isAvailableForAdoption",
-    label: "Ter adoptie",
+    label: "Adopteerbaar",
     remote: (a) => toBoolean(a.adoptie),
     local: (a) => a.isAvailableForAdoption ?? null,
     notTakeable: nooitOverneembaar,
@@ -334,7 +334,7 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   },
   {
     key: "isOnWebsite",
-    label: "Op de website",
+    label: "Ter adoptie (op website)",
     remote: (a) => toBoolean(a.publishonwebsite),
     local: (a) => a.isOnWebsite ?? null,
     notTakeable: nooitOverneembaar,

@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
   terug_eigenaar: "Terug naar eigenaar",
   geeuthanaseerd: "Geëuthanaseerd",
   ontsnapt: "Ontsnapt",
-  niet_ter_adoptie: "Niet ter adoptie",
+  niet_ter_adoptie: "(Nog) niet adopteerbaar",
 };
 
 export default function StatusOverview({ statuses }: StatusOverviewProps) {

@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
 
 // Kolombreedtes (% — som = 100), gealigneerd op het as-is asielrapport.
 const cols = {
-  adoptie: { width: "5%" },
+  adopteerbaar: { width: "6%" },
   reden: { width: "10%" },
   gedrag: { width: "6%" },
   naam: { width: "8%" },
@@ -44,8 +44,7 @@ const cols = {
   vaccin: { width: "6%" },
   ontworming: { width: "5%" },
   vlooien: { width: "5%" },
-  website: { width: "3%" },
-  adopteer: { width: "3%" },
+  terAdoptie: { width: "5%" },
 } as const;
 
 interface Props {
@@ -75,7 +74,7 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
         ) : (
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[cols.adoptie, styles.headerText]}>Ter adoptie</Text>
+              <Text style={[cols.adopteerbaar, styles.headerText]}>Adopteerbaar</Text>
               <Text style={[cols.reden, styles.headerText]}>Reden opvang</Text>
               <Text style={[cols.gedrag, styles.headerText]}>Gedragseval.</Text>
               <Text style={[cols.naam, styles.headerText]}>Naam</Text>
@@ -90,12 +89,11 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
               <Text style={[cols.vaccin, styles.headerText]}>Vaccin</Text>
               <Text style={[cols.ontworming, styles.headerText]}>Ontw.</Text>
               <Text style={[cols.vlooien, styles.headerText]}>Vlooien</Text>
-              <Text style={[cols.website, styles.headerText]}>Web</Text>
-              <Text style={[cols.adopteer, styles.headerText]}>Adopt.</Text>
+              <Text style={[cols.terAdoptie, styles.headerText]}>Ter adoptie</Text>
             </View>
             {animals.map((animal) => (
               <View key={animal.id} style={styles.tableRow}>
-                <Text style={[cols.adoptie, styles.cellText]}>{jaNee(animal.isAvailableForAdoption)}</Text>
+                <Text style={[cols.adopteerbaar, styles.cellText]}>{jaNee(animal.isAvailableForAdoption)}</Text>
                 <Text style={[cols.reden, styles.cellText]}>{redenOpvangDisplay(animal.intakeReason, animal.intakeDate)}</Text>
                 <Text style={[cols.gedrag, styles.cellText]}>{formatDateBE(animal.lastBehaviorDate) || "-"}</Text>
                 <Text style={[cols.naam, styles.cellText]}>{animal.name}</Text>
@@ -110,8 +108,7 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
                 <Text style={[cols.vaccin, styles.cellText]}>{vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter) || "-"}</Text>
                 <Text style={[cols.ontworming, styles.cellText]}>{formatDateBE(animal.lastDewormingDate) || "-"}</Text>
                 <Text style={[cols.vlooien, styles.cellText]}>{formatDateBE(animal.lastFleaTreatmentDate) || "-"}</Text>
-                <Text style={[cols.website, styles.cellText]}>{okBlank(animal.isOnWebsite)}</Text>
-                <Text style={[cols.adopteer, styles.cellText]}>{okBlank(animal.isAvailableForAdoption)}</Text>
+                <Text style={[cols.terAdoptie, styles.cellText]}>{okBlank(animal.isOnWebsite)}</Text>
               </View>
             ))}
           </View>

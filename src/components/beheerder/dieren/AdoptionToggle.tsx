@@ -40,12 +40,12 @@ export default function AdoptionToggle({ animalId, isAvailable }: AdoptionToggle
           className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
         />
         <span className="text-sm font-medium text-gray-700">
-          Beschikbaar voor adoptie
+          Adopteerbaar
         </span>
       </label>
       {isAvailable && (
         <p className="text-xs text-emerald-600">
-          Dit dier is zichtbaar voor adoptie-aanvragen
+          Klaar voor adoptie: kan gekozen worden bij een adoptie-aanvraag
         </p>
       )}
       {isPending && <p className="text-xs text-gray-400">Bijwerken...</p>}

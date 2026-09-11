@@ -6,7 +6,7 @@ import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWe
 import { getCampaignReport, type CampaignReportFilters } from "@/lib/queries/stray-cat-campaigns";
 import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
 import { speciesLabel, genderLabel, escapeCsvField } from "@/lib/utils";
-import { formatDateBE, sterielLabel, vaccinDisplay, redenOpvangDisplay, jaNee, okBlank } from "@/lib/reports/animal-report-format";
+import { formatDateBE, sterielLabel, vaccinDisplay, redenOpvangDisplay, jaNee, okBlank, R1_HEADERS } from "@/lib/reports/animal-report-format";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { ActionResult } from "@/types";
 import type { Animal } from "@/types";
@@ -30,7 +30,6 @@ function animalToCsvRow(animal: AnimalReportRow): string {
     escapeCsvField(formatDateBE(animal.lastDewormingDate)),
     escapeCsvField(formatDateBE(animal.lastFleaTreatmentDate)),
     escapeCsvField(okBlank(animal.isOnWebsite)),
-    escapeCsvField(okBlank(animal.isAvailableForAdoption)),
   ].join(",");
 }
 
@@ -62,7 +61,7 @@ export async function exportAnimalReportCsv(
 
   const { animals } = await getAnimalReport(queryFilters);
 
-  const header = "Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Vlooien,Website,Adopteer";
+  const header = R1_HEADERS.join(",");
   const rows = animals.map(animalToCsvRow);
   const csv = [header, ...rows].join("\n");
 

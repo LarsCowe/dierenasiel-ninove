@@ -10,6 +10,7 @@ import {
   redenOpvangDisplay,
   jaNee,
   okBlank,
+  R1_HEADERS,
 } from "@/lib/reports/animal-report-format";
 import ReportFilters from "@/components/beheerder/rapporten/ReportFilters";
 import ReportExportBar from "@/components/beheerder/rapporten/ReportExportBar";
@@ -70,25 +71,7 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {[
-                "Ter adoptie",
-                "Reden opvang",
-                "Gedragseval.",
-                "Naam",
-                "Ras",
-                "M/V",
-                "Steriel",
-                "Geb.datum",
-                "Chip",
-                "Nwe chip",
-                "Paspoort",
-                "Nw paspoort",
-                "Vaccin",
-                "Ontworming",
-                "Vlooien",
-                "Website",
-                "Adopteer",
-              ].map((h) => (
+              {R1_HEADERS.map((h) => (
                 <th
                   key={h}
                   className="whitespace-nowrap px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
@@ -101,7 +84,7 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
           <tbody className="divide-y divide-gray-100 bg-white">
             {animals.length === 0 ? (
               <tr>
-                <td colSpan={17} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={R1_HEADERS.length} className="px-4 py-8 text-center text-sm text-gray-500">
                   Geen dieren gevonden met de opgegeven filters.
                 </td>
               </tr>
@@ -132,7 +115,6 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
                   <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-600">{formatDateBE(animal.lastDewormingDate) || "—"}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-600">{formatDateBE(animal.lastFleaTreatmentDate) || "—"}</td>
                   <td className="px-3 py-2 text-sm text-gray-600">{okBlank(animal.isOnWebsite)}</td>
-                  <td className="px-3 py-2 text-sm text-gray-600">{okBlank(animal.isAvailableForAdoption)}</td>
                 </tr>
               ))
             )}

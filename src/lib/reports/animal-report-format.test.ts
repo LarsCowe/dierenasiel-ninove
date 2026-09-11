@@ -9,7 +9,37 @@ import {
   okBlank,
   latestByAnimalId,
   latestByAnimalIdForCategory,
+  R1_HEADERS,
 } from "./animal-report-format";
+
+// Story 10.62: één lijst voor scherm en CSV, zodat ze niet opnieuw uit elkaar lopen.
+describe("R1_HEADERS", () => {
+  it("heeft 16 kolommen: Adopteerbaar vooraan, Ter adoptie (= op website) achteraan", () => {
+    expect(R1_HEADERS).toEqual([
+      "Adopteerbaar",
+      "Reden opvang",
+      "Gedragseval.",
+      "Naam",
+      "Ras",
+      "M/V",
+      "Steriel",
+      "Geb.datum",
+      "Chip",
+      "Nwe chip",
+      "Paspoort",
+      "Nw paspoort",
+      "Vaccin",
+      "Ontworming",
+      "Vlooien",
+      "Ter adoptie",
+    ]);
+  });
+
+  it("bevat niet langer de dubbele kolom 'Adopteer' of de losse 'Website'", () => {
+    expect(R1_HEADERS).not.toContain("Adopteer");
+    expect(R1_HEADERS).not.toContain("Website");
+  });
+});
 
 describe("formatDateBE", () => {
   it("formats an ISO date to DD-MM-YYYY", () => {

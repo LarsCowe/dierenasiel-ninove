@@ -121,6 +121,15 @@ describe("AnimalTable — 'Reden van intake' kolom (Story 10.21)", () => {
   });
 });
 
+describe("AnimalTable — kolom Adopteerbaar (Story 10.62)", () => {
+  it("noemt de kolom voor isAvailableForAdoption 'Adopteerbaar', niet 'Ter adoptie'", () => {
+    render(<AnimalTable animals={[mockAnimal()]} />);
+    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent?.trim());
+    expect(headers).toContain("Adopteerbaar");
+    expect(headers).not.toContain("Ter adoptie");
+  });
+});
+
 describe("AnimalTable — kolom Kennel (Story 10.61)", () => {
   function kennelCell(name: string) {
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent?.trim());

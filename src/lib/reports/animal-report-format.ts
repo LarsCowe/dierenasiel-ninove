@@ -69,10 +69,34 @@ export function jaNee(value: boolean | null | undefined): string {
   return value ? "Ja" : "Nee";
 }
 
-/** Boolean → "OK"/"" (zoals Sven's WEBSITE/ADOPTEER kolommen). */
+/** Boolean → "OK"/"" (zoals Sven's TER ADOPTIE-kolom). */
 export function okBlank(value: boolean | null | undefined): string {
   return value ? "OK" : "";
 }
+
+/**
+ * Kolomkoppen van R1, gedeeld door scherm en CSV (de PDF kort ze af).
+ * Story 10.62 (Sven): "Adopteerbaar" = klaar voor adoptie (`isAvailableForAdoption`),
+ * "Ter adoptie" = staat effectief op de website (`isOnWebsite`).
+ */
+export const R1_HEADERS = [
+  "Adopteerbaar",
+  "Reden opvang",
+  "Gedragseval.",
+  "Naam",
+  "Ras",
+  "M/V",
+  "Steriel",
+  "Geb.datum",
+  "Chip",
+  "Nwe chip",
+  "Paspoort",
+  "Nw paspoort",
+  "Vaccin",
+  "Ontworming",
+  "Vlooien",
+  "Ter adoptie",
+] as const;
 
 /**
  * Reduceert een lijst van per-dier-records naar de meest recente per `animalId`.

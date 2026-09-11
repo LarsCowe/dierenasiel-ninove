@@ -31,7 +31,7 @@ const COLUMNS: Column[] = [
   { key: "species", label: "Soort", sortable: true },
   { key: "breed", label: "Ras", sortable: false },
   { key: "status", label: "Status", sortable: true },
-  { key: "isAvailableForAdoption", label: "Ter adoptie", sortable: false },
+  { key: "isAvailableForAdoption", label: "Adopteerbaar", sortable: false },
   { key: "kennelId", label: "Kennel", sortable: false },
   { key: "intakeDate", label: "Intake datum", sortable: true },
   { key: "intakeReason", label: "Reden van intake", sortable: false },

@@ -633,7 +633,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
                 defaultChecked={animal.isOnWebsite ?? false}
                 className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="text-sm text-gray-700">Zichtbaar op website</span>
+              <span className="text-sm text-gray-700">Ter adoptie (staat op website)</span>
             </label>
 
             <label className="flex items-center gap-2">

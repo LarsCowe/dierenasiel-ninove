@@ -88,7 +88,26 @@ describe("exportAnimalReportCsv", () => {
     if (result.success) {
       const lines = result.data.split("\n");
       // Story 10.31: kolom "Vlooien" toegevoegd na "Ontworming".
-      expect(lines[0]).toBe("Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Vlooien,Website,Adopteer");
+      // Story 10.62: "Adopteerbaar" vooraan, "Ter adoptie" (= op website) achteraan, "Adopteer" weg.
+      expect(lines[0]).toBe("Adopteerbaar,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Vlooien,Ter adoptie");
+    }
+  });
+
+  it("Adopteerbaar leest isAvailableForAdoption, Ter adoptie leest isOnWebsite (Story 10.62)", async () => {
+    // Zoals Bella: staat online, maar is (nog) niet als adopteerbaar aangeduid.
+    mockGetAnimalReport.mockResolvedValue({
+      animals: [{ ...mockAnimals[1], name: "Bella", isAvailableForAdoption: false, isOnWebsite: true }],
+      total: 1,
+    });
+
+    const result = await exportAnimalReportCsv({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const fields = result.data.split("\n")[1].split(",");
+      expect(fields).toHaveLength(16);
+      expect(fields[0]).toBe("Nee");
+      expect(fields[15]).toBe("OK");
     }
   });
 

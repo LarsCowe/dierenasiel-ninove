@@ -102,6 +102,21 @@ describe("AnimalEditForm — intake reason dropdown (Story 10.21)", () => {
   });
 });
 
+// Story 10.62: Sven — "ter adoptie" = staat effectief op de website.
+describe("AnimalEditForm — vinkje Ter adoptie (Story 10.62)", () => {
+  it("het vinkje voor isOnWebsite heet 'Ter adoptie (staat op website)'", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isOnWebsite: true })} />);
+    const checkbox = screen.getByRole("checkbox", { name: "Ter adoptie (staat op website)" });
+    expect(checkbox.getAttribute("name")).toBe("isOnWebsite");
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("de oude benaming 'Zichtbaar op website' is weg", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+    expect(screen.queryByRole("checkbox", { name: "Zichtbaar op website" })).toBeNull();
+  });
+});
+
 // Story 10.37: geslacht op de fiche moet overeenkomen met wat bij intake ingegeven
 // werd (reu/teef voor honden, kater/poes voor katten), niet mannelijk/vrouwelijk.
 describe("AnimalEditForm — geslachtsopties per soort (Story 10.37)", () => {
@@ -372,7 +387,7 @@ describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
 
     // getByRole i.p.v. getByLabelText: het label omvat zowel het hidden-veld
     // als de checkbox, dus getByLabelText vindt er twee.
-    fireEvent.click(screen.getByRole("checkbox", { name: /Zichtbaar op website/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ter adoptie (staat op website)" }));
 
     expect(screen.getByText(BAR)).toBeInTheDocument();
   });

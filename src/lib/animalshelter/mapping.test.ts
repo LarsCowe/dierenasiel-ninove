@@ -160,6 +160,11 @@ describe("FIELD_DEFINITIONS — de gedeelde velden (klasse B)", () => {
     ]);
   });
 
+  it("gebruikt Sven's woorden: Adopteerbaar (adoptie) en Ter adoptie (publishonwebsite) — Story 10.62", () => {
+    expect(fieldDefinition("isAvailableForAdoption").label).toBe("Adopteerbaar");
+    expect(fieldDefinition("isOnWebsite").label).toBe("Ter adoptie (op website)");
+  });
+
   it("leest de externe waarden van Rocky correct uit", () => {
     const lees = (key: string) => fieldDefinition(key).remote(rocky);
     expect(lees("name")).toBe("Rocky");
