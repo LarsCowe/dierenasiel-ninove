@@ -44,17 +44,16 @@ describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
     expect(values).not.toContain("overig");
   });
 
-  it("toont de IBN-conditional sectie (dossierNr + pvNr) wanneer 'ibn' geselecteerd is", () => {
+  it("toont de IBN-conditional sectie (pvNr + reden) wanneer 'ibn' geselecteerd is", () => {
     render(<IntakeForm />);
     const select = getReasonSelect();
 
     // Standaard: IBN-sectie niet zichtbaar
-    expect(screen.queryByLabelText(/Dossiernummer/i)).toBeNull();
+    expect(screen.queryByLabelText(/PV-nummer/i)).toBeNull();
 
     fireEvent.change(select, { target: { value: "ibn" } });
 
-    // Na keuze: dossierNr + pvNr + reden van inbeslagname verschijnen
-    expect(screen.getByLabelText(/Dossiernummer/i)).toBeInTheDocument();
+    // Na keuze: pvNr + reden van inbeslagname verschijnen
     expect(screen.getByLabelText(/PV-nummer/i)).toBeInTheDocument();
     // Story 10.36: vrij tekstveld "Reden van inbeslagname".
     expect(screen.getByLabelText(/Reden van inbeslagname/i)).toBeInTheDocument();
@@ -65,8 +64,28 @@ describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
     const select = getReasonSelect();
     fireEvent.change(select, { target: { value: "afstand" } });
 
-    expect(screen.queryByLabelText(/Dossiernummer/i)).toBeNull();
     expect(screen.queryByLabelText(/PV-nummer/i)).toBeNull();
+  });
+});
+
+// Story 10.63: het dossiernummer is het AnimalShelter-nummer, voor elk dier.
+describe("IntakeForm — Dossiernummer AnimalShelter (Story 10.63)", () => {
+  it("staat er voor elke intakereden, niet enkel bij een IBN", () => {
+    render(<IntakeForm />);
+    expect(screen.getByLabelText("Dossiernummer AnimalShelter")).toBeInTheDocument();
+
+    fireEvent.change(getReasonSelect(), { target: { value: "afstand" } });
+    expect(screen.getByLabelText("Dossiernummer AnimalShelter")).toBeInTheDocument();
+  });
+
+  it("is niet verplicht (geen sterretje) en blijft één veld bij een IBN", () => {
+    const { container } = render(<IntakeForm />);
+    fireEvent.change(getReasonSelect(), { target: { value: "ibn" } });
+
+    expect(container.querySelectorAll('input[name="dossierNr"]')).toHaveLength(1);
+    expect(container.querySelector('label[for="dossierNr"]')?.textContent?.trim()).toBe(
+      "Dossiernummer AnimalShelter",
+    );
   });
 });
 

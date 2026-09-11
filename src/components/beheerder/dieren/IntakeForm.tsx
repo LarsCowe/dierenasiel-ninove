@@ -274,6 +274,23 @@ export default function IntakeForm() {
             />
             <FieldError errors={fieldErrors?.passportNr} />
           </div>
+
+          {/* Story 10.63: het AnimalShelter-nummer, voor elke intakereden en niet verplicht. */}
+          <div {...(hasError(fieldErrors, "dossierNr") ? { "data-field-error": true } : {})}>
+            <label htmlFor="dossierNr" className={labelClass("dossierNr")}>
+              Dossiernummer AnimalShelter
+            </label>
+            <input
+              type="text"
+              id="dossierNr"
+              name="dossierNr"
+              defaultValue={keep("dossierNr")}
+              aria-invalid={hasError(fieldErrors, "dossierNr") || undefined}
+              className={fieldClass("dossierNr")}
+              placeholder="Bijv. 2602093"
+            />
+            <FieldError errors={fieldErrors?.dossierNr} />
+          </div>
         </div>
       </div>
 
@@ -334,21 +351,6 @@ export default function IntakeForm() {
               Bij een IBN-intake wordt automatisch een deadline van 60 dagen berekend.
             </p>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <div {...(hasError(fieldErrors, "dossierNr") ? { "data-field-error": true } : {})}>
-                <label htmlFor="dossierNr" className={labelClass("dossierNr")}>
-                  Dossiernummer DWV <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="dossierNr"
-                  name="dossierNr"
-                  defaultValue={keep("dossierNr")}
-                  aria-invalid={hasError(fieldErrors, "dossierNr") || undefined}
-                  className={fieldClass("dossierNr")}
-                  placeholder="Bijv. DWV-2026-12345"
-                />
-                <FieldError errors={fieldErrors?.dossierNr} />
-              </div>
               <div {...(hasError(fieldErrors, "pvNr") ? { "data-field-error": true } : {})}>
                 <label htmlFor="pvNr" className={labelClass("pvNr")}>
                   PV-nummer politie <span className="text-red-500">*</span>

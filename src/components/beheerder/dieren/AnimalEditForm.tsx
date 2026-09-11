@@ -472,6 +472,21 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               <label htmlFor="isNewPassport" className="text-xs text-gray-600">Nieuw paspoort</label>
             </div>
           </div>
+
+          {/* Story 10.63: het AnimalShelter-nummer, voor elk dier (was "Dossiernummer DWV" in de IBN-sectie). */}
+          <div>
+            <label htmlFor="dossierNr" className="block text-xs font-medium text-gray-600">
+              Dossiernummer AnimalShelter
+            </label>
+            <input
+              type="text"
+              id="dossierNr"
+              name="dossierNr"
+              defaultValue={animal.dossierNr ?? ""}
+              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              placeholder="Bijv. 2602093"
+            />
+          </div>
         </div>
 
         {/* Barcode — alleen voor honden */}
@@ -515,19 +530,6 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="dossierNr" className="block text-xs font-medium text-gray-600">
-                Dossiernummer DWV
-              </label>
-              <input
-                type="text"
-                id="dossierNr"
-                name="dossierNr"
-                defaultValue={animal.dossierNr ?? ""}
-                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-                placeholder="Bijv. DWV-2026-12345"
-              />
-            </div>
             <div>
               <label htmlFor="pvNr" className="block text-xs font-medium text-gray-600">
                 PV-nummer politie

@@ -684,7 +684,7 @@ export interface IBNDossierReportRow {
   id: number;
   name: string;
   species: string;
-  dossierNr: string;
+  dossierNr: string | null;
   pvNr: string | null;
   ibnDecisionDeadline: string | null;
   workflowPhase: string | null;
@@ -712,7 +712,9 @@ export async function getIBNDossiersReport(
     intakeDate: animals.intakeDate,
   };
 
-  const conditions = [isNotNull(animals.dossierNr)];
+  // Story 10.63: kiezen op intakereden, niet op "heeft een dossiernummer" — dat is
+  // het AnimalShelter-nummer van élk dier, geen kenmerk van een inbeslagname.
+  const conditions = [eq(animals.intakeReason, "ibn")];
   if (deadlineFrom) conditions.push(gte(animals.ibnDecisionDeadline, deadlineFrom));
   if (deadlineTo) conditions.push(lte(animals.ibnDecisionDeadline, deadlineTo));
 

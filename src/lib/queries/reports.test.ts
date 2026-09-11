@@ -36,6 +36,7 @@ vi.mock("@/lib/db/schema", () => ({
     kennelId: "animals.kennel_id",
     workflowPhase: "animals.workflow_phase",
     intakeDate: "animals.intake_date",
+    intakeReason: "animals.intake_reason",
     isInShelter: "animals.is_in_shelter",
     identificationNr: "animals.identification_nr",
     isAvailableForAdoption: "animals.is_available_for_adoption",
@@ -844,7 +845,7 @@ describe("getIBNDossiersReport", () => {
     mockSelect.mockReturnValue({ from: mockFrom });
   });
 
-  it("returns all IBN dossiers (dossierNr IS NOT NULL)", async () => {
+  it("returns the animals taken in by inbeslagname (intakeReason = ibn)", async () => {
     const result = await getIBNDossiersReport({});
 
     expect(result.dossiers).toEqual(mockIBNDossiers);
@@ -852,14 +853,23 @@ describe("getIBNDossiersReport", () => {
     expect(mockSelect).toHaveBeenCalled();
     expect(mockFrom).toHaveBeenCalled();
     expect(mockWhere).toHaveBeenCalled();
-    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockEq).toHaveBeenCalledWith("animals.intake_reason", "ibn");
+  });
+
+  // Story 10.63: dossierNr is het AnimalShelter-nummer van elk dier, geen IBN-kenmerk.
+  // Kiezen op "heeft een dossiernummer" haalde afstanden en vondelingen binnen en
+  // liet een IBN zonder nummer (Athena) weg.
+  it("kiest niet langer op 'heeft een dossiernummer' (Story 10.63)", async () => {
+    await getIBNDossiersReport({});
+
+    expect(mockIsNotNull).not.toHaveBeenCalledWith("animals.dossier_nr");
   });
 
   it("applies deadlineFrom filter", async () => {
     await getIBNDossiersReport({ deadlineFrom: "2026-03-01" });
 
     expect(mockWhere).toHaveBeenCalled();
-    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockEq).toHaveBeenCalledWith("animals.intake_reason", "ibn");
     expect(mockGte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-01");
   });
 
@@ -867,7 +877,7 @@ describe("getIBNDossiersReport", () => {
     await getIBNDossiersReport({ deadlineTo: "2026-03-31" });
 
     expect(mockWhere).toHaveBeenCalled();
-    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockEq).toHaveBeenCalledWith("animals.intake_reason", "ibn");
     expect(mockLte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-31");
   });
 
@@ -875,7 +885,7 @@ describe("getIBNDossiersReport", () => {
     await getIBNDossiersReport({ deadlineFrom: "2026-03-01", deadlineTo: "2026-03-31" });
 
     expect(mockWhere).toHaveBeenCalled();
-    expect(mockIsNotNull).toHaveBeenCalledWith("animals.dossier_nr");
+    expect(mockEq).toHaveBeenCalledWith("animals.intake_reason", "ibn");
     expect(mockGte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-01");
     expect(mockLte).toHaveBeenCalledWith("animals.ibn_decision_deadline", "2026-03-31");
     expect(mockAnd).toHaveBeenCalled();

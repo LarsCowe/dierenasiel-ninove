@@ -95,9 +95,10 @@ test.describe("Dier intake flow @p0 @intake", () => {
     await page.getByLabel(/intake.*datum/i).fill(animal.intakeDate);
     await page.locator('select[name="intakeReason"]').selectOption("ibn");
 
+    // Story 10.63: dossiernummer = AnimalShelter-nummer, staat er voor elke reden.
+    await page.locator('input[name="dossierNr"]').fill("2609999");
     // IBN-specifieke velden verschijnen
-    await expect(page.locator('input[name="dossierNr"]')).toBeVisible();
-    await page.locator('input[name="dossierNr"]').fill("DWV-2026-E2E-001");
+    await expect(page.locator('input[name="pvNr"]')).toBeVisible();
     await page.locator('input[name="pvNr"]').fill("PV-2026-E2E-001");
 
     await page.getByLabel(/korte beschrijving/i).fill(animal.shortDescription);

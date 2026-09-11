@@ -111,7 +111,7 @@ export default async function IBNDossiersRapportPage({ searchParams }: Props) {
                 const urgency = getUrgencyBadge(dossier.ibnDecisionDeadline);
                 return (
                   <tr key={dossier.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{dossier.dossierNr}</td>
+                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{dossier.dossierNr ?? "-"}</td>
                     <td className="px-4 py-2 text-sm text-gray-600">{dossier.pvNr ?? "-"}</td>
                     <td className="px-4 py-2 text-sm font-medium text-gray-900">
                       <Link href={`/beheerder/dieren/${dossier.id}`} className="text-emerald-700 hover:underline">

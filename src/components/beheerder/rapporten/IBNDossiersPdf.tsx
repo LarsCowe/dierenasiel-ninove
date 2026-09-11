@@ -86,7 +86,7 @@ export default function IBNDossiersPdf({ dossiers, filters, generatedAt }: Props
               const urgency = getUrgency(dossier.ibnDecisionDeadline);
               return (
                 <View key={dossier.id} style={styles.tableRow}>
-                  <Text style={[styles.colDossierNr, styles.cellText]}>{dossier.dossierNr}</Text>
+                  <Text style={[styles.colDossierNr, styles.cellText]}>{dossier.dossierNr ?? "-"}</Text>
                   <Text style={[styles.colPvNr, styles.cellText]}>{dossier.pvNr ?? "-"}</Text>
                   <Text style={[styles.colAnimal, styles.cellText]}>{dossier.name}</Text>
                   <Text style={[styles.colSpecies, styles.cellText]}>{SPECIES_LABELS[dossier.species] ?? dossier.species}</Text>

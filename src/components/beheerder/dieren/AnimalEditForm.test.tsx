@@ -227,7 +227,6 @@ describe("AnimalEditForm — IBN-velden op de fiche (Story 10.36)", () => {
   it("toont GEEN IBN-sectie bij een niet-IBN dier", () => {
     render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand" })} />);
     expect(screen.queryByLabelText(/Reden van inbeslagname/i)).toBeNull();
-    expect(screen.queryByLabelText(/Dossiernummer DWV/i)).toBeNull();
     expect(screen.queryByLabelText(/PV-nummer/i)).toBeNull();
   });
 
@@ -236,14 +235,12 @@ describe("AnimalEditForm — IBN-velden op de fiche (Story 10.36)", () => {
       <AnimalEditForm
         animal={mockAnimal({
           intakeReason: "ibn",
-          dossierNr: "DWV-2026-1",
           pvNr: "PV-2026-9",
           ibnReason: "Verwaarlozing",
         })}
       />,
     );
     expect((screen.getByLabelText(/Reden van inbeslagname/i) as HTMLTextAreaElement).value).toBe("Verwaarlozing");
-    expect((screen.getByLabelText(/Dossiernummer DWV/i) as HTMLInputElement).value).toBe("DWV-2026-1");
     expect((screen.getByLabelText(/PV-nummer/i) as HTMLInputElement).value).toBe("PV-2026-9");
   });
 
@@ -254,12 +251,33 @@ describe("AnimalEditForm — IBN-velden op de fiche (Story 10.36)", () => {
     fireEvent.change(getReasonSelect(), { target: { value: "ibn" } });
 
     expect(screen.getByLabelText(/Reden van inbeslagname/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Dossiernummer DWV/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/PV-nummer/i)).toBeInTheDocument();
   });
 
   it("verbergt de 'Dossiernummer Shelter'-benaming volledig (was tegenstrijdig)", () => {
     render(<AnimalEditForm animal={mockAnimal({ intakeReason: "ibn" })} />);
     expect(screen.queryByLabelText(/Dossiernummer Shelter/i)).toBeNull();
+  });
+});
+
+// Story 10.63: Sven — "dossiernummer is het nummer van animalshelter en dat begint altijd met jaar".
+describe("AnimalEditForm — Dossiernummer AnimalShelter (Story 10.63)", () => {
+  it("toont het nummer bij elk dier, ook zonder inbeslagname", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand", dossierNr: "2602093" })} />);
+    expect((screen.getByLabelText("Dossiernummer AnimalShelter") as HTMLInputElement).value).toBe("2602093");
+  });
+
+  it("heeft precies één dossiernummer-veld, ook bij een IBN-dier", () => {
+    const { container } = render(
+      <AnimalEditForm animal={mockAnimal({ intakeReason: "ibn", dossierNr: "2602093" })} />,
+    );
+    expect(container.querySelectorAll('input[name="dossierNr"]')).toHaveLength(1);
+    expect(screen.getByLabelText("Dossiernummer AnimalShelter")).toBeInTheDocument();
+  });
+
+  it("de benaming 'Dossiernummer DWV' is weg", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "ibn" })} />);
+    expect(screen.queryByLabelText(/Dossiernummer DWV/i)).toBeNull();
   });
 });
 
