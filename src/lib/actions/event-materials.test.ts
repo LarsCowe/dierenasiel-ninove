@@ -40,6 +40,8 @@ vi.mock("@/lib/db/schema", () => ({ eventMaterials: Symbol("eventMaterials") }))
 vi.mock("@/lib/events/event-access", () => ({ requireEventDraaiboekAccess: mockEventAccess }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidate }));
+const { mockEnsureSupplier } = vi.hoisted(() => ({ mockEnsureSupplier: vi.fn() }));
+vi.mock("@/lib/events/supplier-directory", () => ({ ensureSupplier: mockEnsureSupplier }));
 
 import {
   createEventMaterial,
@@ -71,6 +73,37 @@ const geldig = {
   supplier: "Chiro Ninove",
 };
 const GEWEIGERD = { success: false as const, error: "Onvoldoende rechten" };
+
+// Story 13.16 — ook een trekker die materiaal invult, vult zo de leverancierslijst aan.
+describe("leverancierslijst (Story 13.16)", () => {
+  it("geeft de leverancier door aan de lijst na het bewaren", async () => {
+    const res = await createEventMaterial(null, fd(geldig));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).toHaveBeenCalledWith("Chiro Ninove");
+  });
+
+  it("ook bij het wijzigen van een regel", async () => {
+    mockSelectLimit.mockResolvedValue([{ id: 3, eventId: 7 }]);
+    const res = await updateEventMaterial(null, fd({ id: "3", ...geldig, supplier: "Verhuur Van Damme" }));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).toHaveBeenCalledWith("Verhuur Van Damme");
+  });
+
+  // Review 13.16: een verwijderde leverancier mag niet terugkomen doordat iemand
+  // enkel het aantal van een regel met die naam aanpast.
+  it("niet opnieuw wanneer de leverancier van de regel niet wijzigt", async () => {
+    mockSelectLimit.mockResolvedValueOnce([{ id: 3, eventId: 7, supplier: "chiro ninove " }]);
+    const res = await updateEventMaterial(null, fd({ id: "3", ...geldig }));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).not.toHaveBeenCalled();
+  });
+
+  it("niet zonder toegang tot het draaiboek van dat evenement", async () => {
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    await createEventMaterial(null, fd(geldig));
+    expect(mockEnsureSupplier).not.toHaveBeenCalled();
+  });
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

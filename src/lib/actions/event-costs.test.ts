@@ -42,6 +42,8 @@ vi.mock("@/lib/permissions", () => ({ requirePermission: mockRequirePermission }
 vi.mock("@/lib/auth/session", () => ({ getSession: mockGetSession }));
 vi.mock("@/lib/audit", () => ({ logAudit: mockLogAudit }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidate }));
+const { mockEnsureSupplier } = vi.hoisted(() => ({ mockEnsureSupplier: vi.fn() }));
+vi.mock("@/lib/events/supplier-directory", () => ({ ensureSupplier: mockEnsureSupplier }));
 
 import { createEventCost, updateEventCost, deleteEventCost } from "./event-costs";
 
@@ -78,6 +80,36 @@ beforeEach(() => {
   mockInsertReturning.mockResolvedValue([{ id: 3, eventId: 4 }]);
   mockUpdateReturning.mockResolvedValue([{ id: 3, eventId: 4 }]);
   mockSelectLimit.mockResolvedValue([{ id: 3, eventId: 4, description: "Oud" }]);
+});
+
+// Story 13.16 — een nieuwe leveranciersnaam komt vanzelf in de leverancierslijst.
+describe("leverancierslijst (Story 13.16)", () => {
+  it("geeft de leverancier door aan de lijst na het bewaren", async () => {
+    const res = await createEventCost(null, fd({ ...geldig, supplier: "Brouwerij De Ryck" }));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).toHaveBeenCalledWith("Brouwerij De Ryck");
+  });
+
+  it("ook bij het wijzigen van een lijn", async () => {
+    const res = await updateEventCost(null, fd({ id: "3", ...geldig, supplier: "Chiro Ninove" }));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).toHaveBeenCalledWith("Chiro Ninove");
+  });
+
+  // Review 13.16: een verwijderde leverancier mag niet terugkomen doordat iemand
+  // enkel het bedrag van een lijn met die naam aanpast.
+  it("niet opnieuw wanneer de leverancier van de lijn niet wijzigt", async () => {
+    mockSelectLimit.mockResolvedValueOnce([{ id: 3, eventId: 4, supplier: "brouwerij de ryck" }]);
+    const res = await updateEventCost(null, fd({ id: "3", ...geldig, supplier: "Brouwerij De Ryck" }));
+    expect(res.success).toBe(true);
+    expect(mockEnsureSupplier).not.toHaveBeenCalled();
+  });
+
+  it("niet wanneer het bewaren geweigerd wordt", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+    await createEventCost(null, fd({ ...geldig, supplier: "Brouwerij De Ryck" }));
+    expect(mockEnsureSupplier).not.toHaveBeenCalled();
+  });
 });
 
 describe("createEventCost", () => {

@@ -42,6 +42,22 @@ beforeEach(() => {
   mockToggle.mockResolvedValue({ success: true, data: {} });
 });
 
+// Story 13.16 — wie het materiaal levert, is ook te bellen vanaf de lijst.
+describe("EventMaterialsPanel — leverancier (Story 13.16)", () => {
+  it("toont het gsm-nummer van een gekende leverancier onder de herkomst", () => {
+    render(
+      <EventMaterialsPanel
+        eventId={7}
+        materials={lijst}
+        canWrite
+        suppliers={[{ name: "Chiro Ninove", phone: "0499 11 22 33", email: null, website: null }]}
+      />,
+    );
+    const rij = screen.getByRole("row", { name: /Tent 4x8/ });
+    expect(within(rij).getByRole("link", { name: "0499 11 22 33" })).toHaveAttribute("href", "tel:0499112233");
+  });
+});
+
 describe("EventMaterialsPanel", () => {
   it("toont wat er op de lijst staat, met aantal en herkomst", () => {
     render(<EventMaterialsPanel eventId={7} materials={lijst} canWrite />);

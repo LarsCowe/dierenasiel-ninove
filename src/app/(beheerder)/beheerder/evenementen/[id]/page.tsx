@@ -10,6 +10,7 @@ import {
   getPreviousEditionLessons,
   getEventMaterials,
 } from "@/lib/queries/events";
+import { getSuppliers } from "@/lib/queries/suppliers";
 import { eventRights } from "@/lib/events/access";
 import { draaiboekProgress } from "@/lib/events/draaiboek";
 import { formatEventPeriod } from "@/lib/events/list";
@@ -52,14 +53,24 @@ export default async function EvenementFichePage({ params }: Props) {
 
   // Geld blijft bij de beheerder: voor een trekker worden kosten en evaluatie
   // niet eens opgehaald.
-  const [tasks, costs, shifts, evaluation, materials, vorigeEditie] = await Promise.all([
-    getEventTasks(eventId),
-    rechten.geld ? getEventCosts(eventId) : Promise.resolve([]),
-    getEventShifts(eventId),
-    rechten.geld ? getEventEvaluation(eventId) : Promise.resolve(null),
-    getEventMaterials(eventId),
-    getPreviousEditionLessons(event.copiedFromEventId),
-  ]);
+  const [tasks, costs, shifts, evaluation, materials, vorigeEditie, leveranciersLijst] =
+    await Promise.all([
+      getEventTasks(eventId),
+      rechten.geld ? getEventCosts(eventId) : Promise.resolve([]),
+      getEventShifts(eventId),
+      rechten.geld ? getEventEvaluation(eventId) : Promise.resolve(null),
+      getEventMaterials(eventId),
+      getPreviousEditionLessons(event.copiedFromEventId),
+      getSuppliers(),
+    ]);
+
+  // Story 13.16 — enkel wat de regels tonen: naam en contactgegevens.
+  const leveranciers = leveranciersLijst.map(({ name, phone, email, website }) => ({
+    name,
+    phone,
+    email,
+    website,
+  }));
 
   return (
     <div className="space-y-6">
@@ -181,11 +192,21 @@ export default async function EvenementFichePage({ params }: Props) {
         canWrite={rechten.draaiboek}
       />
 
-      <EventMaterialsPanel eventId={event.id} materials={materials} canWrite={rechten.draaiboek} />
+      <EventMaterialsPanel
+        eventId={event.id}
+        materials={materials}
+        canWrite={rechten.draaiboek}
+        suppliers={leveranciers}
+      />
 
       {rechten.geld && (
         <>
-          <EventCostsPanel eventId={event.id} lines={costs} canWrite={rechten.beheer} />
+          <EventCostsPanel
+            eventId={event.id}
+            lines={costs}
+            canWrite={rechten.beheer}
+            suppliers={leveranciers}
+          />
 
           <EventEvaluationPanel
             eventId={event.id}

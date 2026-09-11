@@ -12,6 +12,8 @@ import { MATERIAL_ORIGINS } from "@/lib/events/materials";
 interface Props {
   eventId: number;
   material?: EventMaterialRow;
+  /** Story 13.16 — de namen uit de leverancierslijst, als keuzelijst bij het tekstveld. */
+  supplierNames?: readonly string[];
   onDone: () => void;
 }
 
@@ -19,7 +21,7 @@ const INPUT =
   "mt-0.5 block w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500";
 const LABEL = "block text-xs font-medium text-gray-600";
 
-export default function EventMaterialForm({ eventId, material, onDone }: Props) {
+export default function EventMaterialForm({ eventId, material, supplierNames, onDone }: Props) {
   const router = useRouter();
   const action = material ? updateEventMaterial : createEventMaterial;
   const [state, formAction, isPending] = useActionState(action, null);
@@ -34,6 +36,7 @@ export default function EventMaterialForm({ eventId, material, onDone }: Props) 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
   const sleutel = material?.id ?? "nieuw";
+  const lijstId = supplierNames?.length ? `leveranciers-materiaal-${sleutel}` : undefined;
 
   return (
     <form
@@ -105,10 +108,19 @@ export default function EventMaterialForm({ eventId, material, onDone }: Props) 
           <input
             id={`supplier-${sleutel}`}
             name="supplier"
+            list={lijstId}
+            autoComplete="off"
             defaultValue={material?.supplier ?? ""}
             className={INPUT}
             placeholder="Bijv. Chiro Ninove, gemeente, verhuur Van Damme"
           />
+          {lijstId && (
+            <datalist id={lijstId}>
+              {supplierNames!.map((naam) => (
+                <option key={naam} value={naam} />
+              ))}
+            </datalist>
+          )}
         </div>
 
         <div className="sm:col-span-3">

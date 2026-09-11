@@ -7,6 +7,8 @@ import { requirePermission } from "@/lib/permissions";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { eventCostSchema } from "@/lib/validations/event-costs";
+import { ensureSupplier } from "@/lib/events/supplier-directory";
+import { supplierKey } from "@/lib/events/suppliers";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -86,6 +88,8 @@ export async function createEventCost(
       .returning();
 
     await logAudit("create_event_cost", "event_cost", record.id, null, record);
+    // Story 13.16 — een nieuwe leveranciersnaam komt vanzelf in de leverancierslijst.
+    await ensureSupplier(parsed.data.supplier);
     revalidatePath(fichePad(parsed.data.eventId));
     return { success: true, data: record };
   } catch {
@@ -118,6 +122,11 @@ export async function updateEventCost(
       .returning();
 
     await logAudit("update_event_cost", "event_cost", id, old, record);
+    // Review 13.16: enkel bij een andere leverancier. Anders komt een verwijderde
+    // leverancier terug zodra iemand het bedrag van een lijn met die naam aanpast.
+    if (supplierKey(parsed.data.supplier) !== supplierKey(old.supplier)) {
+      await ensureSupplier(parsed.data.supplier);
+    }
     revalidatePath(fichePad(parsed.data.eventId));
     return { success: true, data: record };
   } catch {

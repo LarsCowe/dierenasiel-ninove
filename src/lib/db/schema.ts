@@ -667,6 +667,21 @@ export const eventMaterials = pgTable("event_materials", {
   index("idx_event_materials_event_id").on(table.eventId),
 ]);
 
+// Epic 13, story 13.16 — de leverancierslijst (Sven, 13 aug 2026: "gsmnr, mail, website").
+// Kosten- en materiaalregels houden de naam als tekst en vinden hun leverancier op naam,
+// hoofdletterongevoelig (`supplierKey`). Zo blijven kopiëren, de draaiboek-PDF en het
+// jaaroverzicht ongewijzigd. Geen uniciteitsregel in de databank: de acties bewaken de naam.
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 200 }),
+  website: varchar("website", { length: 300 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Epic 13, story 13.9 — de evaluatie na afloop. Eén per evenement (unique), want
 // Sven schrijft ze zelf (vraag 23). De cijfers zijn precies die welke hij vandaag al
 // bijhoudt: kaarten gebruikt -> betalende borden -> opbrengst (vraag 22).

@@ -13,19 +13,23 @@ import {
   originLabel,
   sortMaterials,
 } from "@/lib/events/materials";
+import { findSupplier, type SupplierContactInfo } from "@/lib/events/suppliers";
 import EventMaterialForm from "./EventMaterialForm";
+import SupplierContact from "./SupplierContact";
 
 interface Props {
   eventId: number;
   materials: EventMaterialRow[];
   canWrite: boolean;
+  /** Story 13.16 — de leverancierslijst: contactgegevens onder de herkomst. */
+  suppliers?: readonly SupplierContactInfo[];
 }
 
 /**
  * Story 13.11 — wat moeten we hebben, waar komt het vandaan, en wat moet er terug.
  * Dat laatste is de reden dat de herkomst meer is dan een etiket.
  */
-export default function EventMaterialsPanel({ eventId, materials, canWrite }: Props) {
+export default function EventMaterialsPanel({ eventId, materials, canWrite, suppliers = [] }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [nieuw, setNieuw] = useState(false);
@@ -34,6 +38,7 @@ export default function EventMaterialsPanel({ eventId, materials, canWrite }: Pr
 
   const lijst = sortMaterials(materials);
   const totaal = materialSummary(materials);
+  const leveranciersNamen = suppliers.map((s) => s.name);
 
   function omzetten(m: EventMaterialRow, veld: "arranged" | "returned", waarde: boolean) {
     setFout(null);
@@ -91,6 +96,7 @@ export default function EventMaterialsPanel({ eventId, materials, canWrite }: Pr
                     <EventMaterialForm
                       eventId={eventId}
                       material={m}
+                      supplierNames={leveranciersNamen}
                       onDone={() => setBewerktId(null)}
                     />
                   </td>
@@ -107,6 +113,7 @@ export default function EventMaterialsPanel({ eventId, materials, canWrite }: Pr
                   <td className="py-1.5 pr-2 text-gray-700">
                     {originLabel(m.origin)}
                     {m.supplier && <span className="block text-xs text-gray-500">{m.supplier}</span>}
+                    <SupplierContact supplier={findSupplier(suppliers, m.supplier)} />
                   </td>
                   <td className="py-1.5 text-center">
                     <input
@@ -163,7 +170,11 @@ export default function EventMaterialsPanel({ eventId, materials, canWrite }: Pr
       {canWrite &&
         (nieuw ? (
           <div className="mt-3">
-            <EventMaterialForm eventId={eventId} onDone={() => setNieuw(false)} />
+            <EventMaterialForm
+              eventId={eventId}
+              supplierNames={leveranciersNamen}
+              onDone={() => setNieuw(false)}
+            />
           </div>
         ) : (
           <button

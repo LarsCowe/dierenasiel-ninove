@@ -69,12 +69,21 @@ export default async function EvenementenPage() {
           </p>
         </InfoButton>
         {alleEvenementen && (
-          <Link
-            href="/beheerder/evenementen/jaaroverzicht"
-            className="ml-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Jaaroverzicht
-          </Link>
+          <>
+            {/* Story 13.16 — de leverancierslijst hoort bij de evenementen, niet in het menu. */}
+            <Link
+              href="/beheerder/evenementen/leveranciers"
+              className="ml-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Leveranciers
+            </Link>
+            <Link
+              href="/beheerder/evenementen/jaaroverzicht"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Jaaroverzicht
+            </Link>
+          </>
         )}
         {magAanmaken && (
           <Link

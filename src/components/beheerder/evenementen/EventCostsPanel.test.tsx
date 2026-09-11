@@ -38,6 +38,27 @@ const lijnen = [
 
 beforeEach(() => vi.clearAllMocks());
 
+// Story 13.16 — de contactgegevens komen uit de leverancierslijst, gekoppeld op naam.
+describe("EventCostsPanel — leverancier (Story 13.16)", () => {
+  const deRyck = { name: "de ryck", phone: "0470 12 34 56", email: "info@deryck.be", website: null };
+
+  it("toont gsm en mail van een gekende leverancier onder de lijn", () => {
+    render(<EventCostsPanel eventId={4} lines={lijnen} canWrite suppliers={[deRyck]} />);
+    const rij = screen.getByRole("row", { name: /Drank bij de brouwer/ });
+    expect(within(rij).getByRole("link", { name: "0470 12 34 56" })).toHaveAttribute("href", "tel:0470123456");
+    expect(within(rij).getByRole("link", { name: "info@deryck.be" })).toHaveAttribute(
+      "href",
+      "mailto:info@deryck.be",
+    );
+  });
+
+  it("toont geen links bij een leverancier die niet in de lijst staat", () => {
+    render(<EventCostsPanel eventId={4} lines={lijnen} canWrite suppliers={[]} />);
+    const rij = screen.getByRole("row", { name: /Drank bij de brouwer/ });
+    expect(within(rij).queryByRole("link")).toBeNull();
+  });
+});
+
 describe("EventCostsPanel", () => {
   it("toont de kosten en de opbrengsten apart", () => {
     render(<EventCostsPanel eventId={4} lines={lijnen} canWrite />);

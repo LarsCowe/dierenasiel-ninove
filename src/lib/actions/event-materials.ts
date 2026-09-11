@@ -6,6 +6,8 @@ import { eq, type InferSelectModel } from "drizzle-orm";
 import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { logAudit } from "@/lib/audit";
 import { eventMaterialSchema } from "@/lib/validations/event-materials";
+import { ensureSupplier } from "@/lib/events/supplier-directory";
+import { supplierKey } from "@/lib/events/suppliers";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -74,6 +76,8 @@ export async function createEventMaterial(
       .returning();
 
     await logAudit("create_event_material", "event_material", record.id, null, record);
+    // Story 13.16 — een nieuwe leveranciersnaam komt vanzelf in de leverancierslijst.
+    await ensureSupplier(parsed.data.supplier);
     revalidatePath(fichePad(parsed.data.eventId));
     return { success: true, data: record };
   } catch {
@@ -108,6 +112,11 @@ export async function updateEventMaterial(
       .returning();
 
     await logAudit("update_event_material", "event_material", id, old, record);
+    // Review 13.16: enkel bij een andere leverancier. Anders komt een verwijderde
+    // leverancier terug zodra iemand het aantal van een regel met die naam aanpast.
+    if (supplierKey(parsed.data.supplier) !== supplierKey(old.supplier)) {
+      await ensureSupplier(parsed.data.supplier);
+    }
     revalidatePath(fichePad(old.eventId));
     return { success: true, data: record };
   } catch {

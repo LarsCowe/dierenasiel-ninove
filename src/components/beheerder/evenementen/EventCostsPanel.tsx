@@ -11,12 +11,16 @@ import {
   summarizeCosts,
   type CostKind,
 } from "@/lib/events/costs";
+import { findSupplier, type SupplierContactInfo } from "@/lib/events/suppliers";
 import EventCostForm from "./EventCostForm";
+import SupplierContact from "./SupplierContact";
 
 interface Props {
   eventId: number;
   lines: EventCostRow[];
   canWrite: boolean;
+  /** Story 13.16 — de leverancierslijst: contactgegevens onder de lijn. */
+  suppliers?: readonly SupplierContactInfo[];
 }
 
 /** "+ € 160,00" of "− € 50,00". Groen wanneer het goed nieuws is. */
@@ -33,7 +37,7 @@ function Verschil({ line }: { line: EventCostRow }) {
   );
 }
 
-export default function EventCostsPanel({ eventId, lines, canWrite }: Props) {
+export default function EventCostsPanel({ eventId, lines, canWrite, suppliers = [] }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [nieuweLijnKant, setNieuweLijnKant] = useState<CostKind | null>(null);
@@ -42,6 +46,7 @@ export default function EventCostsPanel({ eventId, lines, canWrite }: Props) {
 
   const { kosten, opbrengsten } = splitCostLines(lines as never[]);
   const totalen = summarizeCosts(lines as never[]);
+  const leveranciersNamen = suppliers.map((s) => s.name);
 
   function onDelete(line: EventCostRow) {
     if (!window.confirm(`Lijn "${line.description}" verwijderen?`)) return;
@@ -97,6 +102,7 @@ export default function EventCostsPanel({ eventId, lines, canWrite }: Props) {
                       eventId={eventId}
                       kind={line.kind as CostKind}
                       line={line}
+                      supplierNames={leveranciersNamen}
                       onDone={() => setBewerktId(null)}
                     />
                   </td>
@@ -114,6 +120,7 @@ export default function EventCostsPanel({ eventId, lines, canWrite }: Props) {
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
+                    <SupplierContact supplier={findSupplier(suppliers, line.supplier)} />
                   </td>
                   <td className="py-1.5 text-right tabular-nums text-gray-700">
                     {formatAmount(line.budgetAmount) || <span className="text-gray-300">—</span>}
@@ -169,6 +176,7 @@ export default function EventCostsPanel({ eventId, lines, canWrite }: Props) {
               <EventCostForm
                 eventId={eventId}
                 kind={kind}
+                supplierNames={leveranciersNamen}
                 onDone={() => setNieuweLijnKant(null)}
               />
             </div>

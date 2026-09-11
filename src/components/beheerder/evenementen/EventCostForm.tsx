@@ -14,6 +14,8 @@ interface Props {
   /** Kant waarop de nieuwe lijn komt (bij bewerken die van de lijn zelf). */
   kind: CostKind;
   line?: EventCostRow;
+  /** Story 13.16 — de namen uit de leverancierslijst, als keuzelijst bij het tekstveld. */
+  supplierNames?: readonly string[];
   onDone: () => void;
 }
 
@@ -21,7 +23,7 @@ const INPUT =
   "mt-0.5 block w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500";
 const LABEL = "block text-xs font-medium text-gray-600";
 
-export default function EventCostForm({ eventId, kind, line, onDone }: Props) {
+export default function EventCostForm({ eventId, kind, line, supplierNames, onDone }: Props) {
   const router = useRouter();
   const action = line ? updateEventCost : createEventCost;
   const [state, formAction, isPending] = useActionState(action, null);
@@ -36,6 +38,7 @@ export default function EventCostForm({ eventId, kind, line, onDone }: Props) {
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
   const sleutel = line?.id ?? "nieuw";
+  const lijstId = supplierNames?.length ? `leveranciers-kost-${sleutel}` : undefined;
 
   return (
     <form
@@ -129,10 +132,19 @@ export default function EventCostForm({ eventId, kind, line, onDone }: Props) {
           <input
             id={`supplier-${sleutel}`}
             name="supplier"
+            list={lijstId}
+            autoComplete="off"
             defaultValue={line?.supplier ?? ""}
             className={INPUT}
             placeholder={kind === "kost" ? "Bijv. Brouwerij De Ryck" : "Bijv. Garage Van Den Bossche"}
           />
+          {lijstId && (
+            <datalist id={lijstId}>
+              {supplierNames!.map((naam) => (
+                <option key={naam} value={naam} />
+              ))}
+            </datalist>
+          )}
         </div>
 
         <div className="sm:col-span-6 flex items-center gap-2">
