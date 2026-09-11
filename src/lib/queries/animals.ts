@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { animals } from "@/lib/db/schema";
-import { eq, and, ne, desc, asc, or, ilike, sql, isNotNull } from "drizzle-orm";
+import { animals, kennels } from "@/lib/db/schema";
+import { eq, and, ne, desc, asc, or, ilike, sql, isNotNull, getTableColumns } from "drizzle-orm";
 import type { Animal } from "@/types";
 
 export interface AdminAnimalListOptions {
@@ -14,8 +14,11 @@ export interface AdminAnimalListOptions {
   sortDir?: "asc" | "desc";
 }
 
+/** Story 10.61: de lijst toont de kennelcode (H17), niet de databanksleutel (63). */
+export type AdminAnimalListItem = Animal & { kennelCode: string | null };
+
 export interface AdminAnimalListResult {
-  animals: Animal[];
+  animals: AdminAnimalListItem[];
   total: number;
 }
 
@@ -120,8 +123,9 @@ export async function getAnimalsForAdmin(
   try {
     const [results, totalResult] = await Promise.all([
       db
-        .select()
+        .select({ ...getTableColumns(animals), kennelCode: kennels.code })
         .from(animals)
+        .leftJoin(kennels, eq(animals.kennelId, kennels.id))
         .where(whereClause)
         .orderBy(orderFn(sortColumn))
         .limit(pageSize)
@@ -133,7 +137,7 @@ export async function getAnimalsForAdmin(
     ]);
 
     return {
-      animals: results as Animal[],
+      animals: results as AdminAnimalListItem[],
       total: (totalResult as { count: number }[])[0]?.count ?? 0,
     };
   } catch (err) {

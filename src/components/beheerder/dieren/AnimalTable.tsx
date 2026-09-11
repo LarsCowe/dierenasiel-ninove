@@ -5,10 +5,10 @@ import Link from "next/link";
 import { speciesLabel, statusLabel, formatDate } from "@/lib/utils";
 import { getIntakeReasonLabel } from "@/lib/constants";
 import { useClickableRow } from "@/lib/hooks/useClickableRow";
-import type { Animal } from "@/types";
+import type { AdminAnimalListItem } from "@/lib/queries/animals";
 
 interface AnimalTableProps {
-  animals: Animal[];
+  animals: AdminAnimalListItem[];
   sortBy?: string;
   sortDir?: "asc" | "desc";
 }
@@ -37,7 +37,7 @@ const COLUMNS: Column[] = [
   { key: "intakeReason", label: "Reden van intake", sortable: false },
 ];
 
-function AnimalRow({ animal }: { animal: Animal }) {
+function AnimalRow({ animal }: { animal: AdminAnimalListItem }) {
   const rowProps = useClickableRow(`/beheerder/dieren/${animal.id}`, {
     ariaLabel: `Bekijk ${animal.name}`,
   });
@@ -81,7 +81,7 @@ function AnimalRow({ animal }: { animal: Animal }) {
         </span>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-        {animal.kennelId ?? "—"}
+        {animal.kennelCode ?? "—"}
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
         {animal.intakeDate ? formatDate(animal.intakeDate) : "—"}

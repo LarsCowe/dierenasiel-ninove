@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import AnimalTable from "./AnimalTable";
-import type { Animal } from "@/types";
+import type { AdminAnimalListItem } from "@/lib/queries/animals";
 
 const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 
@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-function mockAnimal(overrides: Partial<Animal> = {}): Animal {
+function mockAnimal(overrides: Partial<AdminAnimalListItem> = {}): AdminAnimalListItem {
   return {
     id: 1,
     name: "Rex",
@@ -40,6 +40,7 @@ function mockAnimal(overrides: Partial<Animal> = {}): Animal {
     isOnWebsite: false,
     isInShelter: true,
     kennelId: null,
+    kennelCode: null,
     intakeDate: "2026-05-01",
     intakeReason: null,
     isPickedUpByShelter: false,
@@ -54,7 +55,7 @@ function mockAnimal(overrides: Partial<Animal> = {}): Animal {
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
-  } as Animal;
+  } as AdminAnimalListItem;
 }
 
 describe("AnimalTable — klikbare rij (Story 10.22)", () => {
@@ -117,5 +118,24 @@ describe("AnimalTable — 'Reden van intake' kolom (Story 10.21)", () => {
     // Dier zonder reden toont '—'
     const reasonCell4 = within(dataRows[3]).getAllByRole("cell").at(-1);
     expect(reasonCell4?.textContent?.trim()).toBe("—");
+  });
+});
+
+describe("AnimalTable — kolom Kennel (Story 10.61)", () => {
+  function kennelCell(name: string) {
+    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent?.trim());
+    const kennelIdx = headers.indexOf("Kennel");
+    const row = screen.getAllByRole("link", { name: new RegExp(name) }).find((el) => el.tagName === "TR")!;
+    return within(row).getAllByRole("cell")[kennelIdx];
+  }
+
+  it("toont de kennelcode, niet het interne kennelnummer", () => {
+    render(<AnimalTable animals={[mockAnimal({ name: "Nel", kennelId: 63, kennelCode: "H17" })]} />);
+    expect(kennelCell("Nel").textContent?.trim()).toBe("H17");
+  });
+
+  it("toont '—' voor een dier zonder kennel", () => {
+    render(<AnimalTable animals={[mockAnimal({ name: "Milka", kennelId: null, kennelCode: null })]} />);
+    expect(kennelCell("Milka").textContent?.trim()).toBe("—");
   });
 });

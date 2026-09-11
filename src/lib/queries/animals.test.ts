@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Hoisted mocks for Drizzle chaining
-const { mockResults, mockWhere, mockOrderBy, mockLimit, mockOffset } = vi.hoisted(() => {
+const { mockResults, mockWhere, mockOrderBy, mockLimit, mockOffset, mockLeftJoin } = vi.hoisted(() => {
   const mockResults: unknown[][] = [];
   const mockWhere = vi.fn();
   const mockOrderBy = vi.fn();
   const mockLimit = vi.fn();
   const mockOffset = vi.fn();
-  return { mockResults, mockWhere, mockOrderBy, mockLimit, mockOffset };
+  const mockLeftJoin = vi.fn();
+  return { mockResults, mockWhere, mockOrderBy, mockLimit, mockOffset, mockLeftJoin };
 });
 
 vi.mock("@/lib/db", () => {
@@ -21,6 +22,7 @@ vi.mock("@/lib/db", () => {
       return Promise.resolve(result);
     };
     chain.from = vi.fn().mockReturnValue(chain);
+    chain.leftJoin = mockLeftJoin.mockReturnValue(chain);
     chain.where = mockWhere.mockReturnValue(chain);
     chain.orderBy = mockOrderBy.mockReturnValue(chain);
     chain.limit = mockLimit.mockReturnValue(chain);
@@ -48,7 +50,9 @@ vi.mock("@/lib/db/schema", () => ({
     intakeDate: "intake_date",
     intakeReason: "intake_reason",
     createdAt: "created_at",
+    kennelId: "kennel_id",
   },
+  kennels: { id: "kennels.id", code: "kennels.code" },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -66,10 +70,42 @@ vi.mock("drizzle-orm", () => ({
   ne: vi.fn((...args: unknown[]) => ({ type: "ne", args })),
   isNotNull: vi.fn((col: unknown) => ({ type: "isNotNull", col })),
   count: vi.fn(),
+  getTableColumns: vi.fn(() => ({ id: "id", name: "name", kennelId: "kennel_id" })),
 }));
 
 import { getAnimalsForAdmin, getAnimalById, getIbnDeadlineAlerts } from "./animals";
 import { db } from "@/lib/db";
+import { kennels } from "@/lib/db/schema";
+
+describe("getAnimalsForAdmin — kennelcode (Story 10.61)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResults.length = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)._resetIndex();
+  });
+
+  it("selecteert de kennelcode naast de dierkolommen", async () => {
+    mockResults.push([], [{ count: 0 }]);
+
+    await getAnimalsForAdmin();
+
+    const selection = vi.mocked(db.select).mock.calls[0][0];
+    expect(selection).toMatchObject({ id: "id", name: "name", kennelCode: "kennels.code" });
+  });
+
+  it("koppelt kennels via een left join, zodat dieren zonder kennel in de lijst blijven", async () => {
+    mockResults.push([], [{ count: 0 }]);
+
+    await getAnimalsForAdmin();
+
+    expect(mockLeftJoin).toHaveBeenCalledTimes(1); // enkel de lijst, niet de telling
+    expect(mockLeftJoin).toHaveBeenCalledWith(kennels, {
+      type: "eq",
+      args: ["kennel_id", "kennels.id"],
+    });
+  });
+});
 
 describe("getAnimalsForAdmin", () => {
   beforeEach(() => {
