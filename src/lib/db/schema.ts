@@ -1092,3 +1092,52 @@ export const databaseBackups = pgTable("database_backups", {
 }, (table) => [
   index("idx_database_backups_created_at").on(table.createdAt),
 ]);
+
+// Story 10.64 — het formulier "Terug naar eigenaar" (model van Sven, 5 mei 2026).
+// Eén rij = één ingevuld formulier: een momentopname van het dier op dat moment
+// plus de gegevens van de eigenaar en de kosten. Een dier kan meer dan één keer
+// terug naar een eigenaar, dus dit hangt niet als kolommen op `animals`.
+// Geslacht (M/V), gesteriliseerd en stamboom staan er als de vakjes op het
+// papier ("" = niet aangekruist), zodat scherm en PDF hetzelfde tonen.
+export const ownerReturnForms = pgTable("owner_return_forms", {
+  id: serial("id").primaryKey(),
+  formNr: varchar("form_nr", { length: 20 }).unique().notNull(), // TNE-JJJJ-NNNN
+  animalId: integer("animal_id").notNull().references(() => animals.id),
+  drawnUpOn: date("drawn_up_on").notNull(),
+  drawnUpAt: varchar("drawn_up_at", { length: 100 }),
+  // Eigenaar
+  ownerLastName: varchar("owner_last_name", { length: 100 }).notNull(),
+  ownerFirstName: varchar("owner_first_name", { length: 100 }).notNull(),
+  ownerStreet: varchar("owner_street", { length: 200 }),
+  ownerPostalCode: varchar("owner_postal_code", { length: 20 }),
+  ownerCity: varchar("owner_city", { length: 100 }),
+  ownerCountry: varchar("owner_country", { length: 100 }),
+  ownerBirthDate: date("owner_birth_date"),
+  ownerBirthPlace: varchar("owner_birth_place", { length: 100 }),
+  ownerPhone: varchar("owner_phone", { length: 30 }),
+  ownerMobile: varchar("owner_mobile", { length: 30 }),
+  ownerEmail: varchar("owner_email", { length: 200 }),
+  // Momentopname van het dier
+  animalName: varchar("animal_name", { length: 100 }).notNull(),
+  animalSpecies: varchar("animal_species", { length: 50 }),
+  animalBreed: varchar("animal_breed", { length: 100 }),
+  animalBirthDate: date("animal_birth_date"),
+  animalIdentificationNr: varchar("animal_identification_nr", { length: 50 }),
+  animalGender: varchar("animal_gender", { length: 1 }), // '' | M | V
+  animalNeutered: varchar("animal_neutered", { length: 3 }), // '' | ja | nee
+  animalPedigree: varchar("animal_pedigree", { length: 3 }), // '' | ja | nee
+  animalPassportNr: varchar("animal_passport_nr", { length: 100 }),
+  animalCoatDescription: text("animal_coat_description"),
+  // Bijdrage in de kosten
+  stayCosts: varchar("stay_costs", { length: 200 }),
+  totalPaid: varchar("total_paid", { length: 20 }), // als tekst, zoals paymentAmount bij contracten
+  // Getekende versie (papier → scan) en de kopie voor de eigenaar
+  signedDocumentUrl: varchar("signed_document_url", { length: 500 }),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+  copyEmailedTo: varchar("copy_emailed_to", { length: 200 }),
+  copyEmailedAt: timestamp("copy_emailed_at", { withTimezone: true }),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_owner_return_forms_animal_id").on(table.animalId),
+]);

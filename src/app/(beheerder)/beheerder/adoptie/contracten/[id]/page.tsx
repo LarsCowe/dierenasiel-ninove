@@ -114,7 +114,10 @@ export default async function ContractDetailPage({ params }: Props) {
           ) : (
             <p className="mt-2 text-xs text-gray-500">Nog geen getekend document opgeladen.</p>
           )}
-          <SignedDocumentUpload contractId={contract.id} hasExisting={Boolean(contract.signedDocumentUrl)} />
+          <SignedDocumentUpload
+            uploadUrl={`/api/adoptie-contract/${contract.id}/signed-upload`}
+            hasExisting={Boolean(contract.signedDocumentUrl)}
+          />
         </div>
       </div>
     </div>

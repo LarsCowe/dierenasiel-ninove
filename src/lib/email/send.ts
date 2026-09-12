@@ -26,6 +26,13 @@ interface SendEmailParams {
   text?: string;
   /** Laat leeg om REPLY_TO_EMAIL te gebruiken. */
   replyTo?: string;
+  /** Bijlagen (story 10.64): bestandsnaam + inhoud. Resend leidt het type af uit de naam. */
+  attachments?: EmailAttachment[];
+}
+
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
 }
 
 export interface SendEmailResult {
@@ -62,6 +69,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       html: params.html,
       ...(params.text ? { text: params.text } : {}),
       ...(replyTo ? { replyTo } : {}),
+      ...(params.attachments?.length ? { attachments: params.attachments } : {}),
     });
 
     if (error) return { success: false, error: error.message };

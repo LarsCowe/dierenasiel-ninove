@@ -41,6 +41,7 @@ async function clearAllTables() {
   await db.delete(schema.vaccinations);
 
   // Animal-related
+  await db.delete(schema.ownerReturnForms); // story 10.64 — FK naar animals én users
   await db.delete(schema.animalTodos);
   await db.delete(schema.behaviorRecords);
   await db.delete(schema.feedingPlans);

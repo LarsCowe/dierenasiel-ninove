@@ -39,6 +39,10 @@ import { getWorkflowHistoryWithUserByAnimalId } from "@/lib/queries/workflow";
 import AnimalDetailTabs from "@/components/beheerder/shared/AnimalDetailTabs";
 import AnimalTraitsSection from "@/components/beheerder/dieren/AnimalTraitsSection";
 import { getAnimalTraits } from "@/lib/queries/animal-traits";
+import { getOwnerReturnFormsByAnimalId } from "@/lib/queries/owner-return";
+import OwnerReturnFormList from "@/components/beheerder/dieren/OwnerReturnFormList";
+import { getSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/permissions";
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -60,7 +64,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues, weighings] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues, weighings, ownerReturnForms, session] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -81,9 +85,12 @@ export default async function DierDetailPage({ params }: Props) {
     getWorkflowHistoryWithUserByAnimalId(animalId),
     getAnimalTraits(animalId),
     getWeightsByAnimalId(animalId),
+    getOwnerReturnFormsByAnimalId(animalId),
+    getSession(),
   ]);
 
   if (!animal) notFound();
+  const magSchrijven = session ? hasPermission(session.role, "animal:write") : false;
 
   return (
     <div className="space-y-4">
@@ -138,6 +145,8 @@ export default async function DierDetailPage({ params }: Props) {
               animalName={animal.name}
               isInShelter={animal.isInShelter ?? true}
             />
+            {/* Story 10.64: het formulier "Terug naar eigenaar" hoort bij de uitstroom. */}
+            <OwnerReturnFormList animalId={animalId} forms={ownerReturnForms} canCreate={magSchrijven} />
           </div>
         </div>
       </div>

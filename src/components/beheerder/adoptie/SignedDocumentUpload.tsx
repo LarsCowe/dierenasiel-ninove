@@ -4,11 +4,12 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Props {
-  contractId: number;
+  /** De route die het bestand ontvangt (story 10.64: één component voor contracten én formulieren). */
+  uploadUrl: string;
   hasExisting: boolean;
 }
 
-export default function SignedDocumentUpload({ contractId, hasExisting }: Props) {
+export default function SignedDocumentUpload({ uploadUrl, hasExisting }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -23,7 +24,7 @@ export default function SignedDocumentUpload({ contractId, hasExisting }: Props)
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch(`/api/adoptie-contract/${contractId}/signed-upload`, {
+      const res = await fetch(uploadUrl, {
         method: "POST",
         body: fd,
       });

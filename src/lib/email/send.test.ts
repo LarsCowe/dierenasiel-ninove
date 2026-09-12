@@ -122,6 +122,27 @@ describe("sendEmail", () => {
     expect(Object.keys(mockSend.mock.calls[0][0])).not.toContain("replyTo");
   });
 
+  it("stuurt bijlagen mee als bestandsnaam + inhoud (story 10.64)", async () => {
+    mockSend.mockResolvedValue({ data: { id: "msg_1" }, error: null });
+    const inhoud = Buffer.from("%PDF-1.4");
+
+    await sendEmail({ ...params, attachments: [{ filename: "terug-naar-eigenaar-TNE-2026-0001.pdf", content: inhoud }] });
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [{ filename: "terug-naar-eigenaar-TNE-2026-0001.pdf", content: inhoud }],
+      }),
+    );
+  });
+
+  it("laat attachments weg wanneer er geen zijn", async () => {
+    mockSend.mockResolvedValue({ data: { id: "msg_1" }, error: null });
+
+    await sendEmail({ ...params, attachments: [] });
+
+    expect(Object.keys(mockSend.mock.calls[0][0])).not.toContain("attachments");
+  });
+
   it("aanvaardt meerdere ontvangers", async () => {
     mockSend.mockResolvedValue({ data: { id: "msg_1" }, error: null });
 
