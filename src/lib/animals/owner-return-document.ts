@@ -33,11 +33,16 @@ export async function renderOwnerReturnPdf(form: OwnerReturnRecordLike): Promise
   return renderToBuffer(createElement(OwnerReturnPdf, { data: buildOwnerReturnPdfData(form) }) as any);
 }
 
+/**
+ * `ophalen` is injecteerbaar voor tests: een vervangen globale `fetch` breekt
+ * ook het laden van de wasm-layoutmotor van @react-pdf (flaky onder belasting).
+ */
 export async function buildOwnerReturnAttachment(
   form: OwnerReturnRecordLike & { signedDocumentUrl: string | null },
+  ophalen: typeof fetch = fetch,
 ): Promise<OwnerReturnAttachment> {
   if (form.signedDocumentUrl) {
-    const res = await fetch(form.signedDocumentUrl);
+    const res = await ophalen(form.signedDocumentUrl);
     if (!res.ok) throw new Error(`Getekende versie niet op te halen (${res.status})`);
     const content = Buffer.from(await res.arrayBuffer());
     return {
