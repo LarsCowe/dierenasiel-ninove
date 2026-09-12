@@ -346,6 +346,15 @@ describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
     );
   });
 
+  // Story 10.66 — etiket voor achteraan in het boekje, bij adoptie.
+  it("biedt het DYMO-etiket voor het boekje aan, in een nieuw tabblad", () => {
+    render(<AnimalEditForm animal={mockAnimal({ id: 310 })} />);
+
+    const link = screen.getByRole("link", { name: /etiket boekje \(dymo\)/i });
+    expect(link).toHaveAttribute("href", "/api/dieren/310/boekje-etiket/pdf");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
   const BAR = /Niet-opgeslagen wijzigingen/i;
 
   it("toont geen balk zolang er niets gewijzigd is", () => {
