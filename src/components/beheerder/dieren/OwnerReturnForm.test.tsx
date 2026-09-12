@@ -48,6 +48,20 @@ describe("OwnerReturnForm", () => {
     expect(screen.getByRole("radio", { name: "V" })).not.toBeChecked();
   });
 
+  it("toont de diersoort met haar Nederlandse naam, als keuzelijst", () => {
+    render(<OwnerReturnForm animalId={7} prefill={prefill} today="2026-09-12" />);
+    const soort = screen.getByLabelText(/Diersoort/) as HTMLSelectElement;
+    expect(soort.tagName).toBe("SELECT");
+    expect(soort.value).toBe("hond");
+    expect(soort.selectedOptions[0].textContent).toBe("Hond");
+  });
+
+  it("houdt een soort die niet in de lijst staat als keuze, zodat niets stil verandert", () => {
+    render(<OwnerReturnForm animalId={7} prefill={{ ...prefill, animalSpecies: "fret" }} today="2026-09-12" />);
+    const soort = screen.getByLabelText(/Diersoort/) as HTMLSelectElement;
+    expect(soort.value).toBe("fret");
+  });
+
   it("zet de datum van opmaak op vandaag en de plaats op Denderwindeke", () => {
     render(<OwnerReturnForm animalId={7} prefill={prefill} today="2026-09-12" />);
     expect((screen.getByLabelText(/Opgemaakt op/) as HTMLInputElement).value).toBe("2026-09-12");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createOwnerReturnForm } from "@/lib/actions/owner-return";
 import type { AnimalSnapshotFields } from "@/lib/animals/owner-return";
 import type { OwnerReturnFormInput } from "@/lib/validations/owner-return";
+import { SPECIES_LABELS } from "@/lib/constants";
 
 /**
  * Story 10.64 — het invulscherm voor "Terug naar eigenaar", in de volgorde van
@@ -89,6 +90,28 @@ function Keuze({ veld, label, waarde, fouten, opties }: KeuzeProps) {
   );
 }
 
+/** Keuzelijst met de Nederlandse namen; een soort buiten de lijst blijft kiesbaar. */
+function Soort({ waarde, fouten }: { waarde: string; fouten?: VeldFouten }) {
+  const opties = Object.entries(SPECIES_LABELS);
+  if (waarde && !(waarde in SPECIES_LABELS)) opties.push([waarde, waarde]);
+  return (
+    <div className={SPAN[3]}>
+      <label htmlFor="animalSpecies" className={LABEL}>
+        Diersoort
+      </label>
+      <select id="animalSpecies" name="animalSpecies" defaultValue={waarde} className={INPUT}>
+        <option value="">—</option>
+        {opties.map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <Fout veld="animalSpecies" fouten={fouten} />
+    </div>
+  );
+}
+
 export default function OwnerReturnForm({ animalId, prefill, today }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createOwnerReturnForm, null);
@@ -149,7 +172,7 @@ export default function OwnerReturnForm({ animalId, prefill, today }: Props) {
         </p>
         <div className="grid gap-3 sm:grid-cols-6">
           <Tekst veld="animalName" label="Naam" verplicht waarde={w("animalName")} fouten={fouten} />
-          <Tekst veld="animalSpecies" label="Diersoort" waarde={w("animalSpecies")} fouten={fouten} />
+          <Soort waarde={w("animalSpecies")} fouten={fouten} />
           <Tekst veld="animalBreed" label="Ras" waarde={w("animalBreed")} fouten={fouten} />
           <Tekst veld="animalBirthDate" label="Geboortedatum" type="date" waarde={w("animalBirthDate")} fouten={fouten} />
           <Tekst veld="animalIdentificationNr" label="Identificatienr (chip)" waarde={w("animalIdentificationNr")} fouten={fouten} />
