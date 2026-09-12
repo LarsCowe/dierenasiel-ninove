@@ -24,7 +24,8 @@
     "test:e2e:headed": "playwright test --headed",
     "db:backfill-campaign-coordinates": "tsx src/lib/db/backfill/run-backfill-campaign-coordinates.ts",
     "db:migrate-kalender-evenementen": "tsx src/lib/db/backfill/run-migrate-calendar-events.ts",
-    "db:seed-leveranciers": "tsx src/lib/db/backfill/run-seed-suppliers.ts"
+    "db:seed-leveranciers": "tsx src/lib/db/backfill/run-seed-suppliers.ts",
+    "voortgang:sync": "tsx scripts/sync-voortgang.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
