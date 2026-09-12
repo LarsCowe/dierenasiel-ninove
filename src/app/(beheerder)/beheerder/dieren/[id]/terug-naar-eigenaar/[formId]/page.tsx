@@ -96,7 +96,7 @@ export default async function TerugNaarEigenaarDetailPage({ params }: Props) {
           {form.signedDocumentUrl ? (
             <div className="mt-2 flex items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
               <span className="text-xs text-emerald-800">
-                Opgeladen op {form.signedAt ? new Date(form.signedAt).toLocaleString("nl-BE") : "—"}
+                Opgeladen op {form.signedAt ? new Date(form.signedAt).toLocaleString("nl-BE", { timeZone: "Europe/Brussels" }) : "—"}
               </span>
               <a
                 href={form.signedDocumentUrl}
@@ -119,7 +119,7 @@ export default async function TerugNaarEigenaarDetailPage({ params }: Props) {
           <h3 className="text-sm font-semibold text-gray-700">Kopie voor de eigenaar</h3>
           {form.copyEmailedAt && (
             <p className="mt-1 text-xs text-emerald-800">
-              Gemaild naar {form.copyEmailedTo} op {new Date(form.copyEmailedAt).toLocaleString("nl-BE")}.
+              Gemaild naar {form.copyEmailedTo} op {new Date(form.copyEmailedAt).toLocaleString("nl-BE", { timeZone: "Europe/Brussels" })}.
             </p>
           )}
           <div className="mt-2">
