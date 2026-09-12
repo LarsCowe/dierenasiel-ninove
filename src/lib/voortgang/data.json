@@ -884,6 +884,13 @@
           "status": "done",
           "doneOn": "2026-09-12",
           "doneAt": "2026-09-12T12:37:48.712Z"
+        },
+        {
+          "id": "10.65",
+          "title": "Opsomtekens in het adoptiecontract verschijnen als \"&\"",
+          "status": "done",
+          "doneOn": "2026-09-12",
+          "doneAt": "2026-09-12T14:13:28.003Z"
         }
       ]
     },

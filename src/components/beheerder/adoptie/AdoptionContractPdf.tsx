@@ -33,7 +33,9 @@ const s = StyleSheet.create({
   // Conditions
   conditionsTitle: { fontSize: 9, fontFamily: "Helvetica-Bold", textDecoration: "underline", marginTop: 10, marginBottom: 4 },
   conditionItem: { fontSize: 7.5, lineHeight: 1.5, marginBottom: 2, color: "#333" },
-  conditionBullet: { fontFamily: "Helvetica-Bold" },
+  conditionRow: { flexDirection: "row", marginBottom: 2 },
+  conditionBullet: { width: 9, fontSize: 7.5, lineHeight: 1.5, fontFamily: "Helvetica-Bold", color: "#333" },
+  conditionText: { flex: 1, fontSize: 7.5, lineHeight: 1.5, color: "#333" },
   // Signatures
   sigRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
   sigBlock: { width: "45%", borderTop: "0.5 solid #333", paddingTop: 4 },
@@ -57,6 +59,22 @@ function Checkbox({ label, checked }: { label: string; checked?: boolean }) {
     <View style={s.checkItem}>
       <View style={checked ? s.checkboxChecked : s.checkbox} />
       <Text style={s.checkLabel}>{label}</Text>
+    </View>
+  );
+}
+
+/**
+ * Eén adoptievoorwaarde als opsomming. Het teken staat in een eigen kolom, zodat
+ * een voorwaarde over meerdere regels onder haar eerste woord blijft uitlijnen.
+ *
+ * "•" en niet "✦": Helvetica kent enkel WinAnsi, en "✦" kwam op de PDF als "&"
+ * (story 10.65 — zie `@/lib/pdf/charset`).
+ */
+export function Voorwaarde({ children }: { children: string }) {
+  return (
+    <View style={s.conditionRow} wrap={false}>
+      <Text style={s.conditionBullet}>•</Text>
+      <Text style={s.conditionText}>{children}</Text>
     </View>
   );
 }
@@ -151,9 +169,7 @@ function HondenContract({ data }: { data: ContractData }) {
       {/* Adoptievoorwaarden */}
       <Text style={s.conditionsTitle}>Adoptievoorwaarden</Text>
       {DOG_CONDITIONS.map((c, i) => (
-        <Text key={i} style={s.conditionItem}>
-          <Text style={s.conditionBullet}>{"✦ "}</Text>{c}
-        </Text>
+        <Voorwaarde key={i}>{c}</Voorwaarde>
       ))}
 
       <Text style={[s.conditionItem, { marginTop: 4 }]}>
@@ -269,9 +285,7 @@ function KattenContract({ data }: { data: ContractData }) {
       {/* Adoptievoorwaarden */}
       <Text style={s.conditionsTitle}>Adoptievoorwaarden</Text>
       {CAT_CONDITIONS.map((c, i) => (
-        <Text key={i} style={s.conditionItem}>
-          <Text style={s.conditionBullet}>{"✦ "}</Text>{c}
-        </Text>
+        <Voorwaarde key={i}>{c}</Voorwaarde>
       ))}
 
       {/* Handtekeningen */}
