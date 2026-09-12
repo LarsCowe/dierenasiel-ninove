@@ -1,5 +1,5 @@
 import voortgang from "@/lib/voortgang/data.json";
-import type { Epic, StoryStatus as Status } from "@/lib/voortgang/parse";
+import { lastDoneStory, type Epic, type StoryStatus as Status } from "@/lib/voortgang/parse";
 
 /**
  * De lijst komt uit `src/lib/voortgang/data.json`, gemaakt door `npm run voortgang:sync`
@@ -62,7 +62,8 @@ export default function VoortgangPage() {
   const doneStories = allStories.filter((s) => s.status === "done").length;
   const reviewStories = allStories.filter((s) => s.status === "review").length;
   const inProgressStories = allStories.filter((s) => s.status === "in-progress").length;
-  const lastDone = [...allStories].reverse().find((s) => s.status === "done");
+  // Op afrondingsdatum, niet op volgorde in het yaml-bestand (10.64 kwam na 14.3).
+  const lastDone = lastDoneStory(EPICS);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -100,6 +101,7 @@ export default function VoortgangPage() {
           {lastDone && (
             <span className="text-xs text-gray-400">
               Laatst afgerond: Story {lastDone.id}
+              {lastDone.doneOn ? ` (${lastDone.doneOn.split("-").reverse().join("/")})` : ""}
             </span>
           )}
         </div>

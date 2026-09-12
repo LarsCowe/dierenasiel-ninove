@@ -1,6 +1,6 @@
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parseSprintStatus, storyTitleFromMarkdown } from "../src/lib/voortgang/parse";
+import { latestDateInMarkdown, parseSprintStatus, storyTitleFromMarkdown, type StoryDate } from "../src/lib/voortgang/parse";
 import titelsOud from "../src/lib/voortgang/titels-oud.json";
 
 /**
@@ -25,13 +25,22 @@ function main() {
   }
 
   const titels: Record<string, string> = { ...(titelsOud as Record<string, string>) };
+  // Afrondingsdatum = laatste datum in het story-bestand (Change Log); zonder datum in
+  // de tekst (46 oudere stories) valt het terug op de wijzigingsdatum van het bestand.
+  const datums: Record<string, StoryDate> = {};
+  const vandaag = new Date().toISOString().slice(0, 10);
   for (const bestand of readdirSync(ARTIFACTS)) {
     if (!/^\d+-\d+-.*\.md$/.test(bestand)) continue;
-    const kop = storyTitleFromMarkdown(readFileSync(join(ARTIFACTS, bestand), "utf8"));
-    if (kop) titels[kop.id] = kop.title;
+    const pad = join(ARTIFACTS, bestand);
+    const inhoud = readFileSync(pad, "utf8");
+    const kop = storyTitleFromMarkdown(inhoud);
+    if (!kop) continue;
+    titels[kop.id] = kop.title;
+    const mtime = statSync(pad).mtime.toISOString();
+    datums[kop.id] = { doneOn: latestDateInMarkdown(inhoud, vandaag) ?? mtime.slice(0, 10), doneAt: mtime };
   }
 
-  const epics = parseSprintStatus(readFileSync(yamlPad, "utf8"), titels);
+  const epics = parseSprintStatus(readFileSync(yamlPad, "utf8"), titels, datums);
   const stories = epics.reduce((n, e) => n + e.stories.length, 0);
   const inhoud = { generatedAt: new Date().toISOString().slice(0, 10), epics };
   writeFileSync(DOEL, JSON.stringify(inhoud, null, 2) + "\n");

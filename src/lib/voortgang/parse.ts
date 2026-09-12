@@ -20,6 +20,15 @@ export interface Story {
   id: string;
   title: string;
   status: StoryStatus;
+  /** JJJJ-MM-DD waarop de story afgerond is (laatste datum in het story-bestand); enkel bij done. */
+  doneOn?: string;
+  /** Tijdstip van het story-bestand (ISO); beslist enkel bij twee stories op dezelfde dag. */
+  doneAt?: string;
+}
+
+export interface StoryDate {
+  doneOn: string;
+  doneAt?: string;
 }
 
 export interface Epic {
@@ -60,7 +69,48 @@ export function storyTitleFromMarkdown(markdown: string): { id: string; title: s
   return { id: m[1], title: m[2].replace(/`/g, "").trim() };
 }
 
-export function parseSprintStatus(yaml: string, titels: Record<string, string>): Epic[] {
+/**
+ * De laatste datum (JJJJ-MM-DD) in een story-bestand — de dag waarop de story
+ * afgerond werd. Staat er een "## Change Log", dan telt enkel dat deel: de tekst
+ * erboven bevat ook voorbeeld-URL's en planningen (14.5 had `?week=2026-12-14`).
+ * Enkel echte kalenderdatums tellen (een chipnummer als 9810-00-12 niet), en
+ * niets na `notAfter`: een afronding ligt nooit in de toekomst.
+ */
+export function latestDateInMarkdown(markdown: string, notAfter?: string): string | null {
+  const changeLog = markdown.search(/^##\s*Change Log/m);
+  const tekst = changeLog >= 0 ? markdown.slice(changeLog) : markdown;
+  let laatste: string | null = null;
+  for (const m of tekst.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})\b/g)) {
+    const maand = Number(m[2]);
+    const dag = Number(m[3]);
+    if (maand < 1 || maand > 12 || dag < 1 || dag > 31) continue;
+    if (notAfter && m[0] > notAfter) continue;
+    if (!laatste || m[0] > laatste) laatste = m[0];
+  }
+  return laatste;
+}
+
+/**
+ * De laatst afgeronde story: op datum; op dezelfde dag op het tijdstip van het
+ * story-bestand; en anders de laatste in het bestand.
+ */
+export function lastDoneStory(epics: Epic[]): Story | undefined {
+  let beste: Story | undefined;
+  for (const story of epics.flatMap((e) => e.stories)) {
+    if (story.status !== "done") continue;
+    if (!beste) { beste = story; continue; }
+    const dag = (story.doneOn ?? "").localeCompare(beste.doneOn ?? "");
+    const tijd = (story.doneAt ?? "").localeCompare(beste.doneAt ?? "");
+    if (dag > 0 || (dag === 0 && tijd >= 0)) beste = story;
+  }
+  return beste;
+}
+
+export function parseSprintStatus(
+  yaml: string,
+  titels: Record<string, string>,
+  datums: Record<string, StoryDate> = {},
+): Epic[] {
   const epics: Epic[] = [];
   let huidige: Epic | null = null;
 
@@ -87,7 +137,13 @@ export function parseSprintStatus(yaml: string, titels: Record<string, string>):
       const status = STORY_STATUS[story[4]];
       if (!status) continue;
       const id = `${story[1]}.${story[2]}`;
-      huidige.stories.push({ id, title: titels[id] ?? titleFromSlug(story[3]), status });
+      const datum = status === "done" ? datums[id] : undefined;
+      huidige.stories.push({
+        id,
+        title: titels[id] ?? titleFromSlug(story[3]),
+        status,
+        ...(datum ? { doneOn: datum.doneOn, ...(datum.doneAt ? { doneAt: datum.doneAt } : {}) } : {}),
+      });
     }
   }
 
